@@ -67,7 +67,7 @@ foreach( SPRITE ${SPRITES})
 	set(SPRITES_HEADER_CONTENT "${SPRITES_HEADER_CONTENT}#include \"${SPRITE_NAME}.hpp\"\n")
 endforeach()
 
-set(SPRITES_HEADER_CONTENT "namespace Sprites\n{\n\n${SPRITES_HEADER_CONTENT}\n}\n")
+set(SPRITES_HEADER_CONTENT "#include <cstdint>\nnamespace Sprites\n{\n\n${SPRITES_HEADER_CONTENT}\n}\n")
 set(SPRITES_HEADER "${SPRITES_HEADERS_PATH}/Sprites.hpp")
 file(GENERATE OUTPUT ${SPRITES_HEADER} CONTENT "${SPRITES_HEADER_CONTENT}")
 

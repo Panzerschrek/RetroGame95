@@ -1,7 +1,7 @@
+#include "Sprites.hpp"
+#include "SpriteBMP.hpp"
 #include "Host.hpp"
 #include <thread>
-#include "Sprites.hpp"
-
 
 Host::Host()
 	: system_window_()
@@ -23,6 +23,29 @@ bool Host::Loop()
 	}
 
 	system_window_.BeginFrame();
+
+	const SpriteBMP sprite(Sprites::test_sprite);
+
+	const SDL_Surface& surface = system_window_.GetSurface();
+
+	{
+		const auto w = sprite.GetWidth();
+		const auto h = sprite.GetHeight();
+		const auto stride = sprite.GetRowStride();
+		const auto palette = sprite.GetPalette();
+		const auto data = sprite.GetImageData();
+
+		const auto pixels = reinterpret_cast<Color32*>(surface.pixels);
+		const auto dst_stride = surface.pitch / sizeof(Color32);
+		for(uint32_t y = 0; y < h; ++y)
+		{
+			for(uint32_t x = 0; x < w; ++x)
+			{
+				const auto color_index = data[x + y * stride];
+				pixels[x + y * dst_stride] = palette[color_index];
+			}
+		}
+	}
 
 	system_window_.EndFrame();
 
