@@ -34,7 +34,12 @@ bool Host::Loop()
 	{
 		for(uint32_t x = 0; x < 6; ++x)
 		{
-			DrawSpriteUnchecked(frame_buffer, sprite, x * (sprite.GetWidth() + 1), y * (sprite.GetHeight() + 1));
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				sprite,
+				0,
+				x * (sprite.GetWidth() + 1),
+				y * (sprite.GetHeight() + 1));
 		}
 	}
 
