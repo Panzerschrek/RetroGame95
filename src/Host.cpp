@@ -29,6 +29,11 @@ bool Host::Loop()
 	const FrameBuffer& frame_buffer = system_window_.GetFrameBuffer();
 	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::gimp_harold), 47, 16);
 
+	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_ghost), 128, 32 );
+	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_1), 144, 32);
+	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_food), 144 + 16, 32 + 6);
+
+
 	const SpriteBMP sprites[]
 		{
 		Sprites::tetris_block_1,
