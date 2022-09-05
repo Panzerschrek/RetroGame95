@@ -1,5 +1,6 @@
 #include "Host.hpp"
 #include <thread>
+#include "Sprites.hpp"
 
 
 Host::Host()

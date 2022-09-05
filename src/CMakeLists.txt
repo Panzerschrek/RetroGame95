@@ -39,6 +39,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DDEBUG)
 endif()
 
+# Setup dependencies.
+
 if(WIN32)
 	set(SDL2_INCLUDE_DIRS ${SDL2_DIR}/include)
 	set(SDL2_LIBRARIES ${SDL2_DIR}/lib/x64/SDL2.lib ${SDL2_DIR}/lib/x64/SDL2main.lib)
@@ -48,7 +50,30 @@ else()
 	set(GUI_APP_FLAG "")
 endif()
 
+# Add generated files.
+set(SPRITES_HEADERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/sprites)
+file(GLOB SPRITES "../sprites/*")
+set(SPRITES_HEADER_CONTENT "")
+foreach( SPRITE ${SPRITES})
+	get_filename_component(SPRITE_NAME ${SPRITE} NAME_WE)
+	set(HEADER_PATH ${SPRITES_HEADERS_PATH}/${SPRITE_NAME}.hpp)
+	add_custom_command(
+		OUTPUT ${HEADER_PATH}
+		DEPENDS ${SPRITE}
+		DEPENDS ${CMAKE_SOURCE_DIR}/bin2c.cmake ${SPRITE}
+		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/bin2c.cmake ${SPRITE} ${HEADER_PATH} ${SPRITE_NAME}
+		)
+	list(APPEND SPRITES_HEADERS ${HEADER_PATH})
+	set(SPRITES_HEADER_CONTENT "${SPRITES_HEADER_CONTENT}#include \"${SPRITE_NAME}.hpp\"\n")
+endforeach()
+
+set(SPRITES_HEADER_CONTENT "namespace Sprites\n{\n\n${SPRITES_HEADER_CONTENT}\n}\n")
+set(SPRITES_HEADER "${SPRITES_HEADERS_PATH}/Sprites.hpp")
+file(GENERATE OUTPUT ${SPRITES_HEADER} CONTENT "${SPRITES_HEADER_CONTENT}")
+
+# Add executable.
+
 file(GLOB_RECURSE SOURCES "*.cpp" "*.hpp")
-add_executable(${PROJECT_NAME} ${GUI_APP_FLAG} ${SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES})
+add_executable(${PROJECT_NAME} ${GUI_APP_FLAG} ${SOURCES} ${SPRITES_HEADERS} ${SPRITES_HEADER})
+target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS} ${SPRITES_HEADERS_PATH})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
