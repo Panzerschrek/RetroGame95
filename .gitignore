@@ -1,5 +1,11 @@
 # Build directories
 build*/
 
+screenshots/*
+
 # QtCreator settings
 CMakeLists.txt.user
+
+# Various Windows binaries
+*.dll
+*.exe
