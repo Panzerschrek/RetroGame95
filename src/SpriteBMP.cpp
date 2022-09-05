@@ -37,7 +37,7 @@ SpriteBMP::SpriteBMP(const uint8_t* const file_data)
 	static_assert(sizeof(SpriteBMP::BitmapFileHeader) == 14, "invalide size");
 	static_assert(sizeof(SpriteBMP::BitmapInfoHeader) == 40, "invalide size");
 
-	assert(GetFileHeader().size == 40);
+	assert(GetFileHeader().size >= 40);
 	assert(GetInfoHeader().bit_count == 8); // Only 8-bit images supported.
 }
 

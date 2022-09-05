@@ -24,7 +24,7 @@ bool Host::Loop()
 
 	system_window_.BeginFrame();
 
-	const SpriteBMP sprite(Sprites::test_sprite);
+	const SpriteBMP sprite(Sprites::ms_paint_test);
 
 	const SDL_Surface& surface = system_window_.GetSurface();
 
