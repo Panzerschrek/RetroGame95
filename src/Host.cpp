@@ -24,7 +24,7 @@ bool Host::Loop()
 
 	system_window_.BeginFrame();
 
-	const SpriteBMP sprite(Sprites::ms_paint_test);
+	const SpriteBMP sprite(Sprites::gimp_harold);
 
 	const SDL_Surface& surface = system_window_.GetSurface();
 
