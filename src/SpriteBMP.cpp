@@ -43,17 +43,17 @@ SpriteBMP::SpriteBMP(const uint8_t* const file_data)
 
 uint32_t SpriteBMP::GetWidth() const
 {
-	return GetInfoHeader().width;
+	return uint32_t(GetInfoHeader().width);
 }
 
 uint32_t SpriteBMP::GetRowStride() const
 {
-	return (GetWidth() + 3) & ~3;
+	return (GetWidth() + 3u) & ~3u;
 }
 
 uint32_t SpriteBMP::GetHeight() const
 {
-	return GetInfoHeader().height;
+	return uint32_t(GetInfoHeader().height);
 }
 
 const uint8_t* SpriteBMP::GetImageData() const

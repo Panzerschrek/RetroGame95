@@ -53,8 +53,8 @@ void SystemWindow::BeginFrame()
 FrameBuffer SystemWindow::GetFrameBuffer()
 {
 	FrameBuffer frame_buffer;
-	frame_buffer.width = surface_->w / scale_;
-	frame_buffer.height = surface_->h / scale_;
+	frame_buffer.width = uint32_t(surface_->w) / scale_;
+	frame_buffer.height = uint32_t(surface_->h) / scale_;
 
 	frame_buffer_data_.resize(frame_buffer.width * frame_buffer.height, 0);
 	frame_buffer.data = frame_buffer_data_.data();
@@ -71,7 +71,7 @@ void SystemWindow::EndFrame()
 
 	// TODO - optimize this.
 	const auto pixels = reinterpret_cast<Color32*>(surface_->pixels);
-	const uint32_t dst_stride = surface_->pitch / sizeof(Color32);
+	const uint32_t dst_stride = uint32_t(surface_->pitch) / sizeof(Color32);
 	for(uint32_t y= 0; y < frame_buffer.height; ++y)
 	{
 		for(uint32_t x= 0; x < frame_buffer.width; ++x)
