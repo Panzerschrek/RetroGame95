@@ -1,3 +1,4 @@
+#pragma once
 #include "Color.hpp"
 
 struct FrameBuffer

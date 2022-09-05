@@ -1,6 +1,7 @@
+#include "Host.hpp"
+#include "Draw.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
-#include "Host.hpp"
 #include <thread>
 
 Host::Host()
@@ -24,24 +25,16 @@ bool Host::Loop()
 
 	system_window_.BeginFrame();
 
-	const SpriteBMP sprite(Sprites::gimp_harold);
 
 	const FrameBuffer& frame_buffer = system_window_.GetFrameBuffer();
+	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::gimp_harold), 37, 16);
 
+	const SpriteBMP sprite(Sprites::test_sprite);
+	for(uint32_t y = 0; y < 8; ++y)
 	{
-		const auto w = sprite.GetWidth();
-		const auto h = sprite.GetHeight();
-		const auto stride = sprite.GetRowStride();
-		const auto palette = sprite.GetPalette();
-		const auto data = sprite.GetImageData();
-
-		for(uint32_t y = 0; y < h; ++y)
+		for(uint32_t x = 0; x < 6; ++x)
 		{
-			for(uint32_t x = 0; x < w; ++x)
-			{
-				const auto color_index = data[x + y * stride];
-				frame_buffer.data[x + y * frame_buffer.width] = palette[color_index];
-			}
+			DrawSpriteUnchecked(frame_buffer, sprite, x * (sprite.GetWidth() + 1), y * (sprite.GetHeight() + 1));
 		}
 	}
 
