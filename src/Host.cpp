@@ -26,7 +26,7 @@ bool Host::Loop()
 
 	const SpriteBMP sprite(Sprites::gimp_harold);
 
-	const SDL_Surface& surface = system_window_.GetSurface();
+	const FrameBuffer& frame_buffer = system_window_.GetFrameBuffer();
 
 	{
 		const auto w = sprite.GetWidth();
@@ -35,14 +35,12 @@ bool Host::Loop()
 		const auto palette = sprite.GetPalette();
 		const auto data = sprite.GetImageData();
 
-		const auto pixels = reinterpret_cast<Color32*>(surface.pixels);
-		const auto dst_stride = surface.pitch / sizeof(Color32);
 		for(uint32_t y = 0; y < h; ++y)
 		{
 			for(uint32_t x = 0; x < w; ++x)
 			{
 				const auto color_index = data[x + y * stride];
-				pixels[x + y * dst_stride] = palette[color_index];
+				frame_buffer.data[x + y * frame_buffer.width] = palette[color_index];
 			}
 		}
 	}
