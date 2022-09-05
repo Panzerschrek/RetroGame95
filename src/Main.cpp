@@ -1,6 +1,7 @@
 #include "Host.hpp"
+#include <SDL.h>
 
-extern "C" int main(const int argc, const char* argv[])
+extern "C" int main(int argc, char *argv[])
 {
 	(void) argc;
 	(void) argv;
