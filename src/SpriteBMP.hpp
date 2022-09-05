@@ -7,7 +7,7 @@
 class SpriteBMP
 {
 public:
-	explicit SpriteBMP(const uint8_t* file_data);
+	SpriteBMP(const uint8_t* file_data);
 
 	uint32_t GetWidth() const;
 	uint32_t GetRowStride() const;
