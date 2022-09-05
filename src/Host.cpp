@@ -27,9 +27,9 @@ bool Host::Loop()
 
 
 	const FrameBuffer& frame_buffer = system_window_.GetFrameBuffer();
-	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::gimp_harold), 37, 16);
+	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::gimp_harold), 47, 16);
 
-	const SpriteBMP sprite(Sprites::test_sprite);
+	const SpriteBMP sprite(Sprites::mt_paint_test);
 	for(uint32_t y = 0; y < 8; ++y)
 	{
 		for(uint32_t x = 0; x < 6; ++x)

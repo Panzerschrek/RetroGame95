@@ -18,7 +18,7 @@ void DrawSpriteUnchecked(
 
 	for(uint32_t y = 0; y < h; ++y)
 	{
-		const auto src_line = data + y * stride;
+		const auto src_line = data + (h - 1 - y) * stride;
 		const auto dst_line = frame_buffer.data + (y + start_y) * frame_buffer.width;
 		for(uint32_t x = 0; x < w; ++x)
 		{
@@ -46,7 +46,7 @@ void DrawSpriteWithAlphaUnchecked(
 
 	for(uint32_t y = 0; y < h; ++y)
 	{
-		const auto src_line = data + y * stride;
+		const auto src_line = data + (h - 1 - y) * stride;
 		const auto dst_line = frame_buffer.data + (y + start_y) * frame_buffer.width;
 		for(uint32_t x = 0; x < w; ++x)
 		{
