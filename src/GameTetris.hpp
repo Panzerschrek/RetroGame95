@@ -42,8 +42,10 @@ private:
 	};
 
 private:
+	void NextLevel();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
 	void MovePieceDown();
+	void UpdateScore(uint32_t lines_removed);
 
 	ActivePiece SpawnActivePiece();
 	void GenerateNextPieceType();
@@ -52,8 +54,9 @@ private:
 	Rand rand_;
 
 	uint32_t num_ticks_ = 0;
-	uint32_t speed_ = 60; // Process actual logic each N tick
-
+	uint32_t score_= 0;
+	uint32_t level_ = 0;
+	uint32_t lines_removed_for_this_level_ = 0;
 	bool game_over_ = false;
 
 	Block field_[ c_field_width * c_field_height] {};

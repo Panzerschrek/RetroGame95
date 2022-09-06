@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
+#include <cassert>
 
 namespace
 {
@@ -19,18 +20,42 @@ const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pie
 	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
 }};
 
+uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
+{
+	switch(lines_removed)
+	{
+	case 0: return 0;
+	case 1: return 1;
+	case 2: return 4;
+	case 3: return 8;
+	case 4: return 16;
+	}
+
+	assert(false);
+	return 0;
+}
+
+uint32_t GetScoreForLinesRemoval(const uint32_t level, const uint32_t lines_removed)
+{
+	return GetBaseLineRemovalScore(lines_removed) * (level + 1);
+}
+
+uint32_t GetSpeedForLevel(const uint32_t level)
+{
+	return 60 / level;
+}
+
+uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
+{
+	return 3 * (level + 3);
+}
+
 } // namespace
 
 GameTetris::GameTetris()
 	: rand_() // TODO - use random seed.
 {
-	for (Block& block : field_)
-	{
-		block = Block::Empty;
-	}
-
-	GenerateNextPieceType();
-	active_piece_ = SpawnActivePiece();
+	NextLevel();
 }
 
 void GameTetris::Tick(
@@ -43,7 +68,7 @@ void GameTetris::Tick(
 
 	ManipulatePiece(events);
 
-	if(num_ticks_ % speed_ == 0)
+	if(num_ticks_ % GetSpeedForLevel(level_) == 0)
 	{
 		MovePieceDown();
 	}
@@ -150,6 +175,21 @@ GameInterfacePtr GameTetris::AskForNextGameTransition()
 {
 	// TODO
 	return nullptr;
+}
+
+void GameTetris::NextLevel()
+{
+	num_ticks_ = 0;
+	level_ += 1;
+	lines_removed_for_this_level_ = 0;
+
+	for (Block& block : field_)
+	{
+		block = Block::Empty;
+	}
+
+	GenerateNextPieceType();
+	active_piece_ = SpawnActivePiece();
 }
 
 void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
@@ -329,6 +369,7 @@ void GameTetris::MovePieceDown()
 			}
 
 			// Remove lines.
+			uint32_t lines_removed = 0;
 			for(uint32_t y = c_field_height -1;;)
 			{
 				bool line_is_full = true;
@@ -339,6 +380,8 @@ void GameTetris::MovePieceDown()
 
 				if(line_is_full)
 				{
+					++lines_removed;
+
 					// Remove this line.
 					for(uint32_t dst_y = y; ; --dst_y)
 					{
@@ -376,8 +419,27 @@ void GameTetris::MovePieceDown()
 				}
 			}
 
+			UpdateScore(lines_removed);
+
 			active_piece_ = std::nullopt;
 		}
+	}
+}
+
+void GameTetris::UpdateScore(const uint32_t lines_removed)
+{
+	lines_removed_for_this_level_ += lines_removed;
+	const uint32_t score_add = GetScoreForLinesRemoval(level_, lines_removed);
+	if(score_add == 0)
+	{
+		return;
+	}
+
+	score_ += score_add;
+
+	if(lines_removed_for_this_level_ >= GetNumRemovedLinesForLevelFinish(level_))
+	{
+		NextLevel();
 	}
 }
 
