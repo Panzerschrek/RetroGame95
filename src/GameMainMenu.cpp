@@ -26,6 +26,8 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer)
 	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_ghost), 128, 32 );
 	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_1), 144, 32);
 	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_food), 144 + 16, 32 + 6);
+
+	DrawText(frame_buffer, g_color_white, 0, 96, "Quick brown fox\njumps over the lazy dog");
 }
 
 GameInterfacePtr GameMainMenu::AskForNextGameTransition()

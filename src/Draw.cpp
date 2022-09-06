@@ -1,6 +1,32 @@
 #include "Draw.hpp"
 #include <cassert>
 
+namespace
+{
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wc++11-narrowing"
+
+#endif // __GNUC__
+#ifdef _MSC_VER
+#pragma warning( push )
+
+#endif // _MSC_VER
+
+#include "../font8x8/font8x8.h"
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+
+} // namespace
+
 void FillWholeFrameBuffer(const FrameBuffer frame_buffer, const Color32 color)
 {
 	FillRect(frame_buffer, color, 0, 0, frame_buffer.width, frame_buffer.height);
@@ -26,7 +52,6 @@ void FillRect(
 		}
 	}
 }
-
 
 void DrawHorisontalLine(
 	const FrameBuffer frame_buffer,
@@ -115,5 +140,46 @@ void DrawSpriteWithAlphaUnchecked(
 				dst_line[start_x + x] = palette[color_index];
 			}
 		}
+	}
+}
+
+void DrawText(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const char* text)
+{
+	uint32_t x = start_x;
+	uint32_t y = start_y;
+	while(*text != '\0')
+	{
+		if(*text == '\n')
+		{
+			++text;
+			x = start_x;
+			y += 8;
+			continue;
+		}
+
+		const auto& glyph= font8x8_basic[uint8_t(*text)];
+
+		for(uint32_t dy = 0; dy < 8; ++dy)
+		{
+			const uint32_t dst_y = y + dy;
+			const char glyph_line_byte = glyph[dy];
+
+			for(uint32_t dx = 0; dx < 8; ++dx)
+			{
+				if((glyph_line_byte & (1 << dx)) != 0)
+				{
+					const uint32_t dst_x = x + dx;
+					frame_buffer.data[ dst_x + dst_y * frame_buffer.width ] = color;
+				}
+			}
+		}
+
+		++text;
+		x+= 8;
 	}
 }

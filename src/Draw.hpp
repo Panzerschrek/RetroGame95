@@ -30,3 +30,11 @@ void DrawSpriteWithAlphaUnchecked(
 	uint8_t transparent_color_index,
 	uint32_t start_x,
 	uint32_t start_y);
+
+
+void DrawText(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	uint32_t start_x,
+	uint32_t start_y,
+	const char* text);
