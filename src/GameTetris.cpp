@@ -95,7 +95,10 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 	const uint32_t field_offset_x = 96;
 	const uint32_t field_offset_y = 8;
 	const uint32_t next_piece_offset_x = field_offset_x + block_width * (c_field_width - 2);
-	const uint32_t next_piece_offset_y = field_offset_y + 5 * block_height;
+	const uint32_t next_piece_offset_y = field_offset_y + 7 * block_height;
+
+	const uint32_t texts_offset_x = 8;
+	const uint32_t texts_offset_y = 180;
 
 	DrawHorisontalLine(
 		frame_buffer,
@@ -159,6 +162,13 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 		}
 	}
 
+	DrawText(
+		frame_buffer,
+		g_color_white,
+		next_piece_offset_x + block_width * 3,
+		next_piece_offset_y - block_height * 6,
+		"Next");
+
 	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(Block::I);
 	for(const auto& piece_block : g_pieces_blocks[next_piece_index])
 	{
@@ -168,6 +178,23 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 			0,
 			next_piece_offset_x + uint32_t(piece_block[0]) * block_width,
 			next_piece_offset_y + uint32_t(piece_block[1]) * block_height);
+	}
+
+	char text[64];
+	std::snprintf(text, sizeof(text), "Level: %3d", level_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y, text);
+
+	std::snprintf(text, sizeof(text), "Score: %3d", score_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 16, text);
+
+	if(game_over_)
+	{
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + block_width  * c_field_width  / 2 - 36,
+			field_offset_y + block_height * c_field_height / 2 - 4,
+			"Game Over");
 	}
 }
 
@@ -313,18 +340,25 @@ void GameTetris::MovePieceDown()
 	{
 		// No active piece - try to spawn new piece.
 		ActivePiece next_active_piece = SpawnActivePiece();
-		bool next_active_piece_can_be_placed = true;
+		bool can_move = true;
 		for(const auto& piece_block : next_active_piece.blocks)
 		{
-			if( piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width ) &&
-				piece_block[1] >= 0 && piece_block[1] < int32_t(c_field_height) &&
-				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] != Block::Empty)
+			if(piece_block[1] == int32_t(c_field_height - 1))
 			{
-				next_active_piece_can_be_placed = false;
+				can_move = false;
+			}
+
+			const auto next_x = piece_block[0];
+			const auto next_y = piece_block[1] + 1;
+			if( next_x >= 0 && next_x < int32_t(c_field_width ) &&
+				next_y >= 0 && next_y < int32_t(c_field_height) &&
+				field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty)
+			{
+				can_move = false;
 			}
 		}
 
-		if(next_active_piece_can_be_placed)
+		if(can_move)
 		{
 			active_piece_ = next_active_piece;
 		}
