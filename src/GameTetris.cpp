@@ -315,7 +315,7 @@ void GameTetris::MovePieceDown()
 			}
 
 			// Remove lines.
-			for(uint32_t y = c_field_height -1; ; --y)
+			for(uint32_t y = c_field_height -1;;)
 			{
 				bool line_is_full = true;
 				for(uint32_t x = 0; x < c_field_width; ++x)
@@ -325,6 +325,7 @@ void GameTetris::MovePieceDown()
 
 				if(line_is_full)
 				{
+					// Remove this line.
 					for(uint32_t dst_y = y; ; --dst_y)
 					{
 						if(dst_y == 0)
@@ -350,9 +351,12 @@ void GameTetris::MovePieceDown()
 							break;
 						}
 					} // Shift lines after removal.
-				} // Check for line removal.
-
-				if(y == 0)
+				}
+				else if (y > 0)
+				{
+					--y;
+				}
+				else
 				{
 					break;
 				}
