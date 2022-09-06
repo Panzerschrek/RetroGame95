@@ -27,6 +27,39 @@ void FillRect(
 	}
 }
 
+
+void DrawHorisontalLine(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const uint32_t length)
+{
+	assert(start_x + length <= frame_buffer.width);
+	assert(start_y <= frame_buffer.height);
+
+	for(uint32_t x = start_x; x < start_x + length; ++x)
+	{
+		frame_buffer.data[x + start_y * frame_buffer.width ] = color;
+	}
+}
+
+void DrawVerticaLine(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const uint32_t length)
+{
+	assert(start_x <= frame_buffer.width);
+	assert(start_y + length <= frame_buffer.height);
+
+	for(uint32_t y = start_y; y < start_y + length; ++y)
+	{
+		frame_buffer.data[start_x + y * frame_buffer.width ] = color;
+	}
+}
+
 void DrawSpriteUnchecked(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,

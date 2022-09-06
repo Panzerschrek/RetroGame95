@@ -12,6 +12,10 @@ void FillRect(
 	uint32_t w,
 	uint32_t h);
 
+void DrawHorisontalLine(FrameBuffer frame_buffer, Color32 color, uint32_t start_x, uint32_t start_y, uint32_t length);
+
+void DrawVerticaLine(FrameBuffer frame_buffer, Color32 color, uint32_t start_x, uint32_t start_y, uint32_t length);
+
 // Draw whole sprite without borders check.
 void DrawSpriteUnchecked(
 	FrameBuffer frame_buffer,

@@ -50,21 +50,50 @@ void GameTetris::Tick(
 
 void GameTetris::Draw(const FrameBuffer frame_buffer)
 {
+	const SpriteBMP sprites[g_num_piece_types]
+	{
+		Sprites::tetris_block_4,
+		Sprites::tetris_block_7,
+		Sprites::tetris_block_5,
+		Sprites::tetris_block_1,
+		Sprites::tetris_block_2,
+		Sprites::tetris_block_6,
+		Sprites::tetris_block_3,
+	};
+
+	const uint32_t block_width = sprites[0].GetWidth();
+	const uint32_t block_height = sprites[1].GetHeight();
+
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
 	const uint32_t field_offset_x = 16;
 	const uint32_t field_offset_y = 8;
 
-	const SpriteBMP sprites[]
-	{
-		Sprites::tetris_block_1,
-		Sprites::tetris_block_2,
-		Sprites::tetris_block_3,
-		Sprites::tetris_block_4,
-		Sprites::tetris_block_5,
-		Sprites::tetris_block_6,
-		Sprites::tetris_block_7,
-	};
+	DrawHorisontalLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x - 1,
+		field_offset_y - 1,
+		block_width * c_field_width + 2);
+	DrawHorisontalLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x - 1,
+		field_offset_y + block_height * c_field_height,
+		block_width * c_field_width + 2);
+
+	DrawVerticaLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x - 1,
+		field_offset_y - 1,
+		block_height * c_field_height + 2);
+	DrawVerticaLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x + block_width * c_field_width,
+		field_offset_y - 1,
+		block_height * c_field_height + 2);
 
 	for(uint32_t y = 0; y < 20; ++y)
 	{
@@ -76,13 +105,12 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 				continue;
 			}
 
-			const SpriteBMP& sprite = sprites[uint32_t(block) - 1];
 			DrawSpriteWithAlphaUnchecked(
 				frame_buffer,
-				sprite,
+				sprites[uint32_t(block) - 1],
 				0,
-				field_offset_x + x * sprite.GetWidth(),
-				field_offset_y + y * sprite.GetHeight());
+				field_offset_x + x * block_width,
+				field_offset_y + y * block_height);
 		}
 	}
 
@@ -93,13 +121,12 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 			if(piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width) &&
 				piece_block[1] >= 0 && piece_block[1] < int32_t(c_field_height))
 			{
-				const SpriteBMP& sprite = sprites[uint32_t(active_piece_->type) - 1];
 				DrawSpriteWithAlphaUnchecked(
 					frame_buffer,
-					sprite,
+					sprites[uint32_t(active_piece_->type) - 1],
 					0,
-					field_offset_x + uint32_t(piece_block[0]) * sprite.GetWidth(),
-					field_offset_y + uint32_t(piece_block[1]) * sprite.GetHeight());
+					field_offset_x + uint32_t(piece_block[0]) * block_width,
+					field_offset_y + uint32_t(piece_block[1]) * block_height);
 			}
 		}
 	}
