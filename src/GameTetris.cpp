@@ -53,7 +53,7 @@ uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 } // namespace
 
 GameTetris::GameTetris()
-	: rand_() // TODO - use random seed.
+	: rand_( std::random_device()())
 {
 	NextLevel();
 }
@@ -399,6 +399,12 @@ void GameTetris::MovePieceDown()
 			// Put piece into field.
 			for(const auto& piece_block : active_piece_->blocks)
 			{
+				if(piece_block[0] < 0)
+				{
+					// HACK! prevent overflow.
+					game_over_ = true;
+					break;
+				}
 				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] = active_piece_->type;
 			}
 
