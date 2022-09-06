@@ -1,21 +1,31 @@
 #include "Host.hpp"
-#include "Draw.hpp"
-#include "Sprites.hpp"
-#include "SpriteBMP.hpp"
+#include "GameMainMenu.hpp"
 #include <thread>
 
 Host::Host()
 	: system_window_()
 	, init_time_(Clock::now())
 	, prev_tick_time_(GetCurrentTime())
+	, game_(std::make_unique<GameMainMenu>())
 {
 }
 
 bool Host::Loop()
 {
-	const auto tick_start_time= GetCurrentTime();
+	const auto tick_start_time = GetCurrentTime();
 
-	for(const SDL_Event& event : system_window_.GetEvents())
+	if(game_ != nullptr)
+	{
+		if(auto next_game = game_->AskForNextGameTransition())
+		{
+			game_ = std::move(next_game);
+		}
+	}
+
+	const auto events = system_window_.GetEvents();
+	const auto keyboard_state = system_window_.GetKeyboardState();
+
+	for(const SDL_Event& event : events)
 	{
 		if(event.type == SDL_QUIT)
 		{
@@ -23,39 +33,27 @@ bool Host::Loop()
 		}
 	}
 
+	if(game_ != nullptr)
+	{
+		// Perform some ticks. Possible 0, 1 or many. But do not perform more than 5 ticks once.
+		for (
+			uint64_t
+				physics_start_tick = prev_tick_time_ * GameInterface::c_update_frequency / c_time_point_resolution,
+				physics_end_tick = tick_start_time * GameInterface::c_update_frequency / c_time_point_resolution,
+				t = physics_start_tick,
+				iterations= 0;
+			t < physics_end_tick && iterations < 5;
+			++t, ++iterations)
+		{
+			game_->Tick(events, keyboard_state);
+		}
+	}
+
 	system_window_.BeginFrame();
 
-
-	const FrameBuffer& frame_buffer = system_window_.GetFrameBuffer();
-	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::gimp_harold), 47, 16);
-
-	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_ghost), 128, 32 );
-	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_1), 144, 32);
-	DrawSpriteUnchecked(frame_buffer, SpriteBMP(Sprites::pacman_food), 144 + 16, 32 + 6);
-
-
-	const SpriteBMP sprites[]
-		{
-		Sprites::tetris_block_1,
-		Sprites::tetris_block_2,
-		Sprites::tetris_block_3,
-		Sprites::tetris_block_4,
-		Sprites::tetris_block_5,
-		Sprites::tetris_block_6,
-		Sprites::tetris_block_7
-		};
-	for(uint32_t y = 0; y < 20; ++y)
+	if(game_ != nullptr)
 	{
-		for(uint32_t x = 0; x < 10; ++x)
-		{
-			const auto& sprite = sprites[ (x / 4 + y/2) % std::size(sprites)];
-			DrawSpriteWithAlphaUnchecked(
-				frame_buffer,
-				sprite,
-				0,
-				x * sprite.GetWidth(),
-				y * sprite.GetHeight());
-		}
+		game_->Draw(system_window_.GetFrameBuffer());
 	}
 
 	system_window_.EndFrame();
@@ -63,7 +61,7 @@ bool Host::Loop()
 	const TimePoint tick_end_time= GetCurrentTime();
 	const auto frame_dt= tick_end_time - tick_start_time;
 
-	const uint64_t max_fps= 120;
+	const uint64_t max_fps = 120;
 	const auto min_frame_duration = c_time_point_resolution / max_fps;
 	if(frame_dt <= min_frame_duration)
 	{

@@ -1,4 +1,5 @@
 #pragma once
+#include "GameInterface.hpp"
 #include "SystemWindow.hpp"
 #include <chrono>
 
@@ -27,4 +28,5 @@ private:
 	const Clock::time_point init_time_;
 	TimePoint prev_tick_time_;
 
+	GameInterfacePtr game_ = nullptr;
 };

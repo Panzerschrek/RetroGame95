@@ -12,6 +12,7 @@ public:
 	~SystemWindow();
 
 	std::vector<SDL_Event> GetEvents();
+	std::vector<bool> GetKeyboardState();
 
 	void BeginFrame();
 	FrameBuffer GetFrameBuffer();

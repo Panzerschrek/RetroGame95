@@ -45,6 +45,21 @@ std::vector<SDL_Event> SystemWindow::GetEvents()
 	return events;
 }
 
+std::vector<bool> SystemWindow::GetKeyboardState()
+{
+	int key_count = 0;
+	const Uint8* const keyboard_state = SDL_GetKeyboardState(&key_count);
+
+	std::vector<bool> result(key_count, false);
+
+	for(int i = 0; i < key_count; ++i)
+	{
+		result[i] = keyboard_state[i] != 0;
+	}
+
+	return result;
+}
+
 void SystemWindow::BeginFrame()
 {
 	surface_= SDL_GetWindowSurface(window_);
