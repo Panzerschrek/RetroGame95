@@ -162,12 +162,19 @@ void DrawText(
 			continue;
 		}
 
-		const auto& glyph= font8x8_basic[uint8_t(*text)];
+
+		auto glyph = &font8x8_basic[uint8_t(*text)];
+		if (uint8_t(*text) >= 0x80)
+		{
+			const uint32_t code_point = ((uint32_t(text[0]) & 31) << 6) | (uint32_t(text[1]) & 63);
+			text += 1;
+			glyph = &font8x8_ext_latin[code_point - 0xA0];
+		}
 
 		for(uint32_t dy = 0; dy < 8; ++dy)
 		{
 			const uint32_t dst_y = y + dy;
-			const char glyph_line_byte = glyph[dy];
+			const char glyph_line_byte = (*glyph)[dy];
 
 			for(uint32_t dx = 0; dx < 8; ++dx)
 			{
