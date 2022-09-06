@@ -58,4 +58,6 @@ private:
 
 	Block field_[ c_field_width * c_field_height] {};
 	std::optional<ActivePiece> active_piece_;
+
+	uint32_t pieces_spawnded_ = 0;
 };

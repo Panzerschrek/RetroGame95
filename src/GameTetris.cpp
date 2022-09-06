@@ -8,14 +8,14 @@ namespace
 
 const constexpr uint32_t g_num_piece_types = 7;
 
-const  std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pieces_blocks =
+const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pieces_blocks =
 {{
 	{{ { 4, -4}, {4, -3}, {4, -2}, {4, -1} }}, // I
 	{{ { 4, -1}, {5, -1}, {5, -2}, {5, -3} }}, // J
 	{{ { 5, -1}, {4, -1}, {4, -2}, {4, -3} }}, // L
 	{{ { 4, -2}, {5, -2}, {4, -1}, {5, -1} }}, // O
 	{{ { 4, -1}, {5, -1}, {5, -2}, {6, -2} }}, // S
-	{{ { 4, -1}, {5, -1}, {6, -1}, {5, -2} }}, // T
+	{{ { 4, -1}, {6, -1}, {5, -1}, {5, -2} }}, // T
 	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
 }};
 
@@ -170,7 +170,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 			const auto next_x = piece_block[0] + delta;
 			const auto next_y = piece_block[1];
 			if( next_x < 0 || next_x >= int32_t(c_field_width ) ||
-				(next_y >= 0 && next_y < int32_t(c_field_width) && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty))
+				(next_y >= 0 && next_y < int32_t(c_field_height) && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty))
 			{
 				can_move = false;
 			}
@@ -217,17 +217,9 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 		}
 	}
 
-	if(has_rotate)
+	if(has_rotate && active_piece_->type != Block::O)
 	{
-		int32_t center[2] = {0, 0};
-		for(const auto& piece_block : active_piece_->blocks)
-		{
-			center[0] += piece_block[0];
-			center[1] += piece_block[1];
-		}
-
-		center[0] /= 4;
-		center[1] /= 4;
+		const auto center = active_piece_->blocks[2];
 
 		std::array<std::array<int32_t, 2>, 4> blocks_transformed;
 		bool can_rotate = true;
@@ -236,17 +228,17 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 			const auto& block = active_piece_->blocks[i];
 			const int32_t rel_x = block[0] - center[0];
 			const int32_t rel_y = block[1] - center[1];
-			const int32_t new_x = -rel_y + center[0];
-			const int32_t new_y = rel_x + center[1];
+			const int32_t new_x = center[0] + rel_y;
+			const int32_t new_y = center[1] - rel_x;
+
+			blocks_transformed[i] = {new_x, new_y};
 
 			if(new_x < 0 || new_x >= int32_t(c_field_width) ||
 				new_y >= int32_t(c_field_height) ||
 				(new_y >= 0 && field_[uint32_t(new_x) + uint32_t(new_y) * c_field_width] != Block::Empty))
-
 			{
 				can_rotate = false;
 			}
-			blocks_transformed[i] = {new_x, new_y};
 		}
 
 		if(can_rotate)
@@ -381,5 +373,6 @@ GameTetris::ActivePiece GameTetris::SpawnActivePiece()
 
 GameTetris::Block GameTetris::GenerateNextPieceType()
 {
+	++pieces_spawnded_;
 	return Block(uint32_t(Block::I) + rand_.Next() % g_num_piece_types);
 }
