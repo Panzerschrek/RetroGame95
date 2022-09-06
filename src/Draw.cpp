@@ -1,6 +1,32 @@
 #include "Draw.hpp"
 #include <cassert>
 
+void FillWholeFrameBuffer(const FrameBuffer frame_buffer, const Color32 color)
+{
+	FillRect(frame_buffer, color, 0, 0, frame_buffer.width, frame_buffer.height);
+}
+
+void FillRect(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const uint32_t w,
+	const uint32_t h)
+{
+	assert(start_x + w <= frame_buffer.width);
+	assert(start_y + h <= frame_buffer.height);
+
+	for(uint32_t y = 0; y < h; ++y)
+	{
+		const auto dst_line = frame_buffer.data + (y + start_y) * frame_buffer.width;
+		for(uint32_t x = 0; x < w; ++x)
+		{
+			dst_line[start_x + x] = color;
+		}
+	}
+}
+
 void DrawSpriteUnchecked(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,

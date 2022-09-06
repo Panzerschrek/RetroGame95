@@ -1,7 +1,7 @@
 #pragma once
 #include "GameInterface.hpp"
 
-class GameMainMenu final : public GameInterface
+class GameTetris final : public GameInterface
 {
 public:
 	virtual void Tick(
@@ -13,5 +13,4 @@ public:
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	GameInterfacePtr next_game_ = nullptr;
 };
