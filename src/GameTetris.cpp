@@ -29,6 +29,7 @@ GameTetris::GameTetris()
 		block = Block::Empty;
 	}
 
+	GenerateNextPieceType();
 	active_piece_ = SpawnActivePiece();
 }
 
@@ -66,8 +67,10 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = 16;
+	const uint32_t field_offset_x = 96;
 	const uint32_t field_offset_y = 8;
+	const uint32_t next_piece_offset_x = field_offset_x + block_width * (c_field_width - 2);
+	const uint32_t next_piece_offset_y = field_offset_y + 5 * block_height;
 
 	DrawHorisontalLine(
 		frame_buffer,
@@ -129,6 +132,17 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 					field_offset_y + uint32_t(piece_block[1]) * block_height);
 			}
 		}
+	}
+
+	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(Block::I);
+	for(const auto& piece_block : g_pieces_blocks[next_piece_index])
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprites[next_piece_index],
+			0,
+			next_piece_offset_x + uint32_t(piece_block[0]) * block_width,
+			next_piece_offset_y + uint32_t(piece_block[1]) * block_height);
 	}
 }
 
@@ -370,13 +384,14 @@ void GameTetris::MovePieceDown()
 GameTetris::ActivePiece GameTetris::SpawnActivePiece()
 {
 	ActivePiece piece;
-	piece.type = GenerateNextPieceType();
+	piece.type = next_piece_type_;
+	GenerateNextPieceType();
 	piece.blocks = g_pieces_blocks[uint32_t(piece.type) - uint32_t(Block::I)];
 	return piece;
 }
 
-GameTetris::Block GameTetris::GenerateNextPieceType()
+void GameTetris::GenerateNextPieceType()
 {
 	++pieces_spawnded_;
-	return Block(uint32_t(Block::I) + rand_.Next() % g_num_piece_types);
+	next_piece_type_ = Block(uint32_t(Block::I) + rand_.Next() % g_num_piece_types);
 }

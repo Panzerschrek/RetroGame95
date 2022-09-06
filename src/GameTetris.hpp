@@ -46,7 +46,7 @@ private:
 	void MovePieceDown();
 
 	ActivePiece SpawnActivePiece();
-	Block GenerateNextPieceType();
+	void GenerateNextPieceType();
 
 private:
 	Rand rand_;
@@ -58,6 +58,7 @@ private:
 
 	Block field_[ c_field_width * c_field_height] {};
 	std::optional<ActivePiece> active_piece_;
+	Block next_piece_type_ = Block::Empty;
 
 	uint32_t pieces_spawnded_ = 0;
 };
