@@ -10,14 +10,13 @@ const constexpr uint32_t g_num_piece_types = 7;
 
 const  std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pieces_blocks =
 {{
-	// TODO - fix this.
-	{{ { 4, -3}, {5, -2}, {4, -1}, {5, 0} }},
-	{{ { 4, -1}, {5, -1}, {4, 0}, {5, 0} }},
-	{{ { 4, -1}, {5, -1}, {4, 0}, {5, 0} }},
-	{{ { 4, -1}, {5, -1}, {4, 0}, {5, 0} }},
-	{{ { 4, -1}, {5, -1}, {4, 0}, {5, 0} }},
-	{{ { 4, -1}, {5, -1}, {4, 0}, {5, 0} }},
-	{{ { 4, -1}, {5, -1}, {4, 0}, {5, 0} }},
+	{{ { 4, -4}, {4, -3}, {4, -2}, {4, -1} }}, // I
+	{{ { 4, -1}, {5, -1}, {5, -2}, {5, -3} }}, // J
+	{{ { 5, -1}, {4, -1}, {4, -2}, {4, -3} }}, // L
+	{{ { 4, -2}, {5, -2}, {4, -1}, {5, -1} }}, // O
+	{{ { 4, -1}, {5, -1}, {5, -2}, {6, -2} }}, // S
+	{{ { 4, -1}, {5, -1}, {6, -1}, {5, -2} }}, // T
+	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
 }};
 
 } // namespace
@@ -37,15 +36,16 @@ void GameTetris::Tick(
 	const std::vector<SDL_Event>& events,
 	const std::vector<bool>& keyboard_state)
 {
+	(void) keyboard_state;
+
 	++num_ticks_;
+
+	ManipulatePiece(events);
+
 	if(num_ticks_ % speed_ == 0)
 	{
-		TickInternal();
+		MovePieceDown();
 	}
-
-	(void) events;
-	(void) keyboard_state;
-	// TODO
 }
 
 void GameTetris::Draw(const FrameBuffer frame_buffer)
@@ -111,7 +111,125 @@ GameInterfacePtr GameTetris::AskForNextGameTransition()
 	return nullptr;
 }
 
-void GameTetris::TickInternal()
+void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
+{
+	if (active_piece_ == std::nullopt)
+	{
+		return;
+	}
+
+	bool has_move_left = false;
+	bool has_move_right = false;
+	bool has_move_down = false;
+	bool has_rotate = false;
+	for(const SDL_Event& event : events)
+	{
+		if(event.type == SDL_KEYDOWN)
+		{
+
+			has_move_left |= event.key.keysym.scancode == SDL_SCANCODE_LEFT;
+			has_move_right |= event.key.keysym.scancode == SDL_SCANCODE_RIGHT;
+			has_move_down |= event.key.keysym.scancode == SDL_SCANCODE_DOWN;
+			has_rotate |= event.key.keysym.scancode == SDL_SCANCODE_UP;
+		}
+	}
+
+	const auto try_side_move_piece =
+	[&](const int32_t delta)
+	{
+		bool can_move = true;
+		for(const auto& piece_block : active_piece_->blocks)
+		{
+			const auto next_x = piece_block[0] + delta;
+			const auto next_y = piece_block[1];
+			if( next_x < 0 || next_x >= int32_t(c_field_width ) ||
+				(next_y >= 0 && next_y < int32_t(c_field_width) && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty))
+			{
+				can_move = false;
+			}
+		}
+
+		if(can_move)
+		{
+			for(auto& piece_block : active_piece_->blocks)
+			{
+				piece_block[0] += delta;
+			}
+		}
+	};
+
+	if(has_move_left)
+	{
+		try_side_move_piece(-1);
+	}
+	if(has_move_right)
+	{
+		try_side_move_piece(1);
+	}
+
+	if(has_move_down)
+	{
+		bool can_move = true;
+		for(const auto& piece_block : active_piece_->blocks)
+		{
+			const auto next_x = piece_block[0];
+			const auto next_y = piece_block[1] + 1;
+			if(next_y >= int32_t(c_field_height) ||
+				(next_y >= 0 && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty))
+			{
+				can_move = false;
+			}
+		}
+
+		if(can_move)
+		{
+			for(auto& piece_block : active_piece_->blocks)
+			{
+				piece_block[1] += 1;
+			}
+		}
+	}
+
+	if(has_rotate)
+	{
+		int32_t center[2] = {0, 0};
+		for(const auto& piece_block : active_piece_->blocks)
+		{
+			center[0] += piece_block[0];
+			center[1] += piece_block[1];
+		}
+
+		center[0] /= 4;
+		center[1] /= 4;
+
+		std::array<std::array<int32_t, 2>, 4> blocks_transformed;
+		bool can_rotate = true;
+		for(size_t i = 0; i < 4; ++i)
+		{
+			const auto& block = active_piece_->blocks[i];
+			const int32_t rel_x = block[0] - center[0];
+			const int32_t rel_y = block[1] - center[1];
+			const int32_t new_x = -rel_y + center[0];
+			const int32_t new_y = rel_x + center[1];
+
+			if(new_x < 0 || new_x >= int32_t(c_field_width) ||
+				new_y >= int32_t(c_field_height) ||
+				(new_y >= 0 && field_[uint32_t(new_x) + uint32_t(new_y) * c_field_width] != Block::Empty))
+
+			{
+				can_rotate = false;
+			}
+			blocks_transformed[i] = {new_x, new_y};
+		}
+
+		if(can_rotate)
+		{
+			active_piece_->blocks = blocks_transformed;
+		}
+	}
+}
+
+void GameTetris::MovePieceDown()
 {
 	if(game_over_)
 	{
@@ -177,7 +295,49 @@ void GameTetris::TickInternal()
 				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] = active_piece_->type;
 			}
 
-			// TODO - remove filled lines.
+			// Remove lines.
+			for(uint32_t y = c_field_height -1; ; --y)
+			{
+				bool line_is_full = true;
+				for(uint32_t x = 0; x < c_field_width; ++x)
+				{
+					line_is_full &= field_[x + y * c_field_width] != Block::Empty;
+				}
+
+				if(line_is_full)
+				{
+					for(uint32_t dst_y = y; ; --dst_y)
+					{
+						if(dst_y == 0)
+						{
+							for(uint32_t x = 0; x < c_field_width; ++x)
+							{
+								field_[x + dst_y * c_field_width] =Block::Empty;
+							}
+						}
+						else
+						{
+							const uint32_t src_y = dst_y - 1;
+
+							for(uint32_t x = 0; x < c_field_width; ++x)
+							{
+								field_[x + dst_y * c_field_width] = field_[x + src_y * c_field_width];
+								field_[x + src_y * c_field_width] = Block::Empty;
+							}
+						}
+
+						if(dst_y == 0)
+						{
+							break;
+						}
+					} // Shift lines after removal.
+				} // Check for line removal.
+
+				if(y == 0)
+				{
+					break;
+				}
+			}
 
 			active_piece_ = std::nullopt;
 		}

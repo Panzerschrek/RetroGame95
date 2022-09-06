@@ -42,7 +42,8 @@ private:
 	};
 
 private:
-	void TickInternal();
+	void ManipulatePiece(const std::vector<SDL_Event>& events);
+	void MovePieceDown();
 
 	ActivePiece SpawnActivePiece();
 	Block GenerateNextPieceType();
@@ -51,7 +52,7 @@ private:
 	Rand rand_;
 
 	uint32_t num_ticks_ = 0;
-	uint32_t speed_ = 10; // Process actual logic each N tick
+	uint32_t speed_ = 60; // Process actual logic each N tick
 
 	bool game_over_ = false;
 
