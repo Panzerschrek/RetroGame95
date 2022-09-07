@@ -13,5 +13,9 @@ public:
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
+	static const constexpr uint32_t c_field_width = 11;
+	static const constexpr uint32_t c_field_height = 19;
+
+private:
 	GameInterfacePtr next_game_;
 };
