@@ -2,7 +2,6 @@
 #include <SDL.h>
 #include <algorithm>
 #include <cstring>
-#include <iostream>
 
 
 SystemWindow::SystemWindow()
@@ -23,9 +22,6 @@ SystemWindow::SystemWindow()
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			int(base_width * scale_), int(base_height * scale_),
 			window_flags);
-
-	if(window_ == nullptr)
-		std::cerr << "Could not create window";
 }
 
 SystemWindow::~SystemWindow()
