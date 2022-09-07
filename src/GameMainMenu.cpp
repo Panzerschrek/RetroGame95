@@ -16,7 +16,10 @@ void GameMainMenu::Tick(
 	{
 		if(event.type == SDL_KEYDOWN)
 		{
-
+			if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
+			{
+				quit_triggered_ = true;
+			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_RETURN)
 			{
 				switch(current_row_)
