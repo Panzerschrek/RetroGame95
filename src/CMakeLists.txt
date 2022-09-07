@@ -14,11 +14,14 @@ set(CMAKE_CXX_EXTENSIONS Off)
 
 # Setup compiler options.
 if(MSVC)
+	# Reset flags to remove exceptions handling and rtti options that are enabled by default.
+	set(CMAKE_CXX_FLAGS /DWIN32 /D_WINDOWS)
+
 	add_compile_options(/utf-8 /W3 /WX)
 	add_definitions(
 		-DNOMINMAX
-		-D_CRT_SECURE_NO_WARNINGS)
-	add_compile_options(/GR-)
+		-D_CRT_SECURE_NO_WARNINGS
+		-D_HAS_EXCEPTIONS=0)
 
 	# Link compiler runtime statically to minimize dependencies.
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -27,6 +30,9 @@ if(MSVC)
 		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 	endif()
 
+	# Use LTO to speed-up code and remove unused stuff.
+	add_compile_options(/GL)
+	add_link_options(/LTCG)
 else()
 	add_compile_options(-Werror -Wall -Wextra -Wconversion)
 	add_compile_options(-fno-exceptions -fno-rtti)
