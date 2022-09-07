@@ -23,6 +23,30 @@ Eto kak vrode vidišj tu že grafiku, no povedenije menäjetsä na druguju igru,
 Podobnyj podhod, kažetsä, možet prevratitj prostoj sbornik igr v cto-to boleje interesnoje.
 
 
+### Transformaçii
+
+Vozmožny sledujuscije transofrmaçii iz odnoj igry v druguju:
+* "Arkanoid" v "tetris". Korablj perehodit v figuru "T".
+* "Tetris" v "Snake". Dlinnaja palka (figura "I") stanovitsä zmejoj.
+* "Snake" v "Pac-Man". Zmeja stanovitsä "Pac-Man"-om, jeda zmei prevrascajetsä v jedu "Pac-Man"-a.
+* "Pac-Man" v "Mario". Geroj prevrascajetsä.
+
+
+### Smesj igr
+
+Dopolniteljno k transformaçijam možno v posledujuscije igry dobavlätj elementy iz predyduscih igr:
+
+* V "Tetris" inogda vyletajet šarik iz "Arkanoid".
+* V "Snake" inogda padajut figury iz "Tetris" i ot nih nado uvoraicivatjsä.
+* V "Pac-Man" možno dobavitj bonus v vide šarika iz "Arkanoid", kotoryj by ubival prizrakov.
+* V "Pac-Man" možno inogda prevrascatj jedu v jedu iz "Snake", pri podbore kotoroj geroj prevrascalsä by na vremä v zmeju.
+* V "Mario" možno sdelatj vraga v forme korablä iz "Arkanoid".
+* V "Mario" možno sdelatj pryžki po figuram iz "Tetris". I ctoby oni padali i (vozmožno) povoracivalisj.
+* V "Mario" možno dobavitj prizrakov iz "Pac-Man".
+
+Vozožno, takže, stoit nemnogo dobavlätj elementy iz posledujuscih igr v prediduscije.
+
+
 ## Jazyk i nazvanije
 
 Dlä raznoobrazija interesno sdelatj vnutriigrovoj tekst na nemeçkom jazyke.
@@ -30,6 +54,11 @@ Kažetsä, dlä prostoj igry eto ne budet problemoj, jesli igrok cego-to ne pojm
 
 Nazvanije tože, stoit sdelatj na nemeçkom jazyke.
 Po-horošemu, eto dolžno bytj odno slovo s glubokim smyslom, vozmožno sostavnoje.
+
+Vozmožnyje nazvanija:
+
+* "Vermischung"
+* "Quatch"
 
 
 ## Tehniceskaja storona voprosa
