@@ -17,6 +17,11 @@ if(MSVC)
 	# Reset flags to remove exceptions handling and rtti options that are enabled by default.
 	set(CMAKE_CXX_FLAGS /DWIN32 /D_WINDOWS)
 
+	# Disable runtime buffer overrun checks.
+	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+		add_compile_options(/GS-)
+	endif()
+
 	add_compile_options(/utf-8 /W3 /WX)
 	add_definitions(
 		-DNOMINMAX
@@ -31,8 +36,10 @@ if(MSVC)
 	endif()
 
 	# Use LTO to speed-up code and remove unused stuff.
-	add_compile_options(/GL)
-	add_link_options(/LTCG)
+	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+		add_compile_options(/GL)
+		add_link_options(/LTCG)
+	endif()
 else()
 	add_compile_options(-Werror -Wall -Wextra -Wconversion)
 	add_compile_options(-fno-exceptions -fno-rtti)
