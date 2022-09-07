@@ -64,4 +64,6 @@ private:
 	Block next_piece_type_ = Block::Empty;
 
 	uint32_t pieces_spawnded_ = 0;
+
+	GameInterfacePtr next_game_;
 };

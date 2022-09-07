@@ -1,5 +1,6 @@
 #include "GameTetris.hpp"
 #include "Draw.hpp"
+#include "GameMainMenu.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include <cassert>
@@ -63,6 +64,14 @@ void GameTetris::Tick(
 	const std::vector<bool>& keyboard_state)
 {
 	(void) keyboard_state;
+
+	for(const SDL_Event& event : events)
+	{
+		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
+		{
+			next_game_ = std::make_unique<GameMainMenu>();
+		}
+	}
 
 	++num_ticks_;
 
@@ -200,8 +209,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 
 GameInterfacePtr GameTetris::AskForNextGameTransition()
 {
-	// TODO
-	return nullptr;
+	return std::move(next_game_);
 }
 
 void GameTetris::NextLevel()
