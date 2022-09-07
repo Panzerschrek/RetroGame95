@@ -16,6 +16,10 @@ bool Host::Loop()
 
 	if(game_ != nullptr)
 	{
+		if(game_->AskForQuit())
+		{
+			return true;
+		}
 		if(auto next_game = game_->AskForNextGameTransition())
 		{
 			game_ = std::move(next_game);

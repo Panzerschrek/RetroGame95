@@ -21,6 +21,9 @@ public:
 	// Returns null if should keep playing this game, returns non-null in case of transition to another game.
 	virtual GameInterfacePtr AskForNextGameTransition() = 0;
 
+	// Game implementation should return "true" in order to trigger whole application quit.
+	virtual bool AskForQuit() { return false; }
+
 public:
 	// Frequency of ticks. Use fixed update step for simplicity.
 	static constexpr const uint32_t c_update_frequency = 120;
