@@ -12,8 +12,9 @@ namespace
 
 #endif // __GNUC__
 #ifdef _MSC_VER
-#pragma warning( push )
-
+#pragma warning(push)
+#pragma warning(disable : 4309)
+#pragma warning(disable : 4838)
 #endif // _MSC_VER
 
 #include "../font8x8/font8x8.h"
@@ -22,7 +23,7 @@ namespace
 #pragma GCC diagnostic pop
 #endif
 #ifdef _MSC_VER
-#pragma warning( pop )
+#pragma warning(pop)
 #endif
 
 } // namespace
