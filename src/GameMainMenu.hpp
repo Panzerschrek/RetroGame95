@@ -13,4 +13,5 @@ public:
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
+	GameInterfacePtr next_game_ = nullptr;
 };

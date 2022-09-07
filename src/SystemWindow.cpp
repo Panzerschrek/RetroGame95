@@ -50,9 +50,9 @@ std::vector<bool> SystemWindow::GetKeyboardState()
 	int key_count = 0;
 	const Uint8* const keyboard_state = SDL_GetKeyboardState(&key_count);
 
-	std::vector<bool> result(key_count, false);
+	std::vector<bool> result(size_t(key_count), false);
 
-	for(int i = 0; i < key_count; ++i)
+	for(size_t i = 0; i < size_t(key_count); ++i)
 	{
 		result[i] = keyboard_state[i] != 0;
 	}

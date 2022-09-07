@@ -22,17 +22,6 @@ bool Host::Loop()
 		}
 	}
 
-	const auto events = system_window_.GetEvents();
-	const auto keyboard_state = system_window_.GetKeyboardState();
-
-	for(const SDL_Event& event : events)
-	{
-		if(event.type == SDL_QUIT)
-		{
-			return true;
-		}
-	}
-
 	if(game_ != nullptr)
 	{
 		// Perform some ticks. Possible 0, 1 or many. But do not perform more than 5 ticks once.
@@ -45,6 +34,17 @@ bool Host::Loop()
 			t < physics_end_tick && iterations < 5;
 			++t, ++iterations)
 		{
+			const auto events = system_window_.GetEvents();
+			const auto keyboard_state = system_window_.GetKeyboardState();
+
+			for(const SDL_Event& event : events)
+			{
+				if(event.type == SDL_QUIT)
+				{
+					return true;
+				}
+			}
+
 			game_->Tick(events, keyboard_state);
 		}
 	}
