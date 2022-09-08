@@ -18,6 +18,14 @@ GameArkanoid::GameArkanoid()
 		balls_.push_back(ball);
 	}
 
+	Ship ship;
+	ship.position =
+	{
+		IntToFixed16(c_field_width * c_block_width / 2),
+		IntToFixed16(c_field_height * c_block_height + c_ship_half_height),
+	};
+
+	ship_ = ship;
 }
 
 void GameArkanoid::Tick(
@@ -31,6 +39,25 @@ void GameArkanoid::Tick(
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameMainMenu>();
+		}
+		if(event.type == SDL_MOUSEMOTION)
+		{
+			if (ship_ != std::nullopt)
+			{
+				const fixed16_t sensetivity =g_fixed16_one / 3; // TODO - make this configurable.
+				ship_->position[0] += event.motion.xrel * sensetivity;
+
+				const fixed16_t half_with = IntToFixed16(c_ship_half_width_normal);
+				if(ship_->position[0] - half_with < 0)
+				{
+					ship_->position[0] = half_with;
+				}
+				const fixed16_t right_border = IntToFixed16(c_field_width * c_block_width);
+				if(ship_->position[0] + half_with >= right_border)
+				{
+					ship_->position[0] = right_border - half_with;
+				}
+			}
 		}
 	}
 
@@ -121,6 +148,16 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 		}
 	}
 
+	if(ship_ != std::nullopt)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			Sprites::arkanoid_ship,
+			0,
+			field_offset_x + Fixed16FloorToInt(ship_->position[0]) - c_ship_half_width_normal,
+			field_offset_y + Fixed16FloorToInt(ship_->position[1]) - c_ship_half_height);
+	}
+
 	for(const Ball& ball : balls_)
 	{
 		DrawSpriteWithAlphaUnchecked(
@@ -130,15 +167,6 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			field_offset_x + Fixed16FloorToInt(ball.position[0]) - c_ball_half_size,
 			field_offset_y + Fixed16FloorToInt(ball.position[1]) - c_ball_half_size);
 	}
-
-	DrawSpriteWithAlphaUnchecked(
-		frame_buffer,
-		Sprites::arkanoid_ship,
-		0,
-		field_offset_x + c_field_width * c_block_width / 2,
-		field_offset_y + (2 + c_field_height) * c_block_height);
-
-
 	const SpriteBMP sprites_trim_top[]
 	{
 		Sprites::arkanoid_trim_corner_top_left,
