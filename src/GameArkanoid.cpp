@@ -3,20 +3,29 @@
 #include "GameMainMenu.hpp"
 #include "Sprites.hpp"
 #include <cassert>
+#include <cmath>
+
+namespace
+{
+
+fixed16_t GetBallSpeed()
+{
+	return g_fixed16_one / 3;
+}
+
+} // namespace
 
 GameArkanoid::GameArkanoid()
 {
-	for(uint32_t i = 0; i < 8; ++i)
+
+	Ball ball;
+	ball.position =
 	{
-		Ball ball;
-		ball.position =
-		{
-			IntToFixed16((i + c_field_width) * c_block_width / 2),
-			IntToFixed16((i * 2 + c_field_height) * c_block_height / 2),
-		};
-		ball.velocity = { 3 * g_fixed16_one / (3 + int32_t(i)), -3 * g_fixed16_one / ( 2 + int32_t(i) ) };
-		balls_.push_back(ball);
-	}
+		IntToFixed16(c_field_width  * c_block_width  / 2),
+		IntToFixed16(c_field_height * c_block_height / 2),
+	};
+	ball.velocity = { 0, -GetBallSpeed() };
+	balls_.push_back(ball);
 
 	Ship ship;
 	ship.position =
@@ -47,15 +56,15 @@ void GameArkanoid::Tick(
 				const fixed16_t sensetivity =g_fixed16_one / 3; // TODO - make this configurable.
 				ship_->position[0] += event.motion.xrel * sensetivity;
 
-				const fixed16_t half_with = IntToFixed16(c_ship_half_width_normal);
-				if(ship_->position[0] - half_with < 0)
+				const fixed16_t half_width = IntToFixed16(c_ship_half_width_normal);
+				if(ship_->position[0] - half_width < 0)
 				{
-					ship_->position[0] = half_with;
+					ship_->position[0] = half_width;
 				}
 				const fixed16_t right_border = IntToFixed16(c_field_width * c_block_width);
-				if(ship_->position[0] + half_with >= right_border)
+				if(ship_->position[0] + half_width >= right_border)
 				{
-					ship_->position[0] = right_border - half_with;
+					ship_->position[0] = right_border - half_width;
 				}
 			}
 		}
@@ -91,7 +100,41 @@ void GameArkanoid::Tick(
 			}
 		}
 
-		if(ball.position[1] + ball_half_size > IntToFixed16((c_field_height) * c_block_height))
+		if(ship_ != std::nullopt)
+		{
+			const fixed16_t half_width = IntToFixed16(c_ship_half_width_normal);
+			const fixed16_t half_height = IntToFixed16(c_ship_half_height);
+			const fixed16_t ship_upper_border = ship_->position[1] - half_height;
+			if((ball.position[0] + ball_half_size >= ship_->position[0] - half_width &&
+				ball.position[0] - ball_half_size <= ship_->position[0] + half_width) &&
+				ball.position[1] + ball_half_size >= ship_upper_border)
+			{
+				// Bounce ball from the ship.
+				ball.position[1] = 2 * ship_upper_border - ball_half_size * 2 - ball.position[1];
+				assert(ball.position[1] <= ship_upper_border);
+
+				// Calculate velocity, based on hit position and ball speed.
+
+				// Value in range close to [-1; 1].
+				const fixed16_t relative_position = Fixed16Div(ball.position[0] - ship_->position[0], half_width);
+
+				const fixed16_t cos_45_deg = 46341;
+				const fixed16_t angle_cos = Fixed16Mul(relative_position, cos_45_deg);
+				// TODO - use integer square root instead.
+				const fixed16_t angle_sin =
+					fixed16_t(
+						std::sqrt(
+							std::max(
+								float(g_fixed16_one) * float(g_fixed16_one) - float(angle_cos) * float(angle_cos),
+								0.0f)));
+
+				const fixed16_t speed = GetBallSpeed();
+				ball.velocity[0] = Fixed16Mul(speed, angle_cos);
+				ball.velocity[1] = -Fixed16Mul(speed, angle_sin);
+			}
+		}
+
+		if(ball.position[1] > IntToFixed16(c_field_height * c_block_height))
 		{
 			// This ball is dead.
 			if(b + 1 < balls_.size())
