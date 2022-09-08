@@ -406,21 +406,22 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 	if(ship_ != std::nullopt)
 	{
-		const fixed16_t half_width = IntToFixed16(c_ship_half_width_normal);
-		const fixed16_t half_height = IntToFixed16(c_ship_half_height);
-		const fixed16_t ship_upper_border = ship_->position[1] - half_height;
-		if((ball.position[0] + ball_half_size >= ship_->position[0] - half_width &&
-			ball.position[0] - ball_half_size <= ship_->position[0] + half_width) &&
-			ball.position[1] + ball_half_size >= ship_upper_border)
+		const fixed16_t half_width_extended = IntToFixed16(c_ship_half_width_normal) + ball_half_size;
+		const fixed16_t ship_upper_border_extended =
+			ship_->position[1] - IntToFixed16(c_ship_half_height) - ball_half_size;
+		if((ball.position[0] >= ship_->position[0] - half_width_extended &&
+			ball.position[0] <= ship_->position[0] + half_width_extended) &&
+			ball.position[1] >= ship_upper_border_extended)
 		{
 			// Bounce ball from the ship.
-			ball.position[1] = 2 * ship_upper_border - ball_half_size * 2 - ball.position[1];
-			assert(ball.position[1] <= ship_upper_border);
+			ball.position[1] = 2 * ship_upper_border_extended - ball.position[1];
+			assert(ball.position[1] <= ship_upper_border_extended);
 
 			// Calculate velocity, based on hit position and ball speed.
 
 			// Value in range close to [-1; 1].
-			const fixed16_t relative_position = Fixed16Div(ball.position[0] - ship_->position[0], half_width);
+			const fixed16_t relative_position =
+				Fixed16Div(ball.position[0] - ship_->position[0], half_width_extended);
 
 			const fixed16_t cos_45_deg = 46341;
 			const fixed16_t angle_cos = Fixed16Mul(relative_position, cos_45_deg);
@@ -438,29 +439,36 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 		}
 	}
 
-
 	// Bounce ball from walls.
 	// Do this only after blocks and ship bouncing to make sure that ball is inside game field.
-	const fixed16vec2_t field_size =
+	const fixed16vec2_t filed_mins =
 	{
-		IntToFixed16(c_field_width * c_block_width),
-		IntToFixed16((c_field_height + 10) * c_block_height), // Increase lower border to disable floor bounce.
+		ball_half_size,
+		ball_half_size,
 	};
+	const fixed16vec2_t filed_maxs =
+	{
+		IntToFixed16(c_field_width * c_block_width) - ball_half_size,
+		 // Increase lower border to disable floor bounce.
+		IntToFixed16((c_field_height + 10) * c_block_height) - ball_half_size,
+	};
+
 	for(size_t i = 0; i < 2; ++i)
 	{
-		if(ball.position[i] - ball_half_size < 0)
+		if(ball.position[i] < filed_mins[i])
 		{
 			ball.velocity[i] = -ball.velocity[i];
-			ball.position[i] = ball_half_size * 2 - ball.position[i];
-			assert(ball.position[i] >= 0);
+			ball.position[i] = 2 * filed_mins[i] - ball.position[i];
+			assert(ball.position[i] >= filed_mins[i]);
 		}
-		if(ball.position[i] + ball_half_size > field_size[i])
+		if(ball.position[i] > filed_maxs[i])
 		{
 			ball.velocity[i] = -ball.velocity[i];
-			ball.position[i] = 2 * field_size[i] - ball_half_size * 2 - ball.position[i];
-			assert(ball.position[i] <= field_size[i]);
+			ball.position[i] = 2 * filed_maxs[i] - ball.position[i];
+			assert(ball.position[i] <= filed_maxs[i]);
 		}
 	}
 
+	// Kill the ball if it reaches lower field border.
 	return ball.position[1] > IntToFixed16(c_field_height * c_block_height);
 }
