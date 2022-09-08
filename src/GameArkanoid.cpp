@@ -62,7 +62,8 @@ void GameArkanoid::Tick(
 				const fixed16_t sensetivity =g_fixed16_one / 3; // TODO - make this configurable.
 				ship_->position[0] += event.motion.xrel * sensetivity;
 
-				const fixed16_t half_width = IntToFixed16(c_ship_half_width_normal);
+				const fixed16_t half_width =
+					IntToFixed16(ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal);
 				if(ship_->position[0] - half_width < 0)
 				{
 					ship_->position[0] = half_width;
@@ -143,12 +144,24 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 	if(ship_ != std::nullopt)
 	{
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			Sprites::arkanoid_ship,
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_normal,
-			field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+		if(ship_->is_large)
+		{
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				Sprites::arkanoid_ship_large,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_large,
+				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+		}
+		else
+		{
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				Sprites::arkanoid_ship,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_normal,
+				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+		}
 	}
 
 	for(const Ball& ball : balls_)
@@ -407,7 +420,8 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 	if(ship_ != std::nullopt)
 	{
-		const fixed16_t half_width_extended = IntToFixed16(c_ship_half_width_normal) + ball_half_size;
+		const fixed16_t half_width_extended =
+			IntToFixed16(ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal) + ball_half_size;
 		const fixed16_t ship_upper_border_extended =
 			ship_->position[1] - IntToFixed16(c_ship_half_height) - ball_half_size;
 		if((ball.position[0] >= ship_->position[0] - half_width_extended &&

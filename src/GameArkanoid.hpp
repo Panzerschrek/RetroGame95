@@ -61,6 +61,7 @@ private:
 	{
 		// Center position.
 		fixed16vec2_t position{};
+		bool is_large = false;
 	};
 
 	static const constexpr uint32_t c_field_width = 11;
@@ -71,7 +72,8 @@ private:
 	static const constexpr uint32_t c_block_width = 20;
 	static const constexpr uint32_t c_block_height = 10;
 
-	static const constexpr uint32_t c_ship_half_width_normal = 20;
+	static const constexpr uint32_t c_ship_half_width_normal = 16;
+	static const constexpr uint32_t c_ship_half_width_large = 24;
 	static const constexpr uint32_t c_ship_half_height = 5;
 
 private:
