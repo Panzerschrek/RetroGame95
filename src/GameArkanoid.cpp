@@ -392,14 +392,14 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 			}
 		}
 
-		ball.position[0] = 2 * closest_position[0] - ball.position[0];
-		ball.position[1] = 2 * closest_position[1] - ball.position[1];
 		if(bounce_vec[0] != 0)
 		{
+			ball.position[0] = 2 * closest_position[0] - ball.position[0];
 			ball.velocity[0] = -ball.velocity[0];
 		}
 		if(bounce_vec[1] != 0)
 		{
+			ball.position[1] = 2 * closest_position[1] - ball.position[1];
 			ball.velocity[1] = -ball.velocity[1];
 		}
 	} // for blocks.
