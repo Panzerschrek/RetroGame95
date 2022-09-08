@@ -147,8 +147,8 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			frame_buffer,
 			Sprites::arkanoid_ship,
 			0,
-			field_offset_x + Fixed16FloorToInt(ship_->position[0]) - c_ship_half_width_normal,
-			field_offset_y + Fixed16FloorToInt(ship_->position[1]) - c_ship_half_height);
+			field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_normal,
+			field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
 	}
 
 	for(const Ball& ball : balls_)
@@ -157,9 +157,10 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			frame_buffer,
 			Sprites::arkanoid_ball,
 			0,
-			field_offset_x + Fixed16FloorToInt(ball.position[0]) - c_ball_half_size,
-			field_offset_y + Fixed16FloorToInt(ball.position[1]) - c_ball_half_size);
+			field_offset_x + uint32_t(Fixed16FloorToInt(ball.position[0])) - c_ball_half_size,
+			field_offset_y + uint32_t(Fixed16FloorToInt(ball.position[1])) - c_ball_half_size);
 	}
+
 	const SpriteBMP sprites_trim_top[]
 	{
 		Sprites::arkanoid_trim_corner_top_left,
@@ -266,13 +267,13 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 		const fixed16vec2_t borders_min =
 		{
-			IntToFixed16(x * c_block_width ) - ball_half_size,
-			IntToFixed16(y * c_block_height) - ball_half_size,
+			IntToFixed16(int32_t(x * c_block_width) ) - ball_half_size,
+			IntToFixed16(int32_t(y * c_block_height)) - ball_half_size,
 		};
 		const fixed16vec2_t borders_max =
 		{
-			IntToFixed16((x + 1) * c_block_width ) + ball_half_size,
-			IntToFixed16((y + 1) * c_block_height) + ball_half_size,
+			IntToFixed16(int32_t((x + 1) * c_block_width )) + ball_half_size,
+			IntToFixed16(int32_t((y + 1) * c_block_height)) + ball_half_size,
 		};
 
 		if( ball.position[0] <= borders_min[0] || ball.position[0] >= borders_max[0] ||

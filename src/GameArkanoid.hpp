@@ -15,7 +15,7 @@ public: // GameInterface
 
 	virtual void Draw(FrameBuffer frame_buffer) override;
 
-	virtual bool NeedToCaptureMouse() { return true; }
+	virtual bool NeedToCaptureMouse() override { return true; }
 
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
