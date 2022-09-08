@@ -2,6 +2,23 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "Sprites.hpp"
+#include <cassert>
+
+GameArkanoid::GameArkanoid()
+{
+	for(uint32_t i = 0; i < 8; ++i)
+	{
+		Ball ball;
+		ball.position =
+		{
+			IntToFixed16((i + c_field_width) * c_block_width / 2),
+			IntToFixed16((i * 2 + c_field_height) * c_block_height / 2),
+		};
+		ball.velocity = { 3 * g_fixed16_one / (3 + int32_t(i)), -3 * g_fixed16_one / ( 2 + int32_t(i) ) };
+		balls_.push_back(ball);
+	}
+
+}
 
 void GameArkanoid::Tick(
 	const std::vector<SDL_Event>& events,
@@ -16,6 +33,51 @@ void GameArkanoid::Tick(
 			next_game_ = std::make_unique<GameMainMenu>();
 		}
 	}
+
+	for(size_t b = 0; b < balls_.size();)
+	{
+		Ball& ball = balls_[b];
+
+		ball.position[0] += ball.velocity[0];
+		ball.position[1] += ball.velocity[1];
+
+		// Bounce ball from walls.
+		const fixed16vec2_t field_size =
+		{
+			IntToFixed16(c_field_width * c_block_width),
+			IntToFixed16((c_field_height + 10) * c_block_height), // Increase lower border to disable floor bounce.
+		};
+		const fixed16_t ball_half_size = IntToFixed16(c_ball_half_size);
+		for(size_t i = 0; i < 2; ++i)
+		{
+			if(ball.position[i] - ball_half_size < 0)
+			{
+				ball.velocity[i] = -ball.velocity[i];
+				ball.position[i] = ball_half_size * 2 - ball.position[i];
+				assert(ball.position[i] >= 0);
+			}
+			if(ball.position[i] + ball_half_size > field_size[i])
+			{
+				ball.velocity[i] = -ball.velocity[i];
+				ball.position[i] = 2 * field_size[i] - ball_half_size * 2 - ball.position[i];
+				assert(ball.position[i] <= field_size[i]);
+			}
+		}
+
+		if(ball.position[1] + ball_half_size > IntToFixed16((c_field_height) * c_block_height))
+		{
+			// This ball is dead.
+			if(b + 1 < balls_.size())
+			{
+				balls_[b] = balls_.back();
+			}
+			balls_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for balls.
 }
 
 void GameArkanoid::Draw(const FrameBuffer frame_buffer)
@@ -46,9 +108,6 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 		Sprites::arkanoid_block_15,
 	};
 
-	const uint32_t block_width = sprites[0].GetWidth();
-	const uint32_t block_height = sprites[1].GetHeight();
-
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
 		for(uint32_t x = 0; x < c_field_width; ++x)
@@ -57,24 +116,27 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 				frame_buffer,
 				sprites[ (x + y) % std::size(sprites) ],
 				0,
-				field_offset_x + x * block_width,
-				field_offset_y + y * block_height);
+				field_offset_x + x * c_block_width,
+				field_offset_y + y * c_block_height);
 		}
 	}
 
-	DrawSpriteWithAlphaUnchecked(
-		frame_buffer,
-		Sprites::arkanoid_ball,
-		0,
-		field_offset_x + c_field_width * block_width / 2,
-		field_offset_y + (1 + c_field_height) * block_height);
+	for(const Ball& ball : balls_)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			Sprites::arkanoid_ball,
+			0,
+			field_offset_x + Fixed16FloorToInt(ball.position[0]) - c_ball_half_size,
+			field_offset_y + Fixed16FloorToInt(ball.position[1]) - c_ball_half_size);
+	}
 
 	DrawSpriteWithAlphaUnchecked(
 		frame_buffer,
 		Sprites::arkanoid_ship,
 		0,
-		field_offset_x + c_field_width * block_width / 2,
-		field_offset_y + (2 + c_field_height) * block_height);
+		field_offset_x + c_field_width * c_block_width / 2,
+		field_offset_y + (2 + c_field_height) * c_block_height);
 
 
 	const SpriteBMP sprites_trim_top[]
@@ -150,7 +212,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			frame_buffer,
 			sprite,
 			0,
-			field_offset_x - 10 + block_width * c_field_width + 10,
+			field_offset_x - 10 + c_block_width * c_field_width + 10,
 			trim_side_y);
 
 		trim_side_y += sprite.GetHeight();
