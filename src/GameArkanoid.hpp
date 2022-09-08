@@ -86,4 +86,5 @@ private:
 	Block field_[c_field_width * c_field_height];
 	std::optional<Ship> ship_;
 	std::vector<Ball> balls_;
+	uint32_t lifes_ = 3;
 };

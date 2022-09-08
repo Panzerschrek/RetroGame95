@@ -99,8 +99,8 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = 15;
-	const uint32_t field_offset_y = 15;
+	const uint32_t field_offset_x = 10;
+	const uint32_t field_offset_y = 10;
 
 	const SpriteBMP block_sprites[]
 	{
@@ -162,6 +162,19 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_normal,
 				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
 		}
+	}
+
+	for(uint32_t i = 0, ship_life_x = 0; i < lifes_; ++i)
+	{
+		const uint32_t padding = 3;
+		const SpriteBMP sprite(Sprites::arkanoid_ship_life);
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			padding + field_offset_x + ship_life_x,
+			padding + field_offset_y + c_block_height * (c_field_height + 1));
+		ship_life_x += sprite.GetWidth() + padding;
 	}
 
 	for(const Ball& ball : balls_)
