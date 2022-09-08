@@ -71,3 +71,8 @@ inline fixed16_t Fixed16VecSquareLen(const fixed16vec2_t& v)
 {
 	return Fixed16VecDot(v, v);
 }
+
+inline int64_t Fixed16VecSquareLenScaled(const fixed16vec2_t& v)
+{
+	return int64_t(v[0]) * int64_t(v[0]) + int64_t(v[1]) * int64_t(v[1]);
+}
