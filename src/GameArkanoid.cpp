@@ -18,6 +18,7 @@ const uint32_t g_ship_modifier_bonus_duration = 500;
 const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_death_animation_duration = 120;
 const uint32_t g_death_animation_flicker_duration = 12;
+const uint32_t g_level_start_animation_duration = 360;
 const uint32_t g_min_shoot_interval = 45;
 
 } // namespace
@@ -25,22 +26,11 @@ const uint32_t g_min_shoot_interval = 45;
 GameArkanoid::GameArkanoid()
 	: rand_(Rand::CreateWithRandomSeed())
 {
-	for(uint32_t y = 4; y < 10; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x)
-		field_[x + y * c_field_width].type =
-			BlockType((uint32_t(BlockType::Color1) + x) % uint32_t(BlockType::NumTypes));
-	}
-
-	SpawnShip();
+	NextLevel();
 }
 
-void GameArkanoid::Tick(
-	const std::vector<SDL_Event>& events,
-	const std::vector<bool>& keyboard_state)
+void GameArkanoid::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	(void)keyboard_state;
-
 	++tick_;
 
 	for(const SDL_Event& event : events)
@@ -49,6 +39,291 @@ void GameArkanoid::Tick(
 		{
 			next_game_ = std::make_unique<GameMainMenu>();
 		}
+	}
+
+	if(tick_ >= level_start_animation_end_tick_)
+	{
+		ProcessLogic(events, keyboard_state);
+	}
+}
+
+void GameArkanoid::Draw(const FrameBuffer frame_buffer)
+{
+	FillWholeFrameBuffer(frame_buffer, g_color_black);
+
+	const uint32_t field_offset_x = 10;
+	const uint32_t field_offset_y = 10;
+
+	const uint32_t texts_offset_x = 256;
+	const uint32_t texts_offset_y = 40;
+
+	const SpriteBMP block_sprites[]
+	{
+		Sprites::arkanoid_block_1,
+		Sprites::arkanoid_block_1,
+		Sprites::arkanoid_block_2,
+		Sprites::arkanoid_block_3,
+		Sprites::arkanoid_block_4,
+		Sprites::arkanoid_block_5,
+		Sprites::arkanoid_block_6,
+		Sprites::arkanoid_block_7,
+		Sprites::arkanoid_block_8,
+		Sprites::arkanoid_block_9,
+		Sprites::arkanoid_block_10,
+		Sprites::arkanoid_block_11,
+		Sprites::arkanoid_block_12,
+		Sprites::arkanoid_block_13,
+		Sprites::arkanoid_block_14,
+		Sprites::arkanoid_block_15,
+		Sprites::arkanoid_block_concrete,
+		Sprites::arkanoid_block_14_15,
+	};
+
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	{
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			const Block& block = field_[x + y * c_field_width];
+			if(block.type == BlockType::Empty)
+			{
+				continue;
+			}
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				block_sprites[uint32_t(block.type)],
+				0,
+				field_offset_x + x * c_block_width,
+				field_offset_y + y * c_block_height);
+		}
+	}
+
+	const bool playing_level_start_animation = tick_ < level_start_animation_end_tick_;
+
+	if(ship_ != std::nullopt && !playing_level_start_animation)
+	{
+		SpriteBMP sprite = Sprites::arkanoid_ship;
+		switch(ship_->state)
+		{
+		case ShipState::Normal:
+		case ShipState::Sticky:
+			sprite = Sprites::arkanoid_ship;
+			break;
+		case ShipState::Large:
+			sprite = Sprites::arkanoid_ship_large;
+			break;
+		case ShipState::Turret:
+			sprite = Sprites::arkanoid_ship_with_turrets;
+			break;
+		}
+
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
+			field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+	}
+	if(death_animation_ != std::nullopt)
+	{
+		if((tick_ / g_death_animation_flicker_duration) % 2 == 0)
+		{
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				Sprites::arkanoid_ship,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
+				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+		}
+	}
+
+	for(uint32_t i = 0, ship_life_x = 0; i < lifes_; ++i)
+	{
+		const uint32_t padding = 3;
+		const SpriteBMP sprite(Sprites::arkanoid_ship_life);
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			padding + field_offset_x + ship_life_x,
+			padding + field_offset_y + c_block_height * (c_field_height + 1));
+		ship_life_x += sprite.GetWidth() + padding;
+	}
+
+	if(!playing_level_start_animation)
+	{
+		for(const Ball& ball : balls_)
+		{
+			fixed16vec2_t position = ball.position;
+			if(ball.is_attached_to_ship)
+			{
+				if(ship_ == std::nullopt)
+				{
+					continue;
+				}
+				position[0] += ship_->position[0];
+				position[1] += ship_->position[1];
+			}
+
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				Sprites::arkanoid_ball,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(position[0])) - c_ball_half_size,
+				field_offset_y + uint32_t(Fixed16FloorToInt(position[1])) - c_ball_half_size);
+		}
+	}
+
+	for(const LaserBeam& laser_beam : laser_beams_)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			Sprites::arkanoid_laser_beam,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(laser_beam.position[0])),
+			field_offset_y + uint32_t(Fixed16FloorToInt(laser_beam.position[1])) - (c_laser_beam_height + 1) / 2);
+	}
+
+	const SpriteBMP bonuses_sprites[]
+	{
+		Sprites::arkanoid_bonus_b,
+		Sprites::arkanoid_bonus_c,
+		Sprites::arkanoid_bonus_d,
+		Sprites::arkanoid_bonus_e,
+		Sprites::arkanoid_bonus_l,
+		Sprites::arkanoid_bonus_p,
+		Sprites::arkanoid_bonus_s,
+	};
+
+	for(Bonus& bonus : bonuses_)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			bonuses_sprites[size_t(bonus.type)],
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(bonus.position[0])) - c_bonus_half_width,
+			field_offset_y + uint32_t(Fixed16FloorToInt(bonus.position[1])) - c_bonus_half_height);
+	}
+
+	const SpriteBMP sprites_trim_top[]
+	{
+		Sprites::arkanoid_trim_corner_top_left,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_corner_top_right,
+	};
+
+	uint32_t trim_top_x = field_offset_x - 10;
+	for(const SpriteBMP& sprite : sprites_trim_top)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			trim_top_x,
+			field_offset_y - 10);
+
+		trim_top_x += sprite.GetWidth();
+	}
+
+	const SpriteBMP sprites_trim_left[]
+	{
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+	};
+
+	uint32_t trim_side_y = field_offset_y;
+	for(const SpriteBMP& sprite : sprites_trim_left)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x - 10,
+			trim_side_y);
+
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x - 10 + c_block_width * c_field_width + 10,
+			trim_side_y);
+
+		trim_side_y += sprite.GetHeight();
+	}
+
+	char text[64];
+	std::snprintf(text, sizeof(text), "Round\n\n%3d", level_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y, text);
+
+	if(tick_ < level_start_animation_end_tick_)
+	{
+		std::snprintf(text, sizeof(text), "Round %d", level_);
+
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + c_block_width  * c_field_width  / 2 - 24,
+			field_offset_y + c_block_height * c_field_height / 2 - 4,
+			text);
+	}
+
+	std::snprintf(text, sizeof(text), "Score\n\n%5d", score_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64, text);
+
+	if(game_over_)
+	{
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + c_block_width  * c_field_width  / 2 - 36,
+			field_offset_y + c_block_height * c_field_height / 2 - 4,
+			"Game Over");
+	}
+}
+
+GameInterfacePtr GameArkanoid::AskForNextGameTransition()
+{
+	return std::move(next_game_);
+}
+
+void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
+{
+	(void)keyboard_state;
+
+	for(const SDL_Event& event : events)
+	{
 		if(event.type == SDL_MOUSEMOTION)
 		{
 			if (ship_ != std::nullopt)
@@ -185,250 +460,52 @@ void GameArkanoid::Tick(
 			death_animation_ = std::nullopt;
 		}
 	}
-}
 
-void GameArkanoid::Draw(const FrameBuffer frame_buffer)
-{
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
-
-	const uint32_t field_offset_x = 10;
-	const uint32_t field_offset_y = 10;
-
-	const SpriteBMP block_sprites[]
-	{
-		Sprites::arkanoid_block_1,
-		Sprites::arkanoid_block_1,
-		Sprites::arkanoid_block_2,
-		Sprites::arkanoid_block_3,
-		Sprites::arkanoid_block_4,
-		Sprites::arkanoid_block_5,
-		Sprites::arkanoid_block_6,
-		Sprites::arkanoid_block_7,
-		Sprites::arkanoid_block_8,
-		Sprites::arkanoid_block_9,
-		Sprites::arkanoid_block_10,
-		Sprites::arkanoid_block_11,
-		Sprites::arkanoid_block_12,
-		Sprites::arkanoid_block_13,
-		Sprites::arkanoid_block_14,
-		Sprites::arkanoid_block_15,
-		Sprites::arkanoid_block_concrete,
-		Sprites::arkanoid_block_14_15,
-	};
-
+	// Check for next level condition.
+	uint32_t num_non_empty_blocks = 0;
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
 		for(uint32_t x = 0; x < c_field_width; ++x)
 		{
 			const Block& block = field_[x + y * c_field_width];
-			if(block.type == BlockType::Empty)
+			if(block.type != BlockType::Empty)
 			{
-				continue;
+				++num_non_empty_blocks;
 			}
-			DrawSpriteWithAlphaUnchecked(
-				frame_buffer,
-				block_sprites[uint32_t(block.type)],
-				0,
-				field_offset_x + x * c_block_width,
-				field_offset_y + y * c_block_height);
 		}
 	}
 
-	if(ship_ != std::nullopt)
+
+	if(num_non_empty_blocks == 0)
 	{
-		SpriteBMP sprite = Sprites::arkanoid_ship;
-		switch(ship_->state)
-		{
-		case ShipState::Normal:
-		case ShipState::Sticky:
-			sprite = Sprites::arkanoid_ship;
-			break;
-		case ShipState::Large:
-			sprite = Sprites::arkanoid_ship_large;
-			break;
-		case ShipState::Turret:
-			sprite = Sprites::arkanoid_ship_with_turrets;
-			break;
-		}
-
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
-			field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
-	}
-	if(death_animation_ != std::nullopt)
-	{
-		if((tick_ / g_death_animation_flicker_duration) % 2 == 0)
-		{
-			DrawSpriteWithAlphaUnchecked(
-				frame_buffer,
-				Sprites::arkanoid_ship,
-				0,
-				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
-				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
-		}
-	}
-
-	for(uint32_t i = 0, ship_life_x = 0; i < lifes_; ++i)
-	{
-		const uint32_t padding = 3;
-		const SpriteBMP sprite(Sprites::arkanoid_ship_life);
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			sprite,
-			0,
-			padding + field_offset_x + ship_life_x,
-			padding + field_offset_y + c_block_height * (c_field_height + 1));
-		ship_life_x += sprite.GetWidth() + padding;
-	}
-
-	for(const Ball& ball : balls_)
-	{
-		fixed16vec2_t position = ball.position;
-		if(ball.is_attached_to_ship)
-		{
-			if(ship_ == std::nullopt)
-			{
-				continue;
-			}
-			position[0] += ship_->position[0];
-			position[1] += ship_->position[1];
-		}
-
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			Sprites::arkanoid_ball,
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(position[0])) - c_ball_half_size,
-			field_offset_y + uint32_t(Fixed16FloorToInt(position[1])) - c_ball_half_size);
-	}
-
-	for(const LaserBeam& laser_beam : laser_beams_)
-	{
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			Sprites::arkanoid_laser_beam,
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(laser_beam.position[0])),
-			field_offset_y + uint32_t(Fixed16FloorToInt(laser_beam.position[1])) - (c_laser_beam_height + 1) / 2);
-	}
-
-	const SpriteBMP bonuses_sprites[]
-	{
-		Sprites::arkanoid_bonus_b,
-		Sprites::arkanoid_bonus_c,
-		Sprites::arkanoid_bonus_d,
-		Sprites::arkanoid_bonus_e,
-		Sprites::arkanoid_bonus_l,
-		Sprites::arkanoid_bonus_p,
-		Sprites::arkanoid_bonus_s,
-	};
-
-	for(Bonus& bonus : bonuses_)
-	{
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			bonuses_sprites[size_t(bonus.type)],
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(bonus.position[0])) - c_bonus_half_width,
-			field_offset_y + uint32_t(Fixed16FloorToInt(bonus.position[1])) - c_bonus_half_height);
-	}
-
-	const SpriteBMP sprites_trim_top[]
-	{
-		Sprites::arkanoid_trim_corner_top_left,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_corner_top_right,
-	};
-
-	uint32_t trim_top_x = field_offset_x - 10;
-	for(const SpriteBMP& sprite : sprites_trim_top)
-	{
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			sprite,
-			0,
-			trim_top_x,
-			field_offset_y - 10);
-
-		trim_top_x += sprite.GetWidth();
-	}
-
-	const SpriteBMP sprites_trim_left[]
-	{
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-	};
-
-	uint32_t trim_side_y = field_offset_y;
-	for(const SpriteBMP& sprite : sprites_trim_left)
-	{
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x - 10,
-			trim_side_y);
-
-		DrawSpriteWithAlphaUnchecked(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x - 10 + c_block_width * c_field_width + 10,
-			trim_side_y);
-
-		trim_side_y += sprite.GetHeight();
-	}
-
-	if(game_over_)
-	{
-		DrawText(
-			frame_buffer,
-			g_color_white,
-			field_offset_x + c_block_width  * c_field_width  / 2 - 36,
-			field_offset_y + c_block_height * c_field_height / 2 - 4,
-			"Game Over");
+		NextLevel();
 	}
 }
 
-GameInterfacePtr GameArkanoid::AskForNextGameTransition()
+void GameArkanoid::NextLevel()
 {
-	return std::move(next_game_);
+	++level_;
+
+	if(lifes_ < 3)
+	{
+		lifes_ += 1;
+	}
+
+	balls_.clear();
+	bonuses_.clear();
+	laser_beams_.clear();
+
+	// TODO - generate different patterns of blocks.
+	for(uint32_t y = 4; y < 10; ++y)
+	{
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		field_[x + y * c_field_width].type =
+			BlockType((uint32_t(BlockType::Color1) + x) % uint32_t(BlockType::NumTypes));
+	}
+
+	SpawnShip();
+
+	level_start_animation_end_tick_ = tick_ + g_level_start_animation_duration;
 }
 
 void GameArkanoid::SpawnShip()
@@ -827,6 +904,9 @@ void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
 
 	// TODO - support blocks requiring more than one hit.
 	block.type = BlockType::Empty;
+
+	// TODO - tune score calculation.
+	score_ += 16;
 
 	TrySpawnNewBonus(block_x, block_y);
 }

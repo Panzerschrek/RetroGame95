@@ -10,9 +10,7 @@ public:
 	GameArkanoid();
 
 public: // GameInterface
-	virtual void Tick(
-		const std::vector<SDL_Event>& events,
-		const std::vector<bool>& keyboard_state) override;
+	virtual void Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state) override;
 
 	virtual void Draw(FrameBuffer frame_buffer) override;
 
@@ -125,6 +123,8 @@ private:
 	static const constexpr uint32_t c_ship_half_height = 5;
 
 private:
+	void ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state);
+	void NextLevel();
 	void SpawnShip();
 
 	// Returns true if need to kill it.
@@ -158,7 +158,11 @@ private:
 	std::vector<Ball> balls_;
 	std::vector<Bonus> bonuses_;
 	std::vector<LaserBeam> laser_beams_;
+	uint32_t level_start_animation_end_tick_ = 0;
+
+	uint32_t level_ = 0;
 	uint32_t lifes_ = 3;
+	uint32_t score_ = 0;
 
 	uint32_t slow_down_end_tick_ = 0;
 };
