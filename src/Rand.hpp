@@ -8,6 +8,8 @@ public:
 
 	explicit Rand(RandResultType seed= 0);
 
+	static Rand CreateWithRandomSeed();
+
 	RandResultType Next();
 
 private:

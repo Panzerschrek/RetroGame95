@@ -1,6 +1,7 @@
 #pragma once
 #include "Fixed.hpp"
 #include "GameInterface.hpp"
+#include "Rand.hpp"
 #include <optional>
 
 class GameArkanoid final : public GameInterface
@@ -66,6 +67,25 @@ private:
 		bool is_large = false;
 	};
 
+	enum class BonusType : uint8_t
+	{
+		NextLevel,
+		StickyShip,
+		BallSplit,
+		LargeShip,
+		LaserShip,
+		ExtraLife,
+		SlowDown,
+		NumBonuses,
+	};
+
+	struct Bonus
+	{
+		BonusType type = BonusType::NextLevel;
+		// Center position.
+		fixed16vec2_t position{};
+	};
+
 	static const constexpr uint32_t c_field_width = 11;
 	static const constexpr uint32_t c_field_height = 21;
 
@@ -73,6 +93,8 @@ private:
 	static const constexpr uint32_t c_ball_half_size = 3;
 	static const constexpr uint32_t c_block_width = 20;
 	static const constexpr uint32_t c_block_height = 10;
+	static const constexpr uint32_t c_bonus_half_width = 10;
+	static const constexpr uint32_t c_bonus_half_height = 5;
 
 	static const constexpr uint32_t c_ship_half_width_normal = 16;
 	static const constexpr uint32_t c_ship_half_width_large = 24;
@@ -82,11 +104,19 @@ private:
 	// Returns true if need to kill it.
 	bool UpdateBall(Ball& ball);
 
+	// Returns true if need to kill it.
+	bool UpdateBonus(Bonus& ball);
+
+	void TrySpawnNewBonus(uint32_t block_x, uint32_t block_y);
+
 private:
+	Rand rand_;
+
 	GameInterfacePtr next_game_;
 
 	Block field_[c_field_width * c_field_height];
 	std::optional<Ship> ship_;
 	std::vector<Ball> balls_;
+	std::vector<Bonus> bonuses_;
 	uint32_t lifes_ = 3;
 };

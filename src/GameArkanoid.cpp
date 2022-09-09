@@ -8,14 +8,21 @@
 namespace
 {
 
+const fixed16_t g_ball_base_speed = g_fixed16_one;
+const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
+
+const uint32_t g_bonus_drop_inv_chance = 4;
+
+
 fixed16_t GetBallSpeed()
 {
-	return g_fixed16_one;
+	return g_ball_base_speed;
 }
 
 } // namespace
 
 GameArkanoid::GameArkanoid()
+	: rand_(Rand::CreateWithRandomSeed())
 {
 	for(uint32_t y = 4; y < 10; ++y)
 	{
@@ -110,6 +117,23 @@ void GameArkanoid::Tick(
 			++b;
 		}
 	} // for balls.
+
+	for(size_t b = 0; b < bonuses_.size();)
+	{
+		if(UpdateBonus(bonuses_[b]))
+		{
+			// This bonus is dead.
+			if(b + 1 < bonuses_.size())
+			{
+				bonuses_[b] = bonuses_.back();
+			}
+			bonuses_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for bonuses.
 }
 
 void GameArkanoid::Draw(const FrameBuffer frame_buffer)
@@ -213,6 +237,27 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(position[0])) - c_ball_half_size,
 			field_offset_y + uint32_t(Fixed16FloorToInt(position[1])) - c_ball_half_size);
+	}
+
+	const SpriteBMP bonuses_sprites[]
+	{
+		Sprites::arkanoid_bonus_b,
+		Sprites::arkanoid_bonus_c,
+		Sprites::arkanoid_bonus_d,
+		Sprites::arkanoid_bonus_e,
+		Sprites::arkanoid_bonus_l,
+		Sprites::arkanoid_bonus_p,
+		Sprites::arkanoid_bonus_s,
+	};
+
+	for(Bonus& bonus : bonuses_)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			bonuses_sprites[size_t(bonus.type)],
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(bonus.position[0])) - c_bonus_half_width,
+			field_offset_y + uint32_t(Fixed16FloorToInt(bonus.position[1])) - c_bonus_half_height);
 	}
 
 	const SpriteBMP sprites_trim_top[]
@@ -345,6 +390,8 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 		// Hit this block.
 		block.type = BlockType::Empty;
 		// TODO - count score here.
+
+		TrySpawnNewBonus(x, y);
 
 		// Ball intersectss with this block. Try to push it.
 		// Find closest intersection of negative velocity vector and extended block side in order to do this.
@@ -533,4 +580,46 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 	// Kill the ball if it reaches lower field border.
 	return ball.position[1] > IntToFixed16(c_field_height * c_block_height);
+}
+
+bool GameArkanoid::UpdateBonus(Bonus& bonus)
+{
+	bonus.position[1] += g_bonus_drop_speed;
+
+	if(ship_ != std::nullopt)
+	{
+		const fixed16_t half_width_extended =
+			IntToFixed16((ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal) + c_bonus_half_width);
+		const fixed16_t ship_upper_border_extended =
+			ship_->position[1] - IntToFixed16(c_ship_half_height) - c_bonus_half_height;
+		if((bonus.position[0] >= ship_->position[0] - half_width_extended &&
+			bonus.position[0] <= ship_->position[0] + half_width_extended) &&
+			bonus.position[1] >= ship_upper_border_extended)
+		{
+			// This bonus is cathed.
+
+			// TODO - aaply bonus.
+
+			return true;
+		}
+	}
+
+	// Kill the bonus if it reaches lower field border.
+	return bonus.position[1] > IntToFixed16(c_field_height * c_block_height);
+}
+
+void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block_y)
+{
+	if(rand_.Next() % g_bonus_drop_inv_chance != 0)
+	{
+		return;
+	}
+
+	Bonus bonus;
+	// TODO - use different chances for different bonuses.
+	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
+	bonus.position[0] = IntToFixed16(block_x * c_block_width  + c_block_width  / 2);
+	bonus.position[1] = IntToFixed16(block_y * c_block_height + c_block_height / 2);
+
+	bonuses_.push_back(bonus);
 }

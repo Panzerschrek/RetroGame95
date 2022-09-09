@@ -54,7 +54,7 @@ uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 } // namespace
 
 GameTetris::GameTetris()
-	: rand_( std::random_device()())
+	: rand_(Rand::CreateWithRandomSeed())
 {
 	NextLevel();
 }
