@@ -8,11 +8,11 @@
 namespace
 {
 
-const fixed16_t g_ball_base_speed = g_fixed16_one;
+const fixed16_t g_ball_base_speed = g_fixed16_one / 2;
 const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
 
 const uint32_t g_bonus_drop_inv_chance = 4;
-
+const uint32_t g_max_lifes = 6;
 
 fixed16_t GetBallSpeed()
 {
@@ -591,14 +591,27 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 		const fixed16_t half_width_extended =
 			IntToFixed16((ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal) + c_bonus_half_width);
 		const fixed16_t ship_upper_border_extended =
-			ship_->position[1] - IntToFixed16(c_ship_half_height) - c_bonus_half_height;
+			ship_->position[1] - IntToFixed16(c_ship_half_height + c_bonus_half_height);
 		if((bonus.position[0] >= ship_->position[0] - half_width_extended &&
 			bonus.position[0] <= ship_->position[0] + half_width_extended) &&
 			bonus.position[1] >= ship_upper_border_extended)
 		{
 			// This bonus is cathed.
+			switch(bonus.type)
+			{
+			// TODO - process other types.
+			case BonusType::BallSplit:
+				SplitBalls();
+				break;
 
-			// TODO - aaply bonus.
+			case BonusType::ExtraLife:
+				lifes_ = std::min(lifes_ + 1, g_max_lifes);
+				break;
+
+			case BonusType::NumBonuses:
+				assert(false);
+				break;
+			}
 
 			return true;
 		}
@@ -617,9 +630,48 @@ void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block
 
 	Bonus bonus;
 	// TODO - use different chances for different bonuses.
+	// TODO - maybe avoid spawning BallSplit bonus if there is more than one active bakk?
 	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
 	bonus.position[0] = IntToFixed16(block_x * c_block_width  + c_block_width  / 2);
 	bonus.position[1] = IntToFixed16(block_y * c_block_height + c_block_height / 2);
 
 	bonuses_.push_back(bonus);
+}
+
+void GameArkanoid::SplitBalls()
+{
+	const fixed16_t cos_split_angle = 56756;
+	const fixed16_t sin_split_angle = 32768;
+
+	for(size_t i = 0, num_balls = balls_.size(); i < num_balls; ++i)
+	{
+		Ball& ball = balls_[i];
+		if(ball.is_attached_to_ship)
+		{
+			continue;
+		}
+
+		const fixed16vec2_t velocity = ball.velocity;
+
+		const fixed16vec2_t velocity0 =
+		{
+			Fixed16Mul(velocity[0], cos_split_angle) - Fixed16Mul(velocity[1], sin_split_angle),
+			Fixed16Mul(velocity[0], sin_split_angle) + Fixed16Mul(velocity[1], cos_split_angle),
+		};
+
+		const fixed16vec2_t velocity1 =
+		{
+			Fixed16Mul(velocity[0], cos_split_angle) - Fixed16Mul(velocity[1], -sin_split_angle),
+			Fixed16Mul(velocity[0], -sin_split_angle) + Fixed16Mul(velocity[1], cos_split_angle),
+		};
+
+		Ball ball0 = ball;
+		ball0.velocity = velocity0;
+
+		Ball ball1 = ball;
+		ball1.velocity = velocity1;
+
+		balls_.push_back(ball0);
+		balls_.push_back(ball1);
+	}
 }

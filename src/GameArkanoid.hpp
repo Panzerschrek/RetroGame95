@@ -109,6 +109,8 @@ private:
 
 	void TrySpawnNewBonus(uint32_t block_x, uint32_t block_y);
 
+	void SplitBalls();
+
 private:
 	Rand rand_;
 
