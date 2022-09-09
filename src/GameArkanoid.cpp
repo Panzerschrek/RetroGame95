@@ -16,6 +16,8 @@ const uint32_t g_bonus_drop_inv_chance = 4;
 const uint32_t g_max_lifes = 6;
 const uint32_t g_ship_modifier_bonus_duration = 500;
 const uint32_t g_slow_down_bonus_duration = 960;
+const uint32_t g_death_animation_duration = 120;
+const uint32_t g_death_animation_flicker_duration = 12;
 const uint32_t g_min_shoot_interval = 45;
 
 } // namespace
@@ -30,27 +32,7 @@ GameArkanoid::GameArkanoid()
 			BlockType((uint32_t(BlockType::Color1) + x) % uint32_t(BlockType::NumTypes));
 	}
 
-	Ball ball;
-	ball.position =
-	{
-		0,
-		-IntToFixed16(c_ship_half_height + c_ball_half_size),
-	};
-	ball.is_attached_to_ship = true;
-	ball.velocity = { 0, -g_ball_base_speed };
-	balls_.push_back(ball);
-
-	Ship ship;
-	ship.position =
-	{
-		IntToFixed16(c_field_width * c_block_width / 2),
-		IntToFixed16(c_field_height * c_block_height + c_ship_half_height),
-	};
-
-	ship.state = ShipState::Sticky;
-	ship.state_end_tick = g_ship_modifier_bonus_duration;
-
-	ship_ = ship;
+	SpawnShip();
 }
 
 void GameArkanoid::Tick(
@@ -173,6 +155,36 @@ void GameArkanoid::Tick(
 			++b;
 		}
 	} // for laser beams.
+
+	if(ship_ != std::nullopt && balls_.empty() && death_animation_ == std::nullopt)
+	{
+		// Lost all balls - kill the ship.
+
+		DeathAnimation death_animation;
+		death_animation.ship_position = ship_->position;
+		death_animation.end_tick = tick_ + g_death_animation_duration;
+
+		death_animation_ = death_animation;
+
+		ship_ = std::nullopt;
+	}
+	if(death_animation_ != std::nullopt)
+	{
+		if(death_animation_->end_tick <= tick_)
+		{
+			if(lifes_ > 0)
+			{
+				--lifes_;
+				SpawnShip();
+			}
+			else
+			{
+				game_over_ = true;
+			}
+
+			death_animation_ = std::nullopt;
+		}
+	}
 }
 
 void GameArkanoid::Draw(const FrameBuffer frame_buffer)
@@ -245,6 +257,18 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
 			field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+	}
+	if(death_animation_ != std::nullopt)
+	{
+		if((tick_ / g_death_animation_flicker_duration) % 2 == 0)
+		{
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				Sprites::arkanoid_ship,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
+				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+		}
 	}
 
 	for(uint32_t i = 0, ship_life_x = 0; i < lifes_; ++i)
@@ -390,11 +414,48 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 		trim_side_y += sprite.GetHeight();
 	}
+
+	if(game_over_)
+	{
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + c_block_width  * c_field_width  / 2 - 36,
+			field_offset_y + c_block_height * c_field_height / 2 - 4,
+			"Game Over");
+	}
 }
 
 GameInterfacePtr GameArkanoid::AskForNextGameTransition()
 {
 	return std::move(next_game_);
+}
+
+void GameArkanoid::SpawnShip()
+{
+	balls_.clear();
+
+	Ball ball;
+	ball.position =
+	{
+		0,
+		-IntToFixed16(c_ship_half_height + c_ball_half_size),
+	};
+	ball.is_attached_to_ship = true;
+	ball.velocity = { 0, -g_ball_base_speed };
+	balls_.push_back(ball);
+
+	Ship ship;
+	ship.position =
+	{
+		IntToFixed16(c_field_width * c_block_width / 2),
+		IntToFixed16(c_field_height * c_block_height + c_ship_half_height),
+	};
+
+	ship.state = ShipState::Sticky;
+	ship.state_end_tick = tick_ + g_ship_modifier_bonus_duration;
+
+	ship_ = ship;
 }
 
 bool GameArkanoid::UpdateBall(Ball& ball)

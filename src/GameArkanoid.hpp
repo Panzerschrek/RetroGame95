@@ -77,6 +77,12 @@ private:
 		uint32_t next_shoot_tick = 0;
 	};
 
+	struct DeathAnimation
+	{
+		fixed16vec2_t ship_position{};
+		uint32_t end_tick = 0;
+	};
+
 	enum class BonusType : uint8_t
 	{
 		NextLevel,
@@ -119,6 +125,8 @@ private:
 	static const constexpr uint32_t c_ship_half_height = 5;
 
 private:
+	void SpawnShip();
+
 	// Returns true if need to kill it.
 	bool UpdateBall(Ball& ball);
 
@@ -145,6 +153,8 @@ private:
 
 	Block field_[c_field_width * c_field_height];
 	std::optional<Ship> ship_;
+	std::optional<DeathAnimation> death_animation_;
+	bool game_over_ = false;
 	std::vector<Ball> balls_;
 	std::vector<Bonus> bonuses_;
 	std::vector<LaserBeam> laser_beams_;
