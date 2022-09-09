@@ -81,6 +81,11 @@ void GameArkanoid::Tick(
 			if(event.button.button == 1)
 			{
 				ReleaseStickyBalls();
+				if(ship_ != std::nullopt && ship_->state == ShipState::Sticky)
+				{
+					// Reset sticky state after first shot.
+					ship_->state = ShipState::Normal;
+				}
 
 				if(ship_ != std::nullopt && ship_->state == ShipState::Turret)
 				{
