@@ -10,10 +10,12 @@ namespace
 
 const fixed16_t g_ball_base_speed = g_fixed16_one;
 const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
+const fixed16_t g_laser_beam_speed = g_fixed16_one * 2;
 
 const uint32_t g_bonus_drop_inv_chance = 4;
 const uint32_t g_max_lifes = 6;
 const uint32_t g_ship_modifier_bonus_duration = 500;
+const uint32_t g_min_shoot_interval = 45;
 
 fixed16_t GetBallSpeed()
 {
@@ -83,6 +85,28 @@ void GameArkanoid::Tick(
 			if(event.button.button == 1)
 			{
 				ReleaseStickyBalls();
+
+				if(ship_ != std::nullopt && ship_->state == ShipState::Turret)
+				{
+					if(tick_ >= ship_->next_shoot_tick)
+					{
+						const fixed16_t x_delta =
+								IntToFixed16(int32_t(GetShipHalfWidthForState(ship_->state) - 5)) - g_fixed16_one / 2;
+
+						LaserBeam beam0;
+						beam0.position = ship_->position;
+						beam0.position[0] += x_delta;
+
+						LaserBeam beam1;
+						beam1.position = ship_->position;
+						beam1.position[0] -= x_delta;
+
+						laser_beams_.push_back(beam0);
+						laser_beams_.push_back(beam1);
+
+						ship_->next_shoot_tick = tick_ + g_min_shoot_interval;
+					}
+				}
 			}
 		}
 	}
@@ -131,6 +155,23 @@ void GameArkanoid::Tick(
 			++b;
 		}
 	} // for bonuses.
+
+	for(size_t b = 0; b < laser_beams_.size();)
+	{
+		if(UpdateLaserBeam(laser_beams_[b]))
+		{
+			// This laser beam is dead.
+			if(b + 1 < laser_beams_.size())
+			{
+				laser_beams_[b] = laser_beams_.back();
+			}
+			laser_beams_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for laser beams.
 }
 
 void GameArkanoid::Draw(const FrameBuffer frame_buffer)
@@ -237,6 +278,16 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(position[0])) - c_ball_half_size,
 			field_offset_y + uint32_t(Fixed16FloorToInt(position[1])) - c_ball_half_size);
+	}
+
+	for(const LaserBeam& laser_beam : laser_beams_)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			Sprites::arkanoid_laser_beam,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(laser_beam.position[0])),
+			field_offset_y + uint32_t(Fixed16FloorToInt(laser_beam.position[1])) - (c_laser_beam_height + 1) / 2);
 	}
 
 	const SpriteBMP bonuses_sprites[]
@@ -631,6 +682,48 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 
 	// Kill the bonus if it reaches lower field border.
 	return bonus.position[1] > IntToFixed16(c_field_height * c_block_height);
+}
+
+bool GameArkanoid::UpdateLaserBeam(LaserBeam& laser_beam)
+{
+	laser_beam.position[1] -= g_laser_beam_speed;
+
+	const fixed16_t beam_half_height = IntToFixed16(c_laser_beam_height) / 2;
+
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		Block& block = field_[x + y * c_field_width];
+		if(block.type == BlockType::Empty)
+		{
+			continue;
+		}
+
+		const fixed16vec2_t borders_min =
+		{
+			IntToFixed16(int32_t(x * c_block_width) ),
+			IntToFixed16(int32_t(y * c_block_height)) - beam_half_height,
+		};
+		const fixed16vec2_t borders_max =
+		{
+			IntToFixed16(int32_t((x + 1) * c_block_width )),
+			IntToFixed16(int32_t((y + 1) * c_block_height)) + beam_half_height,
+		};
+
+		if( laser_beam.position[0] <= borders_min[0] || laser_beam.position[0] >= borders_max[0] ||
+			laser_beam.position[1] <= borders_min[1] || laser_beam.position[1] >= borders_max[1])
+		{
+			continue;
+		}
+
+		// Hit the block.
+		block.type = BlockType::Empty;
+
+		// Destroy laser beam at first hit.
+		return true;
+	}
+
+	return laser_beam.position[1] <= 0;
 }
 
 void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block_y)

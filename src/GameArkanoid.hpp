@@ -74,6 +74,7 @@ private:
 		fixed16vec2_t position{};
 		ShipState state = ShipState::Normal;
 		uint32_t state_end_tick = 0;
+		uint32_t next_shoot_tick = 0;
 	};
 
 	enum class BonusType : uint8_t
@@ -95,6 +96,12 @@ private:
 		fixed16vec2_t position{};
 	};
 
+	struct LaserBeam
+	{
+		// Center position.
+		fixed16vec2_t position{};
+	};
+
 	static const constexpr uint32_t c_field_width = 11;
 	static const constexpr uint32_t c_field_height = 21;
 
@@ -104,6 +111,8 @@ private:
 	static const constexpr uint32_t c_block_height = 10;
 	static const constexpr uint32_t c_bonus_half_width = 10;
 	static const constexpr uint32_t c_bonus_half_height = 5;
+	static const constexpr uint32_t c_laser_beam_width = 1;
+	static const constexpr uint32_t c_laser_beam_height = 7;
 
 	static const constexpr uint32_t c_ship_half_width_normal = 16;
 	static const constexpr uint32_t c_ship_half_width_large = 24;
@@ -115,6 +124,9 @@ private:
 
 	// Returns true if need to kill it.
 	bool UpdateBonus(Bonus& ball);
+
+	// Returns true if need to kill it.
+	bool UpdateLaserBeam(LaserBeam& laser_beam);
 
 	void TrySpawnNewBonus(uint32_t block_x, uint32_t block_y);
 
@@ -134,5 +146,6 @@ private:
 	std::optional<Ship> ship_;
 	std::vector<Ball> balls_;
 	std::vector<Bonus> bonuses_;
+	std::vector<LaserBeam> laser_beams_;
 	uint32_t lifes_ = 3;
 };
