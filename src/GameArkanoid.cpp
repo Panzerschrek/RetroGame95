@@ -8,11 +8,12 @@
 namespace
 {
 
-const fixed16_t g_ball_base_speed = g_fixed16_one / 2;
+const fixed16_t g_ball_base_speed = g_fixed16_one;
 const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
 
 const uint32_t g_bonus_drop_inv_chance = 4;
 const uint32_t g_max_lifes = 6;
+const uint32_t g_ship_modifier_bonus_duration = 500;
 
 fixed16_t GetBallSpeed()
 {
@@ -48,6 +49,9 @@ GameArkanoid::GameArkanoid()
 		IntToFixed16(c_field_height * c_block_height + c_ship_half_height),
 	};
 
+	ship.state = ShipState::Sticky;
+	ship.state_end_tick = g_ship_modifier_bonus_duration;
+
 	ship_ = ship;
 }
 
@@ -56,6 +60,8 @@ void GameArkanoid::Tick(
 	const std::vector<bool>& keyboard_state)
 {
 	(void)keyboard_state;
+
+	++tick_;
 
 	for(const SDL_Event& event : events)
 	{
@@ -69,35 +75,26 @@ void GameArkanoid::Tick(
 			{
 				const fixed16_t sensetivity =g_fixed16_one / 3; // TODO - make this configurable.
 				ship_->position[0] += event.motion.xrel * sensetivity;
-
-				const fixed16_t half_width =
-					IntToFixed16(ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal);
-				if(ship_->position[0] - half_width < 0)
-				{
-					ship_->position[0] = half_width;
-				}
-				const fixed16_t right_border = IntToFixed16(c_field_width * c_block_width);
-				if(ship_->position[0] + half_width >= right_border)
-				{
-					ship_->position[0] = right_border - half_width;
-				}
+				CorrectShipPosition();
 			}
 		}
 		if(event.type == SDL_MOUSEBUTTONDOWN)
 		{
-			if(event.button.button == 1 && ship_ != std::nullopt)
+			if(event.button.button == 1)
 			{
-				// Fire balls attached to the ship.
-				for(Ball& ball : balls_)
-				{
-					if(ball.is_attached_to_ship)
-					{
-						ball.is_attached_to_ship = false;
-						ball.position[0] += ship_->position[0];
-						ball.position[1] += ship_->position[1];
-					}
-				}
+				ReleaseStickyBalls();
 			}
+		}
+	}
+
+	if(ship_ != std::nullopt)
+	{
+		if(ship_->state_end_tick <= tick_)
+		{
+			// Transition to normal state.
+			ReleaseStickyBalls();
+
+			ship_->state = ShipState::Normal;
 		}
 	}
 
@@ -185,24 +182,27 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 	if(ship_ != std::nullopt)
 	{
-		if(ship_->is_large)
+		SpriteBMP sprite = Sprites::arkanoid_ship;
+		switch(ship_->state)
 		{
-			DrawSpriteWithAlphaUnchecked(
-				frame_buffer,
-				Sprites::arkanoid_ship_large,
-				0,
-				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_large,
-				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
+		case ShipState::Normal:
+		case ShipState::Sticky:
+			sprite = Sprites::arkanoid_ship;
+			break;
+		case ShipState::Large:
+			sprite = Sprites::arkanoid_ship_large;
+			break;
+		case ShipState::Turret:
+			sprite = Sprites::arkanoid_ship_with_turrets;
+			break;
 		}
-		else
-		{
-			DrawSpriteWithAlphaUnchecked(
-				frame_buffer,
-				Sprites::arkanoid_ship,
-				0,
-				field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - c_ship_half_width_normal,
-				field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
-		}
+
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(ship_->position[0])) - GetShipHalfWidthForState(ship_->state),
+			field_offset_y + uint32_t(Fixed16FloorToInt(ship_->position[1])) - c_ship_half_height);
 	}
 
 	for(uint32_t i = 0, ship_life_x = 0; i < lifes_; ++i)
@@ -514,8 +514,7 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 	if(ship_ != std::nullopt)
 	{
-		const fixed16_t half_width_extended =
-			IntToFixed16(ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal) + ball_half_size;
+		const fixed16_t half_width_extended = IntToFixed16(GetShipHalfWidthForState(ship_->state)) + ball_half_size;
 		const fixed16_t ship_upper_border_extended =
 			ship_->position[1] - IntToFixed16(c_ship_half_height) - ball_half_size;
 		if((ball.position[0] >= ship_->position[0] - half_width_extended &&
@@ -588,8 +587,7 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 
 	if(ship_ != std::nullopt)
 	{
-		const fixed16_t half_width_extended =
-			IntToFixed16((ship_->is_large ? c_ship_half_width_large : c_ship_half_width_normal) + c_bonus_half_width);
+		const fixed16_t half_width_extended = IntToFixed16(GetShipHalfWidthForState(ship_->state) + c_bonus_half_width);
 		const fixed16_t ship_upper_border_extended =
 			ship_->position[1] - IntToFixed16(c_ship_half_height + c_bonus_half_height);
 		if((bonus.position[0] >= ship_->position[0] - half_width_extended &&
@@ -602,6 +600,20 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 			// TODO - process other types.
 			case BonusType::BallSplit:
 				SplitBalls();
+				break;
+
+			case BonusType::LargeShip:
+				ReleaseStickyBalls();
+				ship_->state = ShipState::Large;
+				ship_->state_end_tick = tick_ + g_ship_modifier_bonus_duration;
+				CorrectShipPosition();
+				break;
+
+			case BonusType::LaserShip:
+				ReleaseStickyBalls();
+				ship_->state = ShipState::Turret;
+				ship_->state_end_tick = tick_ + g_ship_modifier_bonus_duration;
+				CorrectShipPosition();
 				break;
 
 			case BonusType::ExtraLife:
@@ -674,4 +686,56 @@ void GameArkanoid::SplitBalls()
 		balls_.push_back(ball0);
 		balls_.push_back(ball1);
 	}
+}
+
+void GameArkanoid:: ReleaseStickyBalls()
+{
+	if(ship_ != std::nullopt && ship_->state == ShipState::Sticky)
+	{
+		// Fire balls attached to the ship.
+		for(Ball& ball : balls_)
+		{
+			if(ball.is_attached_to_ship)
+			{
+				ball.is_attached_to_ship = false;
+				ball.position[0] += ship_->position[0];
+				ball.position[1] += ship_->position[1];
+			}
+		}
+	}
+}
+
+void GameArkanoid::CorrectShipPosition()
+{
+	if(ship_ == std::nullopt)
+	{
+		return;
+	}
+
+	const fixed16_t half_width = IntToFixed16(GetShipHalfWidthForState(ship_->state));
+	if(ship_->position[0] - half_width < 0)
+	{
+		ship_->position[0] = half_width;
+	}
+	const fixed16_t right_border = IntToFixed16(c_field_width * c_block_width);
+	if(ship_->position[0] + half_width >= right_border)
+	{
+		ship_->position[0] = right_border - half_width;
+	}
+}
+
+uint32_t GameArkanoid::GetShipHalfWidthForState(const ShipState ship_state)
+{
+	switch(ship_state)
+	{
+	case ShipState::Normal:
+	case ShipState::Sticky:
+	case ShipState::Turret:
+		return c_ship_half_width_normal;
+	case ShipState::Large:
+		return c_ship_half_width_large;
+	};
+
+	assert(false);
+	return c_ship_half_width_normal;
 }

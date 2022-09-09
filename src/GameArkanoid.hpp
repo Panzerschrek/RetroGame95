@@ -60,11 +60,20 @@ private:
 		bool is_attached_to_ship = false;
 	};
 
+	enum class ShipState : uint8_t
+	{
+		Normal,
+		Sticky,
+		Large,
+		Turret,
+	};
+
 	struct Ship
 	{
 		// Center position.
 		fixed16vec2_t position{};
-		bool is_large = false;
+		ShipState state = ShipState::Normal;
+		uint32_t state_end_tick = 0;
 	};
 
 	enum class BonusType : uint8_t
@@ -110,9 +119,14 @@ private:
 	void TrySpawnNewBonus(uint32_t block_x, uint32_t block_y);
 
 	void SplitBalls();
+	void ReleaseStickyBalls();
+	void CorrectShipPosition();
+
+	static uint32_t GetShipHalfWidthForState(ShipState ship_state);
 
 private:
 	Rand rand_;
+	uint32_t tick_ = 0;
 
 	GameInterfacePtr next_game_;
 
