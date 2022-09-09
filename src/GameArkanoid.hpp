@@ -55,6 +55,8 @@ private:
 		fixed16vec2_t position{};
 		// In fixed16 pixels / tick.
 		fixed16vec2_t velocity{};
+		// If true - position is relative to the ship.
+		bool is_attached_to_ship = false;
 	};
 
 	struct Ship

@@ -27,9 +27,10 @@ GameArkanoid::GameArkanoid()
 	Ball ball;
 	ball.position =
 	{
-		IntToFixed16(c_field_width  * c_block_width  / 2),
-		IntToFixed16(c_field_height * c_block_height - c_ship_half_height - c_ball_half_size),
+		0,
+		-IntToFixed16(c_ship_half_height + c_ball_half_size),
 	};
+	ball.is_attached_to_ship = true;
 	ball.velocity = { 0, -GetBallSpeed() };
 	balls_.push_back(ball);
 
@@ -72,6 +73,22 @@ void GameArkanoid::Tick(
 				if(ship_->position[0] + half_width >= right_border)
 				{
 					ship_->position[0] = right_border - half_width;
+				}
+			}
+		}
+		if(event.type == SDL_MOUSEBUTTONDOWN)
+		{
+			if(event.button.button == 1 && ship_ != std::nullopt)
+			{
+				// Fire balls attached to the ship.
+				for(Ball& ball : balls_)
+				{
+					if(ball.is_attached_to_ship)
+					{
+						ball.is_attached_to_ship = false;
+						ball.position[0] += ship_->position[0];
+						ball.position[1] += ship_->position[1];
+					}
 				}
 			}
 		}
@@ -179,12 +196,23 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 	for(const Ball& ball : balls_)
 	{
+		fixed16vec2_t position = ball.position;
+		if(ball.is_attached_to_ship)
+		{
+			if(ship_ == std::nullopt)
+			{
+				continue;
+			}
+			position[0] += ship_->position[0];
+			position[1] += ship_->position[1];
+		}
+
 		DrawSpriteWithAlphaUnchecked(
 			frame_buffer,
 			Sprites::arkanoid_ball,
 			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(ball.position[0])) - c_ball_half_size,
-			field_offset_y + uint32_t(Fixed16FloorToInt(ball.position[1])) - c_ball_half_size);
+			field_offset_x + uint32_t(Fixed16FloorToInt(position[0])) - c_ball_half_size,
+			field_offset_y + uint32_t(Fixed16FloorToInt(position[1])) - c_ball_half_size);
 	}
 
 	const SpriteBMP sprites_trim_top[]
@@ -274,6 +302,12 @@ GameInterfacePtr GameArkanoid::AskForNextGameTransition()
 
 bool GameArkanoid::UpdateBall(Ball& ball)
 {
+	if(ball.is_attached_to_ship)
+	{
+		// Just to make sure we do not have attached ball without a ship - kill ball if ship is destroyed.
+		return ship_ == std::nullopt;
+	}
+
 	ball.position[0] += ball.velocity[0];
 	ball.position[1] += ball.velocity[1];
 
