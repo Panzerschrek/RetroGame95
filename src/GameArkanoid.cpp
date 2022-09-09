@@ -571,7 +571,8 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 	if(ship_ != std::nullopt)
 	{
-		const fixed16_t half_width_extended = IntToFixed16(GetShipHalfWidthForState(ship_->state)) + ball_half_size;
+		const fixed16_t half_width_extended =
+			IntToFixed16(int32_t(GetShipHalfWidthForState(ship_->state))) + ball_half_size;
 		const fixed16_t ship_upper_border_extended =
 			ship_->position[1] - IntToFixed16(c_ship_half_height) - ball_half_size;
 		if((ball.position[0] >= ship_->position[0] - half_width_extended &&
@@ -653,7 +654,8 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 
 	if(ship_ != std::nullopt)
 	{
-		const fixed16_t half_width_extended = IntToFixed16(GetShipHalfWidthForState(ship_->state) + c_bonus_half_width);
+		const fixed16_t half_width_extended =
+			IntToFixed16(int32_t(GetShipHalfWidthForState(ship_->state) + c_bonus_half_width));
 		const fixed16_t ship_upper_border_extended =
 			ship_->position[1] - IntToFixed16(c_ship_half_height + c_bonus_half_height);
 		if((bonus.position[0] >= ship_->position[0] - half_width_extended &&
@@ -779,8 +781,8 @@ void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block
 	// TODO - use different chances for different bonuses.
 	// TODO - maybe avoid spawning BallSplit bonus if there is more than one active bakk?
 	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
-	bonus.position[0] = IntToFixed16(block_x * c_block_width  + c_block_width  / 2);
-	bonus.position[1] = IntToFixed16(block_y * c_block_height + c_block_height / 2);
+	bonus.position[0] = IntToFixed16(int32_t(block_x * c_block_width  + c_block_width  / 2));
+	bonus.position[1] = IntToFixed16(int32_t(block_y * c_block_height + c_block_height / 2));
 
 	bonuses_.push_back(bonus);
 }
@@ -847,7 +849,7 @@ void GameArkanoid::CorrectShipPosition()
 		return;
 	}
 
-	const fixed16_t half_width = IntToFixed16(GetShipHalfWidthForState(ship_->state));
+	const fixed16_t half_width = IntToFixed16(int32_t(GetShipHalfWidthForState(ship_->state)));
 	if(ship_->position[0] - half_width < 0)
 	{
 		ship_->position[0] = half_width;
