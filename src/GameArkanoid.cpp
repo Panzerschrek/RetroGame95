@@ -8,19 +8,15 @@
 namespace
 {
 
-const fixed16_t g_ball_base_speed = g_fixed16_one;
+const fixed16_t g_ball_base_speed = g_fixed16_one * 5 / 4;
 const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
 const fixed16_t g_laser_beam_speed = g_fixed16_one * 2;
 
 const uint32_t g_bonus_drop_inv_chance = 4;
 const uint32_t g_max_lifes = 6;
 const uint32_t g_ship_modifier_bonus_duration = 500;
+const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
-
-fixed16_t GetBallSpeed()
-{
-	return g_ball_base_speed;
-}
 
 } // namespace
 
@@ -41,7 +37,7 @@ GameArkanoid::GameArkanoid()
 		-IntToFixed16(c_ship_half_height + c_ball_half_size),
 	};
 	ball.is_attached_to_ship = true;
-	ball.velocity = { 0, -GetBallSpeed() };
+	ball.velocity = { 0, -g_ball_base_speed };
 	balls_.push_back(ball);
 
 	Ship ship;
@@ -404,8 +400,16 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 		return ship_ == std::nullopt;
 	}
 
-	ball.position[0] += ball.velocity[0];
-	ball.position[1] += ball.velocity[1];
+	if(slow_down_end_tick_ > tick_)
+	{
+		ball.position[0] += ball.velocity[0] / 2;
+		ball.position[1] += ball.velocity[1] / 2;
+	}
+	else
+	{
+		ball.position[0] += ball.velocity[0];
+		ball.position[1] += ball.velocity[1];
+	}
 
 	const fixed16_t ball_half_size = IntToFixed16(c_ball_half_size);
 
@@ -592,9 +596,8 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 							float(g_fixed16_one) * float(g_fixed16_one) - float(angle_cos) * float(angle_cos),
 							0.0f)));
 
-			const fixed16_t speed = GetBallSpeed();
-			ball.velocity[0] = Fixed16Mul(speed, angle_cos);
-			ball.velocity[1] = -Fixed16Mul(speed, angle_sin);
+			ball.velocity[0] = Fixed16Mul(g_ball_base_speed, angle_cos);
+			ball.velocity[1] = -Fixed16Mul(g_ball_base_speed, angle_sin);
 
 			if(ship_->state == ShipState::Sticky)
 			{
@@ -658,7 +661,9 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 			// This bonus is cathed.
 			switch(bonus.type)
 			{
-			// TODO - process other types.
+			case BonusType::NextLevel:
+				break;
+
 			case BonusType::BallSplit:
 				SplitBalls();
 				break;
@@ -686,6 +691,10 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 
 			case BonusType::ExtraLife:
 				lifes_ = std::min(lifes_ + 1, g_max_lifes);
+				break;
+
+			case BonusType::SlowDown:
+				slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
 				break;
 
 			case BonusType::NumBonuses:

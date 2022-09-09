@@ -148,4 +148,6 @@ private:
 	std::vector<Bonus> bonuses_;
 	std::vector<LaserBeam> laser_beams_;
 	uint32_t lifes_ = 3;
+
+	uint32_t slow_down_end_tick_ = 0;
 };
