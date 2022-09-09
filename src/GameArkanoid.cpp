@@ -595,6 +595,16 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 			const fixed16_t speed = GetBallSpeed();
 			ball.velocity[0] = Fixed16Mul(speed, angle_cos);
 			ball.velocity[1] = -Fixed16Mul(speed, angle_sin);
+
+			if(ship_->state == ShipState::Sticky)
+			{
+				ball.position[1] = ship_upper_border_extended;
+				ball.position[0] -= ship_->position[0];
+				ball.position[1] -= ship_->position[1];
+				ball.is_attached_to_ship = true;
+
+				return false;
+			}
 		}
 	}
 
@@ -651,6 +661,13 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 			// TODO - process other types.
 			case BonusType::BallSplit:
 				SplitBalls();
+				break;
+
+			case BonusType::StickyShip:
+				ReleaseStickyBalls();
+				ship_->state = ShipState::Sticky;
+				ship_->state_end_tick = tick_ + g_ship_modifier_bonus_duration;
+				CorrectShipPosition();
 				break;
 
 			case BonusType::LargeShip:
