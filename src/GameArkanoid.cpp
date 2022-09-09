@@ -448,10 +448,7 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 		}
 
 		// Hit this block.
-		block.type = BlockType::Empty;
-		// TODO - count score here.
-
-		TrySpawnNewBonus(x, y);
+		DamageBlock(x, y);
 
 		// Ball intersectss with this block. Try to push it.
 		// Find closest intersection of negative velocity vector and extended block side in order to do this.
@@ -748,13 +745,27 @@ bool GameArkanoid::UpdateLaserBeam(LaserBeam& laser_beam)
 		}
 
 		// Hit the block.
-		block.type = BlockType::Empty;
+		DamageBlock(x, y);
 
 		// Destroy laser beam at first hit.
 		return true;
 	}
 
 	return laser_beam.position[1] <= 0;
+}
+
+void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
+{
+	Block& block = field_[ block_x + block_y * c_field_width ];
+	if(block.type == BlockType::Empty)
+	{
+		return;
+	}
+
+	// TODO - support blocks requiring more than one hit.
+	block.type = BlockType::Empty;
+
+	TrySpawnNewBonus(block_x, block_y);
 }
 
 void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block_y)

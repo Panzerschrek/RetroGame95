@@ -128,6 +128,7 @@ private:
 	// Returns true if need to kill it.
 	bool UpdateLaserBeam(LaserBeam& laser_beam);
 
+	void DamageBlock(uint32_t block_x, uint32_t block_y);
 	void TrySpawnNewBonus(uint32_t block_x, uint32_t block_y);
 
 	void SplitBalls();
