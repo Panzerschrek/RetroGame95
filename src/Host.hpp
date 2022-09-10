@@ -31,4 +31,6 @@ private:
 	TimePoint prev_tick_time_;
 
 	GameInterfacePtr game_ = nullptr;
+
+	SoundData test_sound_;
 };

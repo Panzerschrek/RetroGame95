@@ -1,5 +1,6 @@
 #include "Host.hpp"
 #include "GameMainMenu.hpp"
+#include "SoundsGeneration.hpp"
 #include <thread>
 
 Host::Host()
@@ -8,6 +9,7 @@ Host::Host()
 	, init_time_(Clock::now())
 	, prev_tick_time_(GetCurrentTime())
 	, game_(std::make_unique<GameMainMenu>())
+	, test_sound_(GetSquareWaveSound(sound_out_.GetSampleRate(), 200 * g_fixed16_one, 64))
 {
 }
 
@@ -24,6 +26,7 @@ bool Host::Loop()
 		if(auto next_game = game_->AskForNextGameTransition())
 		{
 			game_ = std::move(next_game);
+			sound_out_.PlaySound(test_sound_);
 		}
 
 		SDL_SetRelativeMouseMode(game_->NeedToCaptureMouse() ? SDL_TRUE : SDL_FALSE);
