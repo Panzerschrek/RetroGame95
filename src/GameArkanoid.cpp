@@ -2,6 +2,7 @@
 #include "ArkanoidLevels.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "GameTetris.hpp"
 #include "Sprites.hpp"
 #include <cassert>
 #include <cmath>
@@ -509,7 +510,14 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 	if(next_level_exit_is_open_ &&
 		ship_ != std::nullopt && ship_->position[0] >= IntToFixed16(c_field_width * c_block_width))
 	{
-		NextLevel();
+		if(level_ < std::size(arkanoid_levels))
+		{
+			NextLevel();
+		}
+		else
+		{
+			next_game_ = std::make_unique<GameTetris>();
+		}
 	}
 }
 
