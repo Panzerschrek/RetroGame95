@@ -4,6 +4,7 @@
 
 Host::Host()
 	: system_window_()
+	, sound_out_()
 	, init_time_(Clock::now())
 	, prev_tick_time_(GetCurrentTime())
 	, game_(std::make_unique<GameMainMenu>())

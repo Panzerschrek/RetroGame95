@@ -1,5 +1,6 @@
 #pragma once
 #include "GameInterface.hpp"
+#include "SoundOut.hpp"
 #include "SystemWindow.hpp"
 #include <chrono>
 
@@ -24,6 +25,7 @@ private:
 
 private:
 	SystemWindow system_window_;
+	SoundOut sound_out_;
 
 	const Clock::time_point init_time_;
 	TimePoint prev_tick_time_;
