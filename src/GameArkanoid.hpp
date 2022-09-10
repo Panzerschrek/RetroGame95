@@ -40,12 +40,15 @@ private:
 		Color13,
 		Color14,
 		Color15,
+		Concrete,
+		Color14_15,
 		NumTypes,
 	};
 
 	struct Block
 	{
 		BlockType type = BlockType::Empty;
+		uint8_t health = 0;
 	};
 
 	struct Ball

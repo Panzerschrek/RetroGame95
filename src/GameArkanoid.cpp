@@ -529,10 +529,19 @@ void GameArkanoid::NextLevel()
 
 	// TODO - generate different patterns of blocks.
 	for(uint32_t y = 4; y < 10; ++y)
+	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		for(uint32_t x = 0; x < c_field_width; ++x)
-		field_[x + y * c_field_width].type =
-			BlockType((uint32_t(BlockType::Color1) + x) % uint32_t(BlockType::NumTypes));
+		Block& block = field_[x + y * c_field_width];
+		block.type = BlockType(uint32_t(BlockType::Color1) + (x + y) % (uint32_t(BlockType::NumTypes) - 1));
+		block.health = 1;
+		if(block.type == BlockType::Concrete)
+		{
+			block.health = 2;
+		}
+		else if(block.type == BlockType::Color14_15)
+		{
+			block.health = 4;
+		}
 	}
 
 	SpawnShip();
@@ -935,13 +944,17 @@ void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
 		return;
 	}
 
-	// TODO - support blocks requiring more than one hit.
-	block.type = BlockType::Empty;
-
 	// TODO - tune score calculation.
 	score_ += 16;
 
-	TrySpawnNewBonus(block_x, block_y);
+	assert(block.health > 0);
+	--block.health;
+
+	if(block.health == 0)
+	{
+		block.type = BlockType::Empty;
+		TrySpawnNewBonus(block_x, block_y);
+	}
 }
 
 void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block_y)
