@@ -283,6 +283,17 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 		trim_side_y += sprite.GetHeight();
 	}
 
+	if(next_level_exit_is_open_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_level_exit_gate);
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
+			trim_side_y);
+	}
+
 	// Draw two lover sprites of side trimming, including level exit.
 	for(size_t i = 0; i < 2; ++i)
 	{
@@ -303,7 +314,6 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 				side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
 				trim_side_y);
 		}
-		// TODO - draw special level exit sprite here.
 
 		trim_side_y += sprite.GetHeight();
 	}
