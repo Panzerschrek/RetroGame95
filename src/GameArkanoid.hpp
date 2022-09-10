@@ -147,6 +147,7 @@ private:
 	void CorrectShipPosition();
 
 	static uint32_t GetShipHalfWidthForState(ShipState ship_state);
+	static BlockType GetBlockTypeForLevelDataByte(const char level_data_byte);
 
 private:
 	Rand rand_;

@@ -1,4 +1,5 @@
 #include "GameArkanoid.hpp"
+#include "ArkanoidLevels.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "Sprites.hpp"
@@ -60,7 +61,6 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	const SpriteBMP block_sprites[]
 	{
 		Sprites::arkanoid_block_1,
-		Sprites::arkanoid_block_1,
 		Sprites::arkanoid_block_2,
 		Sprites::arkanoid_block_3,
 		Sprites::arkanoid_block_4,
@@ -90,7 +90,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			}
 			DrawSpriteWithAlphaUnchecked(
 				frame_buffer,
-				block_sprites[uint32_t(block.type)],
+				block_sprites[uint32_t(block.type) - 1],
 				0,
 				field_offset_x + x * c_block_width,
 				field_offset_y + y * c_block_height);
@@ -527,21 +527,26 @@ void GameArkanoid::NextLevel()
 	laser_beams_.clear();
 	next_level_exit_is_open_ = false;
 
-	// TODO - generate different patterns of blocks.
-	for(uint32_t y = 4; y < 10; ++y)
-	for(uint32_t x = 0; x < c_field_width; ++x)
+	const char* level_data = arkanoid_levels[(level_ - 1) % std::size(arkanoid_levels)];
+	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
-		Block& block = field_[x + y * c_field_width];
-		block.type = BlockType(uint32_t(BlockType::Color1) + (x + y) % (uint32_t(BlockType::NumTypes) - 1));
-		block.health = 1;
-		if(block.type == BlockType::Concrete)
+		for(uint32_t x = 0; x < c_field_width; ++x, ++level_data)
 		{
-			block.health = 2;
+			Block& block = field_[x + y * c_field_width];
+			block.type = GetBlockTypeForLevelDataByte(*level_data);
+
+			block.health = 1;
+			if(block.type == BlockType::Concrete)
+			{
+				block.health = 2;
+			}
+			else if(block.type == BlockType::Color14_15)
+			{
+				block.health = 4;
+			}
 		}
-		else if(block.type == BlockType::Color14_15)
-		{
-			block.health = 4;
-		}
+		assert(*level_data == '\n');
+		++level_data;
 	}
 
 	SpawnShip();
@@ -1107,4 +1112,22 @@ uint32_t GameArkanoid::GetShipHalfWidthForState(const ShipState ship_state)
 
 	assert(false);
 	return c_ship_half_width_normal;
+}
+
+GameArkanoid::BlockType GameArkanoid::GetBlockTypeForLevelDataByte(const char level_data_byte)
+{
+	if(level_data_byte >= 'A' && level_data_byte < 'A' + (1 + uint32_t(BlockType::Color15) - uint32_t(BlockType::Color1)))
+	{
+		return BlockType(uint32_t(BlockType::Color1) + level_data_byte - 'A');
+	}
+	if(level_data_byte == '#')
+	{
+		return BlockType::Concrete;
+	}
+	if(level_data_byte == '@')
+	{
+		return BlockType::Color14_15;
+	}
+
+	return BlockType::Empty;
 }
