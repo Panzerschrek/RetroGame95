@@ -407,7 +407,7 @@ void GameTetris::MovePieceDown()
 			// Put piece into field.
 			for(const auto& piece_block : active_piece_->blocks)
 			{
-				if(piece_block[0] < 0)
+				if(piece_block[1] < 0)
 				{
 					// HACK! prevent overflow.
 					game_over_ = true;
