@@ -18,6 +18,8 @@ public:
 
 	virtual void Draw(FrameBuffer frame_buffer) = 0;
 
+	virtual bool NeedToCaptureMouse() { return false; }
+
 	// Returns null if should keep playing this game, returns non-null in case of transition to another game.
 	virtual GameInterfacePtr AskForNextGameTransition() = 0;
 

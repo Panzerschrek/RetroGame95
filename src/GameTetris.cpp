@@ -54,7 +54,7 @@ uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 } // namespace
 
 GameTetris::GameTetris()
-	: rand_( std::random_device()())
+	: rand_(Rand::CreateWithRandomSeed())
 {
 	NextLevel();
 }
@@ -135,9 +135,9 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 		field_offset_y - 1,
 		block_height * c_field_height + 2);
 
-	for(uint32_t y = 0; y < 20; ++y)
+	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
-		for(uint32_t x = 0; x < 10; ++x)
+		for(uint32_t x = 0; x < c_field_width; ++x)
 		{
 			const Block block = field_[x + y * c_field_width];
 			if(block == Block::Empty)

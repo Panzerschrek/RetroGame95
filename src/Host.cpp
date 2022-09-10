@@ -24,6 +24,8 @@ bool Host::Loop()
 		{
 			game_ = std::move(next_game);
 		}
+
+		SDL_SetRelativeMouseMode(game_->NeedToCaptureMouse() ? SDL_TRUE : SDL_FALSE);
 	}
 
 	if(game_ != nullptr)

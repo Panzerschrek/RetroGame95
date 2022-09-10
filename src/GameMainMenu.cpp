@@ -1,10 +1,27 @@
 #include "GameMainMenu.hpp"
 #include "Draw.hpp"
+#include "GameArkanoid.hpp"
 #include "GameTetris.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include <SDL_keyboard.h>
 #include <cassert>
+
+namespace
+{
+
+GameInterfacePtr CreateGameByIndex(const uint32_t index)
+{
+	switch(index)
+	{
+	case 0: return std::make_unique<GameArkanoid>();
+	case 1: return std::make_unique<GameTetris>();
+	}
+
+	return nullptr;
+}
+
+} // namespace
 
 void GameMainMenu::Tick(
 	const std::vector<SDL_Event>& events,
@@ -27,7 +44,7 @@ void GameMainMenu::Tick(
 				case MenuRow::NewGame:
 					if(next_game_ == nullptr)
 					{
-						next_game_ = std::make_unique<GameTetris>();
+						next_game_ = CreateGameByIndex(0);
 					}
 					break;
 
@@ -48,6 +65,14 @@ void GameMainMenu::Tick(
 			if(event.key.keysym.scancode == SDL_SCANCODE_DOWN)
 			{
 				current_row_ = MenuRow((uint32_t(current_row_) + 1) % uint32_t(MenuRow::NumRows));
+			}
+			if(event.key.keysym.scancode >= SDL_SCANCODE_F1 && event.key.keysym.scancode <= SDL_SCANCODE_F12)
+			{
+				// TODO - consider this cheat.
+				if(next_game_ == nullptr)
+				{
+					next_game_ = CreateGameByIndex(event.key.keysym.scancode - SDL_SCANCODE_F1);
+				}
 			}
 		}
 	}
