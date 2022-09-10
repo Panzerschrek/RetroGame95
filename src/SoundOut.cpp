@@ -23,11 +23,11 @@ SoundOut::SoundOut()
 	SDL_AudioSpec requested_format{};
 	SDL_AudioSpec obtained_format{};
 
-	requested_format.channels= 1;
-	requested_format.freq= 8192;
-	requested_format.format= AUDIO_S8;
-	requested_format.callback= AudioCallback;
-	requested_format.userdata= this;
+	requested_format.channels = 1;
+	requested_format.freq = 8192;
+	requested_format.format = AUDIO_S8;
+	requested_format.callback = AudioCallback;
+	requested_format.userdata = this;
 
 	// ~ 1 callback call per two frames (60fps)
 	requested_format.samples= Uint16(NearestPowerOfTwoFloor(requested_format.freq / 30));

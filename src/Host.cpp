@@ -9,7 +9,8 @@ Host::Host()
 	, init_time_(Clock::now())
 	, prev_tick_time_(GetCurrentTime())
 	, game_(std::make_unique<GameMainMenu>())
-	, test_sound_(GetSquareWaveSound(sound_out_.GetSampleRate(), 200 * g_fixed16_one, 64))
+	, test_sound_(
+		GetSquareWaveSound(sound_out_.GetSampleRate(), sound_out_.GetSampleRate() / 4 * g_fixed16_one, 1000))
 {
 }
 
