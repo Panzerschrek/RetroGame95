@@ -160,6 +160,7 @@ private:
 	bool game_over_ = false;
 	std::vector<Ball> balls_;
 	std::vector<Bonus> bonuses_;
+	BonusType prev_bonus_type_ = BonusType::StickyShip;
 	std::vector<LaserBeam> laser_beams_;
 	bool next_level_exit_is_open_ = false;
 	uint32_t level_start_animation_end_tick_ = 0;

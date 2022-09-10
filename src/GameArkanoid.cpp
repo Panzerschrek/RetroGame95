@@ -12,7 +12,7 @@ const fixed16_t g_ball_base_speed = g_fixed16_one * 5 / 4;
 const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
 const fixed16_t g_laser_beam_speed = g_fixed16_one * 2;
 
-const uint32_t g_bonus_drop_inv_chance = 4;
+const uint32_t g_bonus_drop_inv_chance = 7;
 const uint32_t g_max_lifes = 6;
 const uint32_t g_ship_modifier_bonus_duration = 500;
 const uint32_t g_slow_down_bonus_duration = 960;
@@ -964,14 +964,55 @@ void GameArkanoid::TrySpawnNewBonus(const uint32_t block_x, const uint32_t block
 		return;
 	}
 
+	// Calculate base probability for each bonus.
+	uint32_t bonuses_probability[size_t(BonusType::NumBonuses)];
+	for(size_t i = 0; i < size_t(BonusType::NumBonuses); ++i)
+	{
+		bonuses_probability[i] = 256;
+	}
+
+	// Reduce probability for cool bonuses.
+	bonuses_probability[size_t(BonusType::ExtraLife)] /= 2;
+	bonuses_probability[size_t(BonusType::NextLevel)] /= 4;
+
+	// Do not drop ball split bonus in case if there are already multiple balls.
+	if(balls_.size() >= 4)
+	{
+		bonuses_probability[size_t(BonusType::BallSplit)] = 0;
+	}
+
+	// Do not drop two bonuses of same type one after another.
+	bonuses_probability[size_t(prev_bonus_type_)] = 0;
+
+	uint32_t total_probability = 0;
+	uint32_t probability_integrated[size_t(BonusType::NumBonuses)];
+	for(size_t i = 0; i < size_t(BonusType::NumBonuses); ++i)
+	{
+		probability_integrated[i] = total_probability + bonuses_probability[i];
+		total_probability += bonuses_probability[i];
+	}
+	assert(total_probability > 0);
+
+	// Choose bonus type based on random value and probability.
+	const uint32_t rand_value = rand_.Next() % total_probability;
+	BonusType bonus_type = BonusType::SlowDown;
+	for(size_t i = 0; i < size_t(BonusType::NumBonuses); ++i)
+	{
+		if(bonuses_probability[i] != 0 && rand_value < probability_integrated[i])
+		{
+			bonus_type = BonusType(i);
+			break;
+		}
+	}
+
 	Bonus bonus;
-	// TODO - use different chances for different bonuses.
-	// TODO - maybe avoid spawning BallSplit bonus if there is more than one active bakk?
-	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
+	bonus.type = bonus_type;
 	bonus.position[0] = IntToFixed16(int32_t(block_x * c_block_width  + c_block_width  / 2));
 	bonus.position[1] = IntToFixed16(int32_t(block_y * c_block_height + c_block_height / 2));
 
 	bonuses_.push_back(bonus);
+
+	prev_bonus_type_ = bonus_type;
 }
 
 void GameArkanoid::SplitBalls()
