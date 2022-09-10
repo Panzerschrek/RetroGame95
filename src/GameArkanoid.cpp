@@ -855,6 +855,10 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 			bonus.position[1] >= ship_upper_border_extended)
 		{
 			// This bonus is cathed.
+
+			// Add score for bonus catch.
+			score_ += 48;
+
 			switch(bonus.type)
 			{
 			case BonusType::NextLevel:
@@ -1124,9 +1128,11 @@ uint32_t GameArkanoid::GetShipHalfWidthForState(const ShipState ship_state)
 
 GameArkanoid::BlockType GameArkanoid::GetBlockTypeForLevelDataByte(const char level_data_byte)
 {
-	if(level_data_byte >= 'A' && level_data_byte < 'A' + (1 + uint32_t(BlockType::Color15) - uint32_t(BlockType::Color1)))
+	if(
+		level_data_byte >= 'A' &&
+		uint32_t(level_data_byte) < 'A' + (1 + uint32_t(BlockType::Color15) - uint32_t(BlockType::Color1)))
 	{
-		return BlockType(uint32_t(BlockType::Color1) + level_data_byte - 'A');
+		return BlockType(uint32_t(BlockType::Color1) + uint32_t(level_data_byte) - 'A');
 	}
 	if(level_data_byte == '#')
 	{
