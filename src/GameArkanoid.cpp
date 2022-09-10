@@ -253,32 +253,56 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_1,
 		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
 	};
 
 	uint32_t trim_side_y = field_offset_y;
+	const uint32_t side_trim_offset_x = field_offset_x - 10;
 	for(const SpriteBMP& sprite : sprites_trim_left)
 	{
 		DrawSpriteWithAlphaUnchecked(
 			frame_buffer,
 			sprite,
 			0,
-			field_offset_x - 10,
+			side_trim_offset_x,
 			trim_side_y);
 
 		DrawSpriteWithAlphaUnchecked(
 			frame_buffer,
 			sprite,
 			0,
-			field_offset_x - 10 + c_block_width * c_field_width + 10,
+			side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
 			trim_side_y);
+
+		trim_side_y += sprite.GetHeight();
+	}
+
+	// Draw two lover sprites of side trimming, including level exit.
+	for(size_t i = 0; i < 2; ++i)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_trim_segment_side_0);
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x,
+			trim_side_y);
+
+		if(!next_level_exit_is_open_)
+		{
+			DrawSpriteWithAlphaUnchecked(
+				frame_buffer,
+				sprite,
+				0,
+				side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
+				trim_side_y);
+		}
+		// TODO - draw special level exit sprite here.
 
 		trim_side_y += sprite.GetHeight();
 	}
@@ -431,7 +455,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		}
 	} // for laser beams.
 
-	if(ship_ != std::nullopt && balls_.empty() && death_animation_ == std::nullopt)
+	if(ship_ != std::nullopt && balls_.empty() && !next_level_exit_is_open_ && death_animation_ == std::nullopt)
 	{
 		// Lost all balls - kill the ship.
 
@@ -461,7 +485,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		}
 	}
 
-	// Check for next level condition.
+	// Check for next level exit open condition.
 	uint32_t num_non_empty_blocks = 0;
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
@@ -475,8 +499,15 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		}
 	}
 
-
+	// Open next level exit if all blocks are destroyed.
 	if(num_non_empty_blocks == 0)
+	{
+		next_level_exit_is_open_ = true;
+	}
+
+	// Transition to next level when ship reaches exit.
+	if(next_level_exit_is_open_ &&
+		ship_ != std::nullopt && ship_->position[0] >= IntToFixed16(c_field_width * c_block_width))
 	{
 		NextLevel();
 	}
@@ -494,6 +525,7 @@ void GameArkanoid::NextLevel()
 	balls_.clear();
 	bonuses_.clear();
 	laser_beams_.clear();
+	next_level_exit_is_open_ = false;
 
 	// TODO - generate different patterns of blocks.
 	for(uint32_t y = 4; y < 10; ++y)
@@ -804,6 +836,7 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 			switch(bonus.type)
 			{
 			case BonusType::NextLevel:
+				next_level_exit_is_open_ = true;
 				break;
 
 			case BonusType::BallSplit:
@@ -995,7 +1028,11 @@ void GameArkanoid::CorrectShipPosition()
 	{
 		ship_->position[0] = half_width;
 	}
-	const fixed16_t right_border = IntToFixed16(c_field_width * c_block_width);
+	fixed16_t right_border = IntToFixed16(c_field_width * c_block_width);
+	if(next_level_exit_is_open_)
+	{
+		right_border += IntToFixed16(c_ship_half_width_large + 1);
+	}
 	if(ship_->position[0] + half_width >= right_border)
 	{
 		ship_->position[0] = right_border - half_width;

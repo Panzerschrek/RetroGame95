@@ -158,6 +158,7 @@ private:
 	std::vector<Ball> balls_;
 	std::vector<Bonus> bonuses_;
 	std::vector<LaserBeam> laser_beams_;
+	bool next_level_exit_is_open_ = false;
 	uint32_t level_start_animation_end_tick_ = 0;
 
 	uint32_t level_ = 0;
