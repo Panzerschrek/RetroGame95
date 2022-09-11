@@ -36,29 +36,38 @@ SoundOut::SoundOut()
 	// Can't get explicit devices list. Trying to use first device.
 	if(device_count == -1)
 	{
-		device_count= 1;
+		device_count = 1;
 	}
 
-	for(int i = 0; i < device_count; i++)
+	// First, try to open default device.
+	device_id_ = SDL_OpenAudioDevice(nullptr, 0, &requested_format, &obtained_format, 0);
+
+	if(!(device_id_ >= g_first_valid_device_id &&
+		obtained_format.channels == requested_format.channels &&
+		obtained_format.format   == requested_format.format))
 	{
-		const char* const device_name= SDL_GetAudioDeviceName(i, 0);
-
-		const SDL_AudioDeviceID device_id=
-			SDL_OpenAudioDevice(device_name, 0, &requested_format, &obtained_format, 0);
-
-		if(device_id >= g_first_valid_device_id &&
-			obtained_format.channels == requested_format.channels &&
-			obtained_format.format   == requested_format.format)
+		// Try to open other devices.
+		for(int i = 0; i < device_count; i++)
 		{
-			device_id_= device_id;
-			break;
+			const char* const device_name = SDL_GetAudioDeviceName(i, 0);
+
+			const SDL_AudioDeviceID device_id =
+				SDL_OpenAudioDevice(device_name, 0, &requested_format, &obtained_format, 0);
+
+			if(device_id >= g_first_valid_device_id &&
+				obtained_format.channels == requested_format.channels &&
+				obtained_format.format   == requested_format.format)
+			{
+				device_id_= device_id;
+				break;
+			}
 		}
 	}
 
-	if(device_id_ < g_first_valid_device_id)
-	{
-		return;
-	}
+		if(device_id_ < g_first_valid_device_id)
+		{
+			return;
+		}
 
 	sample_rate_ = uint32_t(obtained_format.freq);
 
