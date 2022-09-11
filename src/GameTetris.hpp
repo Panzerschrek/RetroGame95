@@ -1,13 +1,14 @@
 #pragma once
 #include "GameInterface.hpp"
 #include "Rand.hpp"
+#include "SoundPlayer.hpp"
 #include <array>
 #include <optional>
 
 class GameTetris final : public GameInterface
 {
 public:
-	GameTetris();
+	GameTetris(SoundPlayer& sound_player);
 
 public: // GameInterface
 	virtual void Tick(
@@ -51,6 +52,8 @@ private:
 	void GenerateNextPieceType();
 
 private:
+	SoundPlayer& sound_player_;
+
 	Rand rand_;
 
 	uint32_t num_ticks_ = 0;

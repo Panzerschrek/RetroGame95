@@ -2,12 +2,13 @@
 #include "Fixed.hpp"
 #include "GameInterface.hpp"
 #include "Rand.hpp"
+#include "SoundPlayer.hpp"
 #include <optional>
 
 class GameArkanoid final : public GameInterface
 {
 public:
-	GameArkanoid();
+	explicit GameArkanoid(SoundPlayer& sound_player);
 
 public: // GameInterface
 	virtual void Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state) override;
@@ -150,6 +151,8 @@ private:
 	static BlockType GetBlockTypeForLevelDataByte(const char level_data_byte);
 
 private:
+	SoundPlayer& sound_player_;
+
 	Rand rand_;
 	uint32_t tick_ = 0;
 

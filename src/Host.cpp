@@ -1,12 +1,15 @@
 #include "Host.hpp"
 #include "GameMainMenu.hpp"
+#include "SoundsGeneration.hpp"
 #include <thread>
 
 Host::Host()
 	: system_window_()
+	, sound_out_()
+	, sound_player_(sound_out_)
 	, init_time_(Clock::now())
 	, prev_tick_time_(GetCurrentTime())
-	, game_(std::make_unique<GameMainMenu>())
+	, game_(std::make_unique<GameMainMenu>(sound_player_))
 {
 }
 
