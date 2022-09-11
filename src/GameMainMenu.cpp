@@ -10,12 +10,12 @@
 namespace
 {
 
-GameInterfacePtr CreateGameByIndex(const uint32_t index)
+GameInterfacePtr CreateGameByIndex(const uint32_t index, SoundPlayer& sound_player)
 {
 	switch(index)
 	{
-	case 0: return std::make_unique<GameArkanoid>();
-	case 1: return std::make_unique<GameTetris>();
+	case 0: return std::make_unique<GameArkanoid>(sound_player);
+	case 1: return std::make_unique<GameTetris>(sound_player);
 	}
 
 	return nullptr;
@@ -23,9 +23,12 @@ GameInterfacePtr CreateGameByIndex(const uint32_t index)
 
 } // namespace
 
-void GameMainMenu::Tick(
-	const std::vector<SDL_Event>& events,
-	const std::vector<bool>& keyboard_state)
+GameMainMenu::GameMainMenu(SoundPlayer& sound_player)
+	: sound_player_(sound_player)
+{
+}
+
+void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
 	(void)keyboard_state;
 
@@ -44,7 +47,7 @@ void GameMainMenu::Tick(
 				case MenuRow::NewGame:
 					if(next_game_ == nullptr)
 					{
-						next_game_ = CreateGameByIndex(0);
+						next_game_ = CreateGameByIndex(0, sound_player_);
 					}
 					break;
 
@@ -71,7 +74,7 @@ void GameMainMenu::Tick(
 				// TODO - consider this cheat.
 				if(next_game_ == nullptr)
 				{
-					next_game_ = CreateGameByIndex(event.key.keysym.scancode - SDL_SCANCODE_F1);
+					next_game_ = CreateGameByIndex(event.key.keysym.scancode - SDL_SCANCODE_F1, sound_player_);
 				}
 			}
 		}

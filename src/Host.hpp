@@ -1,6 +1,7 @@
 #pragma once
 #include "GameInterface.hpp"
 #include "SoundOut.hpp"
+#include "SoundPlayer.hpp"
 #include "SystemWindow.hpp"
 #include <chrono>
 
@@ -26,11 +27,10 @@ private:
 private:
 	SystemWindow system_window_;
 	SoundOut sound_out_;
+	SoundPlayer sound_player_;
 
 	const Clock::time_point init_time_;
 	TimePoint prev_tick_time_;
 
 	GameInterfacePtr game_ = nullptr;
-
-	SoundData test_sound_;
 };

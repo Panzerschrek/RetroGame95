@@ -28,7 +28,7 @@ SoundData GenSinWaveSound(const uint32_t sample_rate, const fixed16_t sin_wave_f
 	return out_data;
 }
 
-SoundData GetSquareWaveSound(const uint32_t sample_rate, const fixed16_t sin_wave_frequency, const uint32_t periods)
+SoundData GenSquareWaveSound(const uint32_t sample_rate, const fixed16_t sin_wave_frequency, const uint32_t periods)
 {
 	const uint32_t total_samples =
 		uint32_t(uint64_t(sample_rate) * uint64_t(periods) * uint64_t(g_fixed16_one) / uint64_t(sin_wave_frequency));
@@ -45,4 +45,9 @@ SoundData GetSquareWaveSound(const uint32_t sample_rate, const fixed16_t sin_wav
 	}
 
 	return out_data;
+}
+
+SoundData GenArkanoidBallHitSound(const uint32_t sample_rate)
+{
+	return GenSquareWaveSound(sample_rate, 32 * g_fixed16_one, 3);
 }

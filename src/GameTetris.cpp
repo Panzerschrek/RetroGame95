@@ -53,15 +53,14 @@ uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 
 } // namespace
 
-GameTetris::GameTetris()
-	: rand_(Rand::CreateWithRandomSeed())
+GameTetris::GameTetris(SoundPlayer& sound_player)
+	: sound_player_(sound_player)
+	, rand_(Rand::CreateWithRandomSeed())
 {
 	NextLevel();
 }
 
-void GameTetris::Tick(
-	const std::vector<SDL_Event>& events,
-	const std::vector<bool>& keyboard_state)
+void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
 	(void) keyboard_state;
 
@@ -69,7 +68,7 @@ void GameTetris::Tick(
 	{
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
-			next_game_ = std::make_unique<GameMainMenu>();
+			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
 	}
 

@@ -6,11 +6,10 @@
 Host::Host()
 	: system_window_()
 	, sound_out_()
+	, sound_player_(sound_out_)
 	, init_time_(Clock::now())
 	, prev_tick_time_(GetCurrentTime())
-	, game_(std::make_unique<GameMainMenu>())
-	, test_sound_(
-		GetSquareWaveSound(sound_out_.GetSampleRate(), sound_out_.GetSampleRate() / 4 * g_fixed16_one, 1000))
+	, game_(std::make_unique<GameMainMenu>(sound_player_))
 {
 }
 
@@ -27,7 +26,6 @@ bool Host::Loop()
 		if(auto next_game = game_->AskForNextGameTransition())
 		{
 			game_ = std::move(next_game);
-			sound_out_.PlaySound(test_sound_);
 		}
 
 		SDL_SetRelativeMouseMode(game_->NeedToCaptureMouse() ? SDL_TRUE : SDL_FALSE);

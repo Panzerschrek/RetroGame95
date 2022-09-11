@@ -25,8 +25,9 @@ const uint32_t g_min_shoot_interval = 45;
 
 } // namespace
 
-GameArkanoid::GameArkanoid()
-	: rand_(Rand::CreateWithRandomSeed())
+GameArkanoid::GameArkanoid(SoundPlayer& sound_player)
+	: sound_player_(sound_player)
+	, rand_(Rand::CreateWithRandomSeed())
 {
 	NextLevel();
 }
@@ -39,7 +40,7 @@ void GameArkanoid::Tick(const std::vector<SDL_Event>& events, const std::vector<
 	{
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
-			next_game_ = std::make_unique<GameMainMenu>();
+			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
 	}
 
@@ -526,7 +527,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		}
 		else
 		{
-			next_game_ = std::make_unique<GameTetris>();
+			next_game_ = std::make_unique<GameTetris>(sound_player_);
 		}
 	}
 }
@@ -651,6 +652,7 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 
 		// Hit this block.
 		DamageBlock(x, y);
+		sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 
 		// Ball intersectss with this block. Try to push it.
 		// Find closest intersection of negative velocity vector and extended block side in order to do this.

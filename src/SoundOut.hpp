@@ -15,6 +15,9 @@ public:
 	SoundOut();
 	~SoundOut();
 
+	SoundOut(const SoundOut&) = delete;
+	SoundOut& operator=(const SoundOut&) = delete;
+
 	// Sound data reference must outlive this clss.
 	void PlaySound(const SoundData& src_sound_data);
 	void StopPlaying();
