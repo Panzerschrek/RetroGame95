@@ -302,6 +302,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 			{
 				piece_block[1] += 1;
 			}
+			sound_player_.PlaySound(SoundId::TetrisFigureStep);
 		}
 	}
 
@@ -400,6 +401,7 @@ void GameTetris::MovePieceDown()
 			{
 				piece_block[1] += 1;
 			}
+			sound_player_.PlaySound(SoundId::TetrisFigureStep);
 		}
 		else
 		{

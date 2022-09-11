@@ -51,3 +51,8 @@ SoundData GenArkanoidBallHitSound(const uint32_t sample_rate)
 {
 	return GenSquareWaveSound(sample_rate, 32 * g_fixed16_one, 3);
 }
+
+SoundData GenTetrisFigureStep(uint32_t sample_rate)
+{
+	return GenSquareWaveSound(sample_rate, 120 * g_fixed16_one, 6);
+}

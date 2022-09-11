@@ -5,6 +5,7 @@
 enum class SoundId
 {
 	ArkanoidBallHit,
+	TetrisFigureStep,
 	NumSounds,
 };
 

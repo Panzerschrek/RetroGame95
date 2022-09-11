@@ -8,6 +8,7 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 	static constexpr GenFunc c_gen_funcs[size_t(SoundId::NumSounds)]
 	{
 		GenArkanoidBallHitSound,
+		GenTetrisFigureStep,
 	};
 
 	for(size_t i= 0; i < size_t(SoundId::NumSounds); ++i)
