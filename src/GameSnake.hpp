@@ -56,7 +56,7 @@ private:
 		BonusType type = BonusType::Food0;
 	};
 
-	static const constexpr uint32_t c_field_width = 20;
+	static const constexpr uint32_t c_field_width = 30;
 	static const constexpr uint32_t c_field_height = 20;
 	static const constexpr uint32_t c_block_size = 10;
 
@@ -81,6 +81,8 @@ private:
 	std::array<Bonus, c_num_bonuses> bonuses_;
 	uint32_t grow_points_ = 0;
 	bool is_dead_ = false;
+	uint32_t level_ = 0;
+	uint32_t score_ = 0;
 
 	GameInterfacePtr next_game_;
 };

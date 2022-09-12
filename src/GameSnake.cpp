@@ -267,6 +267,17 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 				uint32_t(int32_t(field_offset_y + segment.position[1] * c_block_size) + sprite_offset_y));
 		}
 	}
+
+	char text[64];
+	std::snprintf(
+		text,
+		sizeof(text),
+		"level: %1d  score: %4d  length: %3d",
+		level_,
+		score_,
+		uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()));
+	DrawText(frame_buffer, g_color_white, 10, frame_buffer.height - 10, text);
+
 }
 
 GameInterfacePtr GameSnake::AskForNextGameTransition()
@@ -377,8 +388,8 @@ void GameSnake::MoveSnake()
 		if(new_segment.position == bonus.position)
 		{
 			// Pick-up the bonus.
-			// TODO - add score here?
 			grow_points_ += g_grow_points_per_food_piece;
+			score_ += 10; // TODO - make score dependent on level.
 
 			// Respawn bonus.
 			bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
