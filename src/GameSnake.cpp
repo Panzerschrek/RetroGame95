@@ -281,11 +281,12 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	std::snprintf(
 		text,
 		sizeof(text),
-		"level: %1d  score: %4d  length: %3d",
+		"length %3d  lifes %1d  level %1d  score %4d",
+		uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()),
+		lifes_,
 		level_,
-		score_,
-		uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()));
-	DrawText(frame_buffer, g_color_white, 10, frame_buffer.height - 10, text);
+		score_);
+	DrawText(frame_buffer, g_color_white, 0, frame_buffer.height - 10, text);
 
 }
 
