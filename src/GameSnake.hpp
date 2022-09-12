@@ -43,17 +43,17 @@ private:
 
 	enum class BonusType
 	{
-		Food0,
-		Food1,
-		Food2,
-		Food3,
+		FoodSmall,
+		FoodMedium,
+		FoodLarge,
+		ExtraLife,
 		NumTypes,
 	};
 
 	struct Bonus
 	{
 		std::array<uint32_t, 2> position{ 9999, 9999};
-		BonusType type = BonusType::Food0;
+		BonusType type = BonusType::FoodSmall;
 	};
 
 	static const constexpr uint32_t c_field_width = 30;

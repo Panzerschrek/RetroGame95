@@ -97,14 +97,10 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 
 	const SpriteBMP bonus_sprites[]
 	{
-		// TODO - use proper graphic
-		Sprites::tetris_block_4,
-		Sprites::tetris_block_7,
-		Sprites::tetris_block_5,
-		Sprites::tetris_block_1,
-		Sprites::tetris_block_2,
-		Sprites::tetris_block_6,
-		Sprites::tetris_block_3,
+		Sprites::snake_food_small,
+		Sprites::snake_food_medium,
+		Sprites::snake_food_large,
+		Sprites::snake_extra_life,
 	};
 
 	for(const Bonus& bonus : bonuses_)
