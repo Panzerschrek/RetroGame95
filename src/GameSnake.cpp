@@ -62,6 +62,32 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	const uint32_t field_offset_x = 10;
 	const uint32_t field_offset_y = 10;
 
+	DrawHorisontalLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x - 1,
+		field_offset_y - 1,
+		c_block_size * c_field_width + 2);
+	DrawHorisontalLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x - 1,
+		field_offset_y + c_block_size * c_field_height,
+		c_block_size * c_field_width + 2);
+
+	DrawVerticaLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x - 1,
+		field_offset_y - 1,
+		c_block_size * c_field_height + 2);
+	DrawVerticaLine(
+		frame_buffer,
+		g_color_white,
+		field_offset_x + c_block_size * c_field_width,
+		field_offset_y - 1,
+		c_block_size * c_field_height + 2);
+
 	if(snake_ != std::nullopt)
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
@@ -241,27 +267,75 @@ void GameSnake::MoveSnake()
 	{
 		return;
 	}
+	if(is_dead_)
+	{
+		return;
+	}
 
 	SnakeSegment new_segment = snake_->segments.front();
-	// TODO - check for walls collision here.
+	bool hit_border = false;
 	switch(snake_->direction)
 	{
 	case SnakeDirection::XPlus:
-		new_segment.position[0] += 1;
+		if(new_segment.position[0] < c_field_width - 1)
+		{
+			new_segment.position[0] += 1;
+		}
+		else
+		{
+			hit_border = true;
+		}
 		break;
 	case SnakeDirection::XMinus:
-		new_segment.position[0] -= 1;
+		if(new_segment.position[0] > 0)
+		{
+			new_segment.position[0] -= 1;
+		}
+		else
+		{
+			hit_border = true;
+		}
 		break;
 	case SnakeDirection::YPlus:
-		new_segment.position[1] += 1;
+		if(new_segment.position[1] < c_field_height - 1)
+		{
+			new_segment.position[1] += 1;
+		}
+		else
+		{
+			hit_border = true;
+		}
 		break;
 	case SnakeDirection::YMinus:
-		new_segment.position[1] -= 1;
+		if(new_segment.position[1] > 0)
+		{
+			new_segment.position[1] -= 1;
+		}
+		else
+		{
+			hit_border = true;
+		}
 		break;
+	}
+
+	if(hit_border)
+	{
+		is_dead_ = true;
+		return;
 	}
 
 	snake_->segments.insert(snake_->segments.begin(), new_segment);
 	snake_->segments.pop_back();
 
-	// TODO - check for obstacles collision, self-intersection, food consumption.
+	for(size_t i = 1; i < snake_->segments.size(); ++i)
+	{
+		if(snake_->segments.front().position == snake_->segments[i].position)
+		{
+			// Hit itself.
+			is_dead_ = true;
+			return;
+		}
+	}
+
+	// TODO - check for obstacles collision, food consumption.
 }

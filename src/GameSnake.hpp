@@ -56,6 +56,7 @@ private:
 	uint32_t num_ticks_ = 0;
 
 	std::optional<Snake> snake_;
+	bool is_dead_ = false;
 
 	GameInterfacePtr next_game_;
 };
