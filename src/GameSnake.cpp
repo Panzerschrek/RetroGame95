@@ -4,11 +4,18 @@
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
 
+namespace
+{
+
+const uint32_t g_grow_points_per_food_piece = 5;
+
+} // namespace
+
 GameSnake::GameSnake(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	SpawnSnake();
+	NextLevel();
 }
 
 void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -87,6 +94,28 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 		field_offset_x + c_block_size * c_field_width,
 		field_offset_y - 1,
 		c_block_size * c_field_height + 2);
+
+	const SpriteBMP bonus_sprites[]
+	{
+		// TODO - use proper graphic
+		Sprites::tetris_block_4,
+		Sprites::tetris_block_7,
+		Sprites::tetris_block_5,
+		Sprites::tetris_block_1,
+		Sprites::tetris_block_2,
+		Sprites::tetris_block_6,
+		Sprites::tetris_block_3,
+	};
+
+	for(const Bonus& bonus : bonuses_)
+	{
+		DrawSpriteWithAlphaUnchecked(
+			frame_buffer,
+			bonus_sprites[size_t(bonus.type)],
+			0,
+			field_offset_x + bonus.position[0] * c_block_size,
+			field_offset_y + bonus.position[1] * c_block_size);
+	}
 
 	if(snake_ != std::nullopt)
 	{
@@ -245,6 +274,24 @@ GameInterfacePtr GameSnake::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
+void GameSnake::NextLevel()
+{
+	SpawnSnake();
+
+	// Clear all bonuses.
+	for(Bonus& bonus : bonuses_)
+	{
+		bonus.position = { 9999, 9999 };
+	}
+
+	// Spawn nee nobuses
+	for(Bonus& bonus : bonuses_)
+	{
+		bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
+		bonus.position = GetRandomFreePosition();
+	}
+}
+
 void GameSnake::SpawnSnake()
 {
 	Snake snake;
@@ -324,8 +371,30 @@ void GameSnake::MoveSnake()
 		return;
 	}
 
+	// Check for bonuses collision.
+	for(Bonus& bonus : bonuses_)
+	{
+		if(new_segment.position == bonus.position)
+		{
+			// Pick-up the bonus.
+			// TODO - add score here?
+			grow_points_ += g_grow_points_per_food_piece;
+
+			// Respawn bonus.
+			bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
+			bonus.position = GetRandomFreePosition();
+		}
+	}
+
 	snake_->segments.insert(snake_->segments.begin(), new_segment);
-	snake_->segments.pop_back();
+	if(grow_points_ > 0)
+	{
+		--grow_points_;
+	}
+	else
+	{
+		snake_->segments.pop_back();
+	}
 
 	for(size_t i = 1; i < snake_->segments.size(); ++i)
 	{
@@ -337,5 +406,46 @@ void GameSnake::MoveSnake()
 		}
 	}
 
-	// TODO - check for obstacles collision, food consumption.
+	// TODO - check for obstacles collision.
+}
+
+bool GameSnake::IsPositionFree(const std::array<uint32_t, 2>& position) const
+{
+	if(snake_ != std::nullopt)
+	{
+		for(const SnakeSegment& segment : snake_->segments)
+		{
+			if(position == segment.position)
+			{
+				return false;
+			}
+		}
+	}
+
+	for(const Bonus& bonus : bonuses_)
+	{
+		if(bonus.position == position)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+std::array<uint32_t, 2> GameSnake::GetRandomPosition()
+{
+	return {rand_.Next() % c_field_width, rand_.Next() % c_field_height };
+}
+
+std::array<uint32_t, 2> GameSnake::GetRandomFreePosition()
+{
+	while(true)
+	{
+		const std::array<uint32_t, 2> position = GetRandomPosition();
+		if(IsPositionFree(position))
+		{
+			return position;
+		}
+	}
 }
