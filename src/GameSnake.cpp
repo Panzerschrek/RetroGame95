@@ -128,7 +128,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 
 		const SpriteBMP tail_sprite(Sprites::snake_tail);
 
-		for(size_t i = 0; i < snake_->segments.size(); ++i)
+		for(size_t i = snake_->segments.size() - 1; ;)
 		{
 			const SnakeSegment& segment = snake_->segments[i];
 
@@ -268,7 +268,13 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 				0,
 				uint32_t(int32_t(field_offset_x + segment.position[0] * c_block_size) + sprite_offset_x),
 				uint32_t(int32_t(field_offset_y + segment.position[1] * c_block_size) + sprite_offset_y));
-		}
+
+			if(i == 0)
+			{
+				break;
+			}
+			--i;
+		} // for snake segments
 	}
 
 	char text[64];
