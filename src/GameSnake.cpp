@@ -59,6 +59,19 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
+	if(num_ticks_ / 128  % 6 == 0)
+		DrawSpriteWithAlphaIdentityTransform(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
+	if(num_ticks_ / 128  % 6 == 1)
+		DrawSpriteWithAlphaUncheckedRotate90(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
+	if(num_ticks_ / 128  % 6 == 2)
+		DrawSpriteWithAlphaUncheckedRotate180(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
+	if(num_ticks_ / 128  % 6 == 3)
+		DrawSpriteWithAlphaUncheckedRotate270(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
+	if(num_ticks_ / 128  % 6 == 4)
+		DrawSpriteWithAlphaUncheckedMirrorX(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
+	if(num_ticks_ / 128  % 6 == 5)
+		DrawSpriteWithAlphaUncheckedMirrorY(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
+
 	const uint32_t field_offset_x = 10;
 	const uint32_t field_offset_y = 10;
 

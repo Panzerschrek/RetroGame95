@@ -5,6 +5,7 @@
 using fixed16_t = int32_t;
 
 using fixed16vec2_t = std::array<fixed16_t, 2>;
+using fixed16vec3_t = std::array<fixed16_t, 3>;
 
 const int32_t g_fixed16_base = 16;
 
