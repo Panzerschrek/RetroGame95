@@ -71,6 +71,8 @@ private:
 	std::array<uint32_t, 2> GetRandomPosition();
 	std::array<uint32_t, 2> GetRandomFreePosition();
 
+	Bonus SpawnBonus();
+
 private:
 	SoundPlayer& sound_player_;
 	Rand rand_;
@@ -81,6 +83,7 @@ private:
 	std::array<Bonus, c_num_bonuses> bonuses_;
 	uint32_t grow_points_ = 0;
 	bool is_dead_ = false;
+	uint32_t lifes_ = 3;
 	uint32_t level_ = 0;
 	uint32_t score_ = 0;
 

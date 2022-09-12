@@ -3,11 +3,18 @@
 #include "GameMainMenu.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
+#include <cassert>
 
 namespace
 {
 
-const uint32_t g_grow_points_per_food_piece = 5;
+const uint32_t g_max_lifes = 6;
+
+const uint32_t g_grow_points_per_food_piece_small = 3;
+const uint32_t g_grow_points_per_food_piece_medium = 5;
+const uint32_t g_grow_points_per_food_piece_large = 7;
+
+const uint32_t g_extra_life_spawn_inv_chance = 20;
 
 } // namespace
 
@@ -294,8 +301,7 @@ void GameSnake::NextLevel()
 	// Spawn nee nobuses
 	for(Bonus& bonus : bonuses_)
 	{
-		bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
-		bonus.position = GetRandomFreePosition();
+		bonus = SpawnBonus();
 	}
 }
 
@@ -384,12 +390,28 @@ void GameSnake::MoveSnake()
 		if(new_segment.position == bonus.position)
 		{
 			// Pick-up the bonus.
-			grow_points_ += g_grow_points_per_food_piece;
+			switch(bonus.type)
+			{
+			case BonusType::FoodSmall:
+				grow_points_ += g_grow_points_per_food_piece_small;
+				break;
+			case BonusType::FoodMedium:
+				grow_points_ += g_grow_points_per_food_piece_medium;
+				break;
+			case BonusType::FoodLarge:
+				grow_points_ += g_grow_points_per_food_piece_large;
+				break;
+			case BonusType::ExtraLife:
+				lifes_ = std::min(lifes_ + 1, g_max_lifes);
+				break;
+			case BonusType::NumTypes:
+				assert(false);
+				break;
+			};
 			score_ += 10; // TODO - make score dependent on level.
 
 			// Respawn bonus.
-			bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
-			bonus.position = GetRandomFreePosition();
+			bonus = SpawnBonus();
 		}
 	}
 
@@ -455,4 +477,22 @@ std::array<uint32_t, 2> GameSnake::GetRandomFreePosition()
 			return position;
 		}
 	}
+}
+
+GameSnake::Bonus GameSnake::SpawnBonus()
+{
+	Bonus bonus;
+
+	bonus.position = GetRandomFreePosition();
+
+	if(rand_.Next() % g_extra_life_spawn_inv_chance == 0)
+	{
+		bonus.type = BonusType::ExtraLife;
+	}
+	else
+	{
+		bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::ExtraLife));
+	}
+
+	return bonus;
 }
