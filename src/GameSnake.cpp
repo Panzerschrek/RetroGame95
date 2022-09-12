@@ -59,19 +59,6 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	if(num_ticks_ / 128  % 6 == 0)
-		DrawSpriteWithAlphaIdentityTransform(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
-	if(num_ticks_ / 128  % 6 == 1)
-		DrawSpriteWithAlphaUncheckedRotate90(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
-	if(num_ticks_ / 128  % 6 == 2)
-		DrawSpriteWithAlphaUncheckedRotate180(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
-	if(num_ticks_ / 128  % 6 == 3)
-		DrawSpriteWithAlphaUncheckedRotate270(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
-	if(num_ticks_ / 128  % 6 == 4)
-		DrawSpriteWithAlphaUncheckedMirrorX(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
-	if(num_ticks_ / 128  % 6 == 5)
-		DrawSpriteWithAlphaUncheckedMirrorY(frame_buffer, Sprites::arkanoid_bonus_b, 0, 33, 72);
-
 	const uint32_t field_offset_x = 10;
 	const uint32_t field_offset_y = 10;
 
@@ -79,27 +66,150 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
 		const SpriteBMP body_segment_sprite(Sprites::snake_body_segment);
+		const SpriteBMP body_segment_angle_sprite(Sprites::snake_body_segment_angle);
+
 		const SpriteBMP tail_sprite(Sprites::snake_tail);
 
-		for(const SnakeSegment& segment : snake_->segments)
+		for(size_t i = 0; i < snake_->segments.size(); ++i)
 		{
+			const SnakeSegment& segment = snake_->segments[i];
+
 			SpriteBMP sprite = body_segment_sprite;
-			if(&segment == &snake_->segments.front())
+			auto draw_fn = DrawSpriteWithAlphaUnchecked;
+			int32_t sprite_offset_x = 0;
+			int32_t sprite_offset_y = 0;
+
+			if(i == 0)
 			{
 				sprite = head_sprite;
+
+				const SnakeSegment& next_segment = snake_->segments[i + 1];
+
+				if(segment.position[0] > next_segment.position[0])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate270;
+				}
+				if(segment.position[0] < next_segment.position[0])
+				{
+					sprite_offset_x = -5;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate90;
+				}
+				if(segment.position[1] > next_segment.position[1])
+				{
+					draw_fn = DrawSpriteWithAlphaUnchecked;
+				}
+				if(segment.position[1] < next_segment.position[1])
+				{
+					sprite_offset_y = -5;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+				}
 			}
-			if(&segment == &snake_->segments.back())
+			else if(i == snake_->segments.size() - 1)
 			{
 				sprite = tail_sprite;
+
+				const SnakeSegment& prev_segment = snake_->segments[i - 1];
+				if(segment.position[0] >prev_segment.position[0])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate90;
+				}
+				if(segment.position[0] < prev_segment.position[0])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate270;
+				}
+				if(segment.position[1] > prev_segment.position[1])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+				}
+				if(segment.position[1] < prev_segment.position[1])
+				{
+					draw_fn = DrawSpriteWithAlphaUnchecked;
+				}
+			}
+			else
+			{
+				const SnakeSegment& next_segment = snake_->segments[i + 1];
+				const SnakeSegment& prev_segment = snake_->segments[i - 1];
+				if(next_segment.position[0] < segment.position[0] && segment.position[0] < prev_segment.position[0])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate90;
+				}
+				else if(next_segment.position[0] > segment.position[0] && segment.position[0] > prev_segment.position[0])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate270;
+				}
+				else if(next_segment.position[1] < segment.position[1] && segment.position[1] < prev_segment.position[1])
+				{
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+				}
+				else if(next_segment.position[1] > segment.position[1] && segment.position[1] > prev_segment.position[1])
+				{
+					draw_fn = DrawSpriteWithAlphaUnchecked;
+				}
+				else if(next_segment.position[0] > segment.position[0] && prev_segment.position[1] > segment.position[1])
+				{
+					sprite_offset_x = 1;
+					sprite_offset_y = 1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+				}
+				else if(prev_segment.position[0] > segment.position[0] && next_segment.position[1] > segment.position[1])
+				{
+					sprite_offset_x = 1;
+					sprite_offset_y = 1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+				}
+				else if(next_segment.position[0] > segment.position[0] && prev_segment.position[1] < segment.position[1])
+				{
+					sprite_offset_x = 1;
+					sprite_offset_y = -1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate90;
+				}
+				else if(prev_segment.position[0] > segment.position[0] && next_segment.position[1] < segment.position[1])
+				{
+					sprite_offset_x = 1;
+					sprite_offset_y = -1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate90;
+				}
+				else if(next_segment.position[0] < segment.position[0] && prev_segment.position[1] > segment.position[1])
+				{
+					sprite_offset_x = -1;
+					sprite_offset_y = 1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate270;
+				}
+				else if(next_segment.position[0] < segment.position[0] && prev_segment.position[1] < segment.position[1])
+				{
+					sprite_offset_x = -1;
+					sprite_offset_y = -1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUnchecked;
+				}
+				else if(prev_segment.position[0] < segment.position[0] && next_segment.position[1] > segment.position[1])
+				{
+					sprite_offset_x = -1;
+					sprite_offset_y = 1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUncheckedRotate270;
+				}
+				else if(prev_segment.position[0] < segment.position[0] && next_segment.position[1] < segment.position[1])
+				{
+					sprite_offset_x = -1;
+					sprite_offset_y = -1;
+					sprite = body_segment_angle_sprite;
+					draw_fn = DrawSpriteWithAlphaUnchecked;
+				}
 			}
 
-			DrawSpriteWithAlphaUnchecked(
+			draw_fn(
 				frame_buffer,
 				sprite,
 				0,
-				field_offset_x + segment.position[0] * c_block_size,
-				field_offset_y + segment.position[1] * c_block_size);
-
+				uint32_t(int32_t(field_offset_x + segment.position[0] * c_block_size) + sprite_offset_x),
+				uint32_t(int32_t(field_offset_y + segment.position[1] * c_block_size) + sprite_offset_y));
 		}
 	}
 }
