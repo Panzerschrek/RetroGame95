@@ -167,6 +167,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	}
 
 	if(snake_ != std::nullopt &&
+		field_start_animation_end_tick_ == std::nullopt &&
 		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0))
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
