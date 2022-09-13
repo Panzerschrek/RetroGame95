@@ -363,7 +363,7 @@ void DrawText(
 
 		const uint32_t code_point = ExtractUTF8CodePoint(text);
 
-		auto glyph = &font8x8_basic['?'];
+		auto glyph = &font8x8_basic[uint32_t('?')];
 		if (code_point < 0x80)
 		{
 			glyph = &font8x8_basic[code_point];
