@@ -314,20 +314,20 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	{
 		std::snprintf(text, sizeof(text), "level %d", level_);
 
-		DrawText(
+		DrawTextCentered(
 			frame_buffer,
 			g_color_white,
-			field_offset_x + c_block_size  * c_field_width  / 2 - 24,
-			field_offset_y + c_block_size * c_field_height / 2 - 4,
+			field_offset_x + c_block_size  * c_field_width  / 2,
+			field_offset_y + c_block_size * c_field_height / 2,
 			text);
 	}
 	if(game_over_)
 	{
-		DrawText(
+		DrawTextCentered(
 			frame_buffer,
 			g_color_white,
-			field_offset_x + c_block_size  * c_field_width  / 2 - 24,
-			field_offset_y + c_block_size * c_field_height / 2 - 4,
+			field_offset_x + c_block_size  * c_field_width  / 2,
+			field_offset_y + c_block_size * c_field_height / 2,
 			"game over");
 	}
 

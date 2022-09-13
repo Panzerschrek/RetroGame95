@@ -86,3 +86,10 @@ void DrawText(
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
+
+void DrawTextCentered(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	uint32_t center_x,
+	uint32_t center_y,
+	const char* text);
