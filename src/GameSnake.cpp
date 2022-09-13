@@ -20,6 +20,16 @@ const uint32_t g_field_start_animation_duration = 240;
 const uint32_t g_death_animation_duration = 180;
 const uint32_t g_death_animation_flicker_duration = 12;
 
+uint32_t GetLengthForNextLevelTransition(const uint32_t level)
+{
+	return 100 + 10 * level;
+}
+
+uint32_t GetSpeedForLevel(const uint32_t level)
+{
+	return 240 / (3 + level);
+}
+
 } // namespace
 
 GameSnake::GameSnake(SoundPlayer& sound_player)
@@ -73,7 +83,7 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 		return;
 	}
 
-	if(tick_ % 60 == 0)
+	if(tick_ % GetSpeedForLevel(level_) == 0)
 	{
 		MoveSnake();
 	}
@@ -94,7 +104,14 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 		else
 		{
 			game_over_ = true;
+			snake_ = std::nullopt;
 		}
+	}
+
+	if(!game_over_ && death_animation_end_tick_ == std::nullopt &&
+		snake_ != std::nullopt && snake_->segments.size() >= GetLengthForNextLevelTransition(level_))
+	{
+		NextLevel();
 	}
 }
 
@@ -150,8 +167,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	}
 
 	if(snake_ != std::nullopt &&
-		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0) &&
-		!game_over_)
+		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0))
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
 		const SpriteBMP body_segment_sprite(Sprites::snake_body_segment);
@@ -462,13 +478,13 @@ void GameSnake::MoveSnake()
 			switch(bonus.type)
 			{
 			case BonusType::FoodSmall:
-				grow_points_ += g_grow_points_per_food_piece_small;
+				snake_->grow_points_ += g_grow_points_per_food_piece_small;
 				break;
 			case BonusType::FoodMedium:
-				grow_points_ += g_grow_points_per_food_piece_medium;
+				snake_->grow_points_ += g_grow_points_per_food_piece_medium;
 				break;
 			case BonusType::FoodLarge:
-				grow_points_ += g_grow_points_per_food_piece_large;
+				snake_->grow_points_ += g_grow_points_per_food_piece_large;
 				break;
 			case BonusType::ExtraLife:
 				lifes_ = std::min(lifes_ + 1, g_max_lifes);
@@ -485,9 +501,9 @@ void GameSnake::MoveSnake()
 	}
 
 	snake_->segments.insert(snake_->segments.begin(), new_segment);
-	if(grow_points_ > 0)
+	if(snake_->grow_points_ > 0)
 	{
-		--grow_points_;
+		--snake_->grow_points_;
 	}
 	else
 	{
