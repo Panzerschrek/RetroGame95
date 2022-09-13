@@ -16,6 +16,10 @@ const uint32_t g_grow_points_per_food_piece_large = 7;
 
 const uint32_t g_extra_life_spawn_inv_chance = 20;
 
+const uint32_t g_field_start_animation_duration = 240;
+const uint32_t g_death_animation_duration = 180;
+const uint32_t g_death_animation_flicker_duration = 12;
+
 } // namespace
 
 GameSnake::GameSnake(SoundPlayer& sound_player)
@@ -35,7 +39,8 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
-		if(event.type == SDL_KEYDOWN && snake_ != std::nullopt)
+		if(event.type == SDL_KEYDOWN &&
+			snake_ != std::nullopt && death_animation_end_tick_ == std::nullopt && field_start_animation_end_tick_ == std::nullopt)
 		{
 			// Turn snake, but do not allow to turn directly towards the neck.
 			if(event.key.keysym.scancode == SDL_SCANCODE_LEFT &&
@@ -61,11 +66,35 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 		}
 	}
 
-	++num_ticks_;
+	++tick_;
 
-	if(num_ticks_ % 60 == 0)
+	if(game_over_)
+	{
+		return;
+	}
+
+	if(tick_ % 60 == 0)
 	{
 		MoveSnake();
+	}
+
+	if(field_start_animation_end_tick_ != std::nullopt && tick_ > *field_start_animation_end_tick_)
+	{
+		field_start_animation_end_tick_ = std::nullopt;
+	}
+
+	if(death_animation_end_tick_ != std::nullopt && tick_ >= *death_animation_end_tick_)
+	{
+		death_animation_end_tick_ = std::nullopt;
+		if(lifes_ > 0)
+		{
+			--lifes_;
+			NewField();
+		}
+		else
+		{
+			game_over_ = true;
+		}
 	}
 }
 
@@ -120,7 +149,9 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 			field_offset_y + bonus.position[1] * c_block_size);
 	}
 
-	if(snake_ != std::nullopt)
+	if(snake_ != std::nullopt &&
+		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0) &&
+		!game_over_)
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
 		const SpriteBMP body_segment_sprite(Sprites::snake_body_segment);
@@ -278,6 +309,28 @@ void GameSnake::Draw(const FrameBuffer frame_buffer)
 	}
 
 	char text[64];
+
+	if(field_start_animation_end_tick_ != std::nullopt)
+	{
+		std::snprintf(text, sizeof(text), "level %d", level_);
+
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + c_block_size  * c_field_width  / 2 - 24,
+			field_offset_y + c_block_size * c_field_height / 2 - 4,
+			text);
+	}
+	if(game_over_)
+	{
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + c_block_size  * c_field_width  / 2 - 24,
+			field_offset_y + c_block_size * c_field_height / 2 - 4,
+			"game over");
+	}
+
 	std::snprintf(
 		text,
 		sizeof(text),
@@ -297,6 +350,13 @@ GameInterfacePtr GameSnake::AskForNextGameTransition()
 
 void GameSnake::NextLevel()
 {
+	++level_;
+
+	NewField();
+}
+
+void GameSnake::NewField()
+{
 	SpawnSnake();
 
 	// Clear all bonuses.
@@ -305,11 +365,13 @@ void GameSnake::NextLevel()
 		bonus.position = { 9999, 9999 };
 	}
 
-	// Spawn nee nobuses
+	// Spawn new bonses.
 	for(Bonus& bonus : bonuses_)
 	{
 		bonus = SpawnBonus();
 	}
+
+	field_start_animation_end_tick_ = tick_ + g_field_start_animation_duration;
 }
 
 void GameSnake::SpawnSnake()
@@ -334,7 +396,7 @@ void GameSnake::MoveSnake()
 	{
 		return;
 	}
-	if(is_dead_)
+	if(death_animation_end_tick_ != std::nullopt || field_start_animation_end_tick_ != std::nullopt)
 	{
 		return;
 	}
@@ -387,7 +449,7 @@ void GameSnake::MoveSnake()
 
 	if(hit_border)
 	{
-		is_dead_ = true;
+		death_animation_end_tick_ = tick_ + g_death_animation_duration;
 		return;
 	}
 
@@ -436,8 +498,7 @@ void GameSnake::MoveSnake()
 	{
 		if(snake_->segments.front().position == snake_->segments[i].position)
 		{
-			// Hit itself.
-			is_dead_ = true;
+			death_animation_end_tick_ = tick_ + g_death_animation_duration;
 			return;
 		}
 	}

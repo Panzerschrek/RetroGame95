@@ -64,6 +64,7 @@ private:
 
 private:
 	void NextLevel();
+	void NewField();
 	void SpawnSnake();
 	void MoveSnake();
 	bool IsPositionFree(const std::array<uint32_t, 2>& position) const;
@@ -77,15 +78,17 @@ private:
 	SoundPlayer& sound_player_;
 	Rand rand_;
 
-	uint32_t num_ticks_ = 0;
+	uint32_t tick_ = 0;
 
 	std::optional<Snake> snake_;
 	std::array<Bonus, c_num_bonuses> bonuses_;
 	uint32_t grow_points_ = 0;
-	bool is_dead_ = false;
+	std::optional<uint32_t> death_animation_end_tick_; // Non-empty if is dead.
+	std::optional<uint32_t> field_start_animation_end_tick_; // Non-empty if just started and show game field.
 	uint32_t lifes_ = 3;
 	uint32_t level_ = 0;
 	uint32_t score_ = 0;
+	bool game_over_ = false;
 
 	GameInterfacePtr next_game_;
 };
