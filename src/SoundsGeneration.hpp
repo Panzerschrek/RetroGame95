@@ -10,3 +10,7 @@ SoundData GenSquareWaveSound(uint32_t sample_rate, fixed16_t sin_wave_frequency,
 SoundData GenArkanoidBallHitSound(uint32_t sample_rate);
 
 SoundData GenTetrisFigureStep(uint32_t sample_rate);
+
+SoundData GenSnakeBonusEat(uint32_t sample_rate);
+
+SoundData GenSnakeDeath(uint32_t sample_rate);

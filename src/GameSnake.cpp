@@ -466,8 +466,11 @@ void GameSnake::MoveSnake()
 	if(hit_border)
 	{
 		death_animation_end_tick_ = tick_ + g_death_animation_duration;
+		sound_player_.PlaySound(SoundId::SnakeDeath);
 		return;
 	}
+
+	sound_player_.PlaySound(SoundId::TetrisFigureStep);
 
 	// Check for bonuses collision.
 	for(Bonus& bonus : bonuses_)
@@ -475,6 +478,8 @@ void GameSnake::MoveSnake()
 		if(new_segment.position == bonus.position)
 		{
 			// Pick-up the bonus.
+			sound_player_.PlaySound(SoundId::SnakeBonusEat);
+
 			switch(bonus.type)
 			{
 			case BonusType::FoodSmall:
@@ -515,6 +520,7 @@ void GameSnake::MoveSnake()
 		if(snake_->segments.front().position == snake_->segments[i].position)
 		{
 			death_animation_end_tick_ = tick_ + g_death_animation_duration;
+			sound_player_.PlaySound(SoundId::SnakeDeath);
 			return;
 		}
 	}
