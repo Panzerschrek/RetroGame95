@@ -1,6 +1,7 @@
 #include "GameMainMenu.hpp"
 #include "Draw.hpp"
 #include "GameArkanoid.hpp"
+#include "GamePacman.hpp"
 #include "GameSnake.hpp"
 #include "GameTetris.hpp"
 #include "Sprites.hpp"
@@ -18,6 +19,7 @@ GameInterfacePtr CreateGameByIndex(const uint32_t index, SoundPlayer& sound_play
 	case 0: return std::make_unique<GameArkanoid>(sound_player);
 	case 1: return std::make_unique<GameTetris>(sound_player);
 	case 2: return std::make_unique<GameSnake>(sound_player);
+	case 3: return std::make_unique<GamePacman>(sound_player);
 	}
 
 	return nullptr;
