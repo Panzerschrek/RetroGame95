@@ -545,6 +545,7 @@ void GameArkanoid::NextLevel()
 	bonuses_.clear();
 	laser_beams_.clear();
 	next_level_exit_is_open_ = false;
+	slow_down_end_tick_ = 0;
 
 	const char* level_data = arkanoid_levels[(level_ - 1) % std::size(arkanoid_levels)];
 	for(uint32_t y = 0; y < c_field_height; ++y)
