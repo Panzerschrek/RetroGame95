@@ -9,7 +9,7 @@ namespace
 constexpr char g_game_field[]=
 "                # #              "
 " ############   # #   ########## "
-" #....##....#   # #   #........# "
+" #....##@...#   # #   #.....@..# "
 " #.##.##.##.#   # #   #.##.###.# "
 " #.##....##.#   # #   #.##.###.# "
 " #.##.#####.#   # #   #.##.###.# "
@@ -34,12 +34,14 @@ constexpr char g_game_field[]=
 " #.##.#####.#   # #   #.##.###.# "
 " #.##....##.#   # #   #.##.###.# "
 " #.##.##.##.#   # #   #.##.###.# "
-" #....##....#   # #   #........# "
-".############   # #   ########## "
+" #....##@...#   # #   #.....@..# "
+" ############   # #   ########## "
 "                # #              "
 ;
 
 const char g_wall_symbol = '#';
+const char g_food_symbol = '.';
+const char g_bonus_deadly_symbol = '@';
 
 const fixed16_t g_pacman_move_speed = g_fixed16_one / 64;
 
@@ -167,9 +169,13 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
 			const char block = line[x];
-			if(block == '.')
+			if(block == g_food_symbol)
 			{
 				DrawSprite(frame_buffer, Sprites::pacman_food, x * c_block_size + 3, y * c_block_size + 3);
+			}
+			if(block == g_bonus_deadly_symbol)
+			{
+				DrawSprite(frame_buffer, Sprites::pacman_bonus_deadly, x * c_block_size, y * c_block_size);
 			}
 			if(block != g_wall_symbol)
 			{
