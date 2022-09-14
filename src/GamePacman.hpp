@@ -28,5 +28,7 @@ private:
 
 	uint32_t tick_ = 0;
 
+	std::array<uint32_t, 2> pacman_position_{};
+
 	GameInterfacePtr next_game_;
 };

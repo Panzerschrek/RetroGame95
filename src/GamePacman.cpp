@@ -1,5 +1,6 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
+#include "Sprites.hpp"
 
 namespace
 {
@@ -43,12 +44,15 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	pacman_position_ = {4, 6};
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
 	(void)events;
 	(void)keyboard_state;
+
+	++tick_;
 }
 
 void GamePacman::Draw(const FrameBuffer frame_buffer) const
@@ -222,6 +226,23 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			}
 		} // for x
 	} // for y
+
+	const SpriteBMP pacman_sprites[]
+	{
+		Sprites::pacman_0,
+		Sprites::pacman_1,
+		Sprites::pacman_2,
+		Sprites::pacman_3,
+		Sprites::pacman_2,
+		Sprites::pacman_1,
+	};
+
+	DrawSpriteWithAlpha(
+		frame_buffer,
+		pacman_sprites[tick_ / 12 % std::size(pacman_sprites)],
+		0,
+		pacman_position_[0] * c_block_size + 5,
+		pacman_position_[1] * c_block_size + 5);
 }
 
 GameInterfacePtr GamePacman::AskForNextGameTransition()
