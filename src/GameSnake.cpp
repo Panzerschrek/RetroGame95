@@ -115,7 +115,7 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	}
 }
 
-void GameSnake::Draw(const FrameBuffer frame_buffer)
+void GameSnake::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 

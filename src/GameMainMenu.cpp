@@ -83,7 +83,7 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 	}
 }
 
-void GameMainMenu::Draw(const FrameBuffer frame_buffer)
+void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 

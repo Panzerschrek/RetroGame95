@@ -85,7 +85,7 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	}
 }
 
-void GameTetris::Draw(const FrameBuffer frame_buffer)
+void GameTetris::Draw(const FrameBuffer frame_buffer) const
 {
 	const SpriteBMP sprites[g_num_piece_types]
 	{

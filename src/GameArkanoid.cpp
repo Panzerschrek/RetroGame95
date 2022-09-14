@@ -50,7 +50,7 @@ void GameArkanoid::Tick(const std::vector<SDL_Event>& events, const std::vector<
 	}
 }
 
-void GameArkanoid::Draw(const FrameBuffer frame_buffer)
+void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
@@ -196,7 +196,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 		Sprites::arkanoid_bonus_s,
 	};
 
-	for(Bonus& bonus : bonuses_)
+	for(const Bonus& bonus : bonuses_)
 	{
 		DrawSpriteWithAlpha(
 			frame_buffer,
