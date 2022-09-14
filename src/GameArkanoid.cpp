@@ -90,7 +90,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			{
 				continue;
 			}
-			DrawSpriteWithAlphaUnchecked(
+			DrawSpriteWithAlpha(
 				frame_buffer,
 				block_sprites[uint32_t(block.type) - 1],
 				0,
@@ -118,7 +118,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 			break;
 		}
 
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
@@ -129,7 +129,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	{
 		if((tick_ / g_death_animation_flicker_duration) % 2 == 0)
 		{
-			DrawSpriteWithAlphaUnchecked(
+			DrawSpriteWithAlpha(
 				frame_buffer,
 				Sprites::arkanoid_ship,
 				0,
@@ -142,7 +142,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	{
 		const uint32_t padding = 3;
 		const SpriteBMP sprite(Sprites::arkanoid_ship_life);
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
@@ -166,7 +166,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 				position[1] += ship_->position[1];
 			}
 
-			DrawSpriteWithAlphaUnchecked(
+			DrawSpriteWithAlpha(
 				frame_buffer,
 				Sprites::arkanoid_ball,
 				0,
@@ -177,7 +177,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 	for(const LaserBeam& laser_beam : laser_beams_)
 	{
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			Sprites::arkanoid_laser_beam,
 			0,
@@ -198,7 +198,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 	for(Bonus& bonus : bonuses_)
 	{
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			bonuses_sprites[size_t(bonus.type)],
 			0,
@@ -233,7 +233,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	uint32_t trim_top_x = field_offset_x - 10;
 	for(const SpriteBMP& sprite : sprites_trim_top)
 	{
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
@@ -267,14 +267,14 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	const uint32_t side_trim_offset_x = field_offset_x - 10;
 	for(const SpriteBMP& sprite : sprites_trim_left)
 	{
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
 			side_trim_offset_x,
 			trim_side_y);
 
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
@@ -287,7 +287,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	if(next_level_exit_is_open_)
 	{
 		const SpriteBMP sprite(Sprites::arkanoid_level_exit_gate);
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
@@ -299,7 +299,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 	for(size_t i = 0; i < 2; ++i)
 	{
 		const SpriteBMP sprite(Sprites::arkanoid_trim_segment_side_0);
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
 			0,
@@ -308,7 +308,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer)
 
 		if(!next_level_exit_is_open_)
 		{
-			DrawSpriteWithAlphaUnchecked(
+			DrawSpriteWithAlpha(
 				frame_buffer,
 				sprite,
 				0,

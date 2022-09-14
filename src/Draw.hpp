@@ -18,21 +18,21 @@ void DrawHorisontalLine(FrameBuffer frame_buffer, Color32 color, uint32_t start_
 void DrawVerticaLine(FrameBuffer frame_buffer, Color32 color, uint32_t start_x, uint32_t start_y, uint32_t length);
 
 // Draw whole sprite without borders check.
-void DrawSpriteUnchecked(
+void DrawSprite(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint32_t start_x,
 	uint32_t start_y);
 
 // Draw whole sprite without borders check. Reject texels with transparent color.
-void DrawSpriteWithAlphaUnchecked(
+void DrawSpriteWithAlpha(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,
 	uint32_t start_x,
 	uint32_t start_y);
 
-void DrawSpriteWithAlphaUncheckedTransformed(
+void DrawSpriteWithAlphaTransformed(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,
@@ -45,21 +45,21 @@ void DrawSpriteWithAlphaIdentityTransform(
 	uint32_t start_x,
 	uint32_t start_y);
 
-void DrawSpriteWithAlphaUncheckedMirrorX(
+void DrawSpriteWithAlphaMirrorX(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,
 	uint32_t start_x,
 	uint32_t start_y);
 
-void DrawSpriteWithAlphaUncheckedMirrorY(
+void DrawSpriteWithAlphaMirrorY(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,
 	uint32_t start_x,
 	uint32_t start_y);
 
-void DrawSpriteWithAlphaUncheckedRotate90(
+void DrawSpriteWithAlphaRotate90(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,
@@ -73,7 +73,7 @@ void DrawSpriteWithAlphaUncheckedRotate180(
 	uint32_t start_x,
 	uint32_t start_y);
 
-void DrawSpriteWithAlphaUncheckedRotate270(
+void DrawSpriteWithAlphaRotate270(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,

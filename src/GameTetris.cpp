@@ -147,7 +147,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 				continue;
 			}
 
-			DrawSpriteWithAlphaUnchecked(
+			DrawSpriteWithAlpha(
 				frame_buffer,
 				sprites[uint32_t(block) - 1],
 				0,
@@ -163,7 +163,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 			if(piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width) &&
 				piece_block[1] >= 0 && piece_block[1] < int32_t(c_field_height))
 			{
-				DrawSpriteWithAlphaUnchecked(
+				DrawSpriteWithAlpha(
 					frame_buffer,
 					sprites[uint32_t(active_piece_->type) - 1],
 					0,
@@ -183,7 +183,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer)
 	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(Block::I);
 	for(const auto& piece_block : g_pieces_blocks[next_piece_index])
 	{
-		DrawSpriteWithAlphaUnchecked(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprites[next_piece_index],
 			0,

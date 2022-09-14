@@ -149,7 +149,7 @@ void DrawVerticaLine(
 	}
 }
 
-void DrawSpriteUnchecked(
+void DrawSprite(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint32_t start_x,
@@ -176,7 +176,7 @@ void DrawSpriteUnchecked(
 	}
 }
 
-void DrawSpriteWithAlphaUnchecked(
+void DrawSpriteWithAlpha(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
@@ -207,7 +207,7 @@ void DrawSpriteWithAlphaUnchecked(
 	}
 }
 
-void DrawSpriteWithAlphaUncheckedTransformed(
+void DrawSpriteWithAlphaTransformed(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
@@ -274,10 +274,10 @@ void DrawSpriteWithAlphaIdentityTransform(
 	Matrix3 matrix;
 	matrix.x = { g_fixed16_one, 0, -IntToFixed16(int32_t(start_x)) };
 	matrix.y = { 0, -g_fixed16_one, IntToFixed16(int32_t(start_y) + int32_t(sprite.GetHeight() - 1)) };
-	DrawSpriteWithAlphaUncheckedTransformed(frame_buffer, sprite, transparent_color_index, matrix);
+	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
-void DrawSpriteWithAlphaUncheckedMirrorX(
+void DrawSpriteWithAlphaMirrorX(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
@@ -287,10 +287,10 @@ void DrawSpriteWithAlphaUncheckedMirrorX(
 	Matrix3 matrix;
 	matrix.x = { -g_fixed16_one, 0, IntToFixed16(int32_t(start_x) + int32_t(sprite.GetWidth () - 1)) };
 	matrix.y = { 0, -g_fixed16_one, IntToFixed16(int32_t(start_y) + int32_t(sprite.GetHeight() - 1)) };
-	DrawSpriteWithAlphaUncheckedTransformed(frame_buffer, sprite, transparent_color_index, matrix);
+	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
-void DrawSpriteWithAlphaUncheckedMirrorY(
+void DrawSpriteWithAlphaMirrorY(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
@@ -300,10 +300,10 @@ void DrawSpriteWithAlphaUncheckedMirrorY(
 	Matrix3 matrix;
 	matrix.x = { g_fixed16_one, 0, -IntToFixed16(int32_t(start_x)) };
 	matrix.y = { 0, g_fixed16_one, -IntToFixed16(int32_t(start_y)) };
-	DrawSpriteWithAlphaUncheckedTransformed(frame_buffer, sprite, transparent_color_index, matrix);
+	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
-void DrawSpriteWithAlphaUncheckedRotate90(
+void DrawSpriteWithAlphaRotate90(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
@@ -313,7 +313,7 @@ void DrawSpriteWithAlphaUncheckedRotate90(
 	Matrix3 matrix;
 	matrix.x = { 0, g_fixed16_one, -IntToFixed16(int32_t(start_y)) };
 	matrix.y = { g_fixed16_one, 0, -IntToFixed16(int32_t(start_x)) };
-	DrawSpriteWithAlphaUncheckedTransformed(frame_buffer, sprite, transparent_color_index, matrix);
+	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
 void DrawSpriteWithAlphaUncheckedRotate180(
@@ -326,10 +326,10 @@ void DrawSpriteWithAlphaUncheckedRotate180(
 	Matrix3 matrix;
 	matrix.x = { -g_fixed16_one, 0, IntToFixed16(int32_t(start_x) + int32_t(sprite.GetWidth() - 1)) };
 	matrix.y = { 0, g_fixed16_one, -IntToFixed16(int32_t(start_y)) };
-	DrawSpriteWithAlphaUncheckedTransformed(frame_buffer, sprite, transparent_color_index, matrix);
+	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
-void DrawSpriteWithAlphaUncheckedRotate270(
+void DrawSpriteWithAlphaRotate270(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
@@ -339,7 +339,7 @@ void DrawSpriteWithAlphaUncheckedRotate270(
 	Matrix3 matrix;
 	matrix.x = { 0, -g_fixed16_one, IntToFixed16(int32_t(start_y) + int32_t(sprite.GetWidth () - 1)) };
 	matrix.y = { -g_fixed16_one, 0, IntToFixed16(int32_t(start_x) + int32_t(sprite.GetHeight() - 1)) };
-	DrawSpriteWithAlphaUncheckedTransformed(frame_buffer, sprite, transparent_color_index, matrix);
+	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
 void DrawText(
