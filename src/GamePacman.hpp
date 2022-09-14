@@ -1,5 +1,6 @@
 #pragma once
 #include "GameInterface.hpp"
+#include "Fixed.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
 
@@ -28,8 +29,11 @@ private:
 
 	struct Pacman
 	{
-		std::array<uint32_t, 2> position{};
+		fixed16vec2_t position{};
+		// Current moving direction.
 		PacmanDirection direction = PacmanDirection::XPlus;
+		PacmanDirection next_direction = PacmanDirection::XPlus;
+		fixed16vec2_t target_position{};
 	};
 
 	static const constexpr uint32_t c_field_width = 33;

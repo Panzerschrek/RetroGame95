@@ -1,5 +1,6 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
+#include "GameMainMenu.hpp"
 #include "Sprites.hpp"
 
 namespace
@@ -38,23 +39,114 @@ constexpr char g_game_field[]=
 "                # #              "
 ;
 
+const fixed16_t g_pacman_move_speed = g_fixed16_one / 64;
+
 } // namespace
 
 GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	pacman_.position = {4, 6};
+	pacman_.target_position = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(2) + g_fixed16_one / 2};
+	pacman_.position = pacman_.target_position;
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	(void)events;
 	(void)keyboard_state;
+
+	for(const SDL_Event& event : events)
+	{
+		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
+		{
+			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
+		}
+		if(event.type == SDL_KEYDOWN)
+		{
+			if(event.key.keysym.scancode == SDL_SCANCODE_LEFT)
+			{
+				pacman_.next_direction = PacmanDirection::XMinus;
+			}
+			if(event.key.keysym.scancode == SDL_SCANCODE_RIGHT)
+			{
+				pacman_.next_direction = PacmanDirection::XPlus;
+			}
+			if(event.key.keysym.scancode == SDL_SCANCODE_DOWN)
+			{
+				pacman_.next_direction = PacmanDirection::YPlus;
+			}
+			if(event.key.keysym.scancode == SDL_SCANCODE_UP)
+			{
+				pacman_.next_direction = PacmanDirection::YMinus;
+			}
+		}
+	}
 
 	++tick_;
 
-	pacman_.direction = PacmanDirection(tick_ / 128 % 4);
+	fixed16vec2_t new_position = pacman_.position;
+	switch(pacman_.direction)
+	{
+	case PacmanDirection::XMinus:
+		new_position[0] -= g_pacman_move_speed;
+		break;
+	case PacmanDirection::XPlus:
+		new_position[0] += g_pacman_move_speed;
+		break;
+	case PacmanDirection::YMinus:
+		new_position[1] -= g_pacman_move_speed;
+		break;
+	case PacmanDirection::YPlus:
+		new_position[1] += g_pacman_move_speed;
+		break;
+	}
+
+	const fixed16vec2_t vec_to_target =
+	{
+		pacman_.target_position[0] - new_position[0],
+		pacman_.target_position[1] - new_position[1],
+	};
+	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_pacman_move_speed)
+	{
+		pacman_.position = pacman_.target_position;
+		// TODO - maybe update direction only if we can move towards this direction?
+		pacman_.direction = pacman_.next_direction;
+
+		auto new_target_position = pacman_.target_position;
+		switch(pacman_.next_direction)
+		{
+		case PacmanDirection::XMinus:
+			new_target_position[0] -= g_fixed16_one;
+			break;
+		case PacmanDirection::XPlus:
+			new_target_position[0] += g_fixed16_one;
+			break;
+		case PacmanDirection::YMinus:
+			new_target_position[1] -= g_fixed16_one;
+			break;
+		case PacmanDirection::YPlus:
+			new_target_position[1] += g_fixed16_one;
+			break;
+		}
+
+		const std::array<int32_t, 2> target_block =
+		{
+			Fixed16FloorToInt(new_target_position[0]), Fixed16FloorToInt(new_target_position[1])
+		};
+
+		// Do not allow moving towards walls.
+		// TODO - maybe prevent moving towards corners?
+		if( target_block[0] >= 0 && target_block[0] < int32_t(c_field_width ) &&
+			target_block[1] >= 0 && target_block[1] < int32_t(c_field_height) &&
+			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] == ' ')
+		{
+			pacman_.target_position = new_target_position;
+		}
+	}
+	else
+	{
+		pacman_.position = new_position;
+	}
 }
 
 void GamePacman::Draw(const FrameBuffer frame_buffer) const
@@ -240,8 +332,8 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	};
 
 	const SpriteBMP current_sprite = pacman_sprites[tick_ / 12 % std::size(pacman_sprites)];
-	const uint32_t pacman_x = pacman_.position[0] * c_block_size + 5;
-	const uint32_t pacman_y = pacman_.position[1] * c_block_size + 5;
+	const uint32_t pacman_x = uint32_t(Fixed16FloorToInt(pacman_.position[0] * c_block_size)) - 7;
+	const uint32_t pacman_y = uint32_t(Fixed16FloorToInt(pacman_.position[1] * c_block_size)) - 7;
 	switch(pacman_.direction)
 	{
 	case PacmanDirection::XMinus:
