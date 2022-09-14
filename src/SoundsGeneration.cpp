@@ -8,6 +8,22 @@ namespace
 const int32_t g_sample_scale = int32_t(std::numeric_limits<SampleType>::max());
 const float g_two_pi = 2.0f * 3.1415926535f;
 
+SoundData Concat(SoundData l, const SoundData& r)
+{
+	l.samples.insert(l.samples.end(), r.samples.begin(), r.samples.end());
+	return l;
+}
+
+SoundData Concat(SoundData a, const SoundData& b, const SoundData& c)
+{
+	return Concat(Concat(a, b), c);
+}
+
+SoundData Concat(SoundData a, const SoundData& b, const SoundData& c, const SoundData& d)
+{
+	return Concat(Concat(a, b), c, d);
+}
+
 } // namespace
 
 SoundData GenSinWaveSound(const uint32_t sample_rate, const fixed16_t sin_wave_frequency, const uint32_t periods)
@@ -52,7 +68,25 @@ SoundData GenArkanoidBallHitSound(const uint32_t sample_rate)
 	return GenSquareWaveSound(sample_rate, 32 * g_fixed16_one, 3);
 }
 
-SoundData GenTetrisFigureStep(uint32_t sample_rate)
+SoundData GenTetrisFigureStep(const uint32_t sample_rate)
 {
 	return GenSquareWaveSound(sample_rate, 120 * g_fixed16_one, 6);
+}
+
+SoundData GenSnakeBonusEat(const uint32_t sample_rate)
+{
+	return Concat(
+		GenSquareWaveSound(sample_rate, 120 * g_fixed16_one, 8),
+		GenSquareWaveSound(sample_rate, 140 * g_fixed16_one, 8),
+		GenSquareWaveSound(sample_rate, 160 * g_fixed16_one, 8));
+}
+
+
+SoundData GenSnakeDeath(const uint32_t sample_rate)
+{
+	return Concat(
+		GenSquareWaveSound(sample_rate, 180 * g_fixed16_one, 16),
+		GenSquareWaveSound(sample_rate, 160 * g_fixed16_one, 24),
+		GenSquareWaveSound(sample_rate, 140 * g_fixed16_one, 32),
+		GenSquareWaveSound(sample_rate, 120 * g_fixed16_one, 48));
 }

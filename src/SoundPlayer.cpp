@@ -9,6 +9,8 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 	{
 		GenArkanoidBallHitSound,
 		GenTetrisFigureStep,
+		GenSnakeBonusEat,
+		GenSnakeDeath,
 	};
 
 	for(size_t i= 0; i < size_t(SoundId::NumSounds); ++i)

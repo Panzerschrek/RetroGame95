@@ -1,12 +1,15 @@
 #include "GameTetris.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "GameSnake.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include <cassert>
 
 namespace
 {
+
+const uint32_t g_max_level = 2;
 
 const constexpr uint32_t g_num_piece_types = 7;
 
@@ -488,7 +491,14 @@ void GameTetris::UpdateScore(const uint32_t lines_removed)
 
 	if(lines_removed_for_this_level_ >= GetNumRemovedLinesForLevelFinish(level_))
 	{
-		NextLevel();
+		if(level_ >= g_max_level)
+		{
+			next_game_ = std::make_unique<GameSnake>(sound_player_);
+		}
+		else
+		{
+			NextLevel();
+		}
 	}
 }
 
