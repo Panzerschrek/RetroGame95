@@ -9,35 +9,37 @@ namespace
 constexpr char g_game_field[]=
 "                # #              "
 " ############   # #   ########## "
-" #    ##    #   # #   #        # "
-" # ## ## ## #   # #   # ## ### # "
-" # ##    ## #   # #   # ## ### # "
-" # ## ##### #   # #   # ## ### # "
-" # ## ##### ##### ##### ## ### # "
-" # ##                          # "
-" # ##### ## ##### ######## ### # "
-" # ##### ## ##### ######## ### # "
-" # ##    ##          ##    ### # "
-" # ## ## ## ## ##### ## ## ### # "
-" # ## ## ## ## #   # ## ## ### # "
-" #    ##    ## #   #    ##     # "
-" # ##### ##### #     ##### ##### "
-" # ##### ##### #     ##### ##### "
-" #    ##    ## #   #    ##     # "
-" # ## ## ## ## #   # ## ## ### # "
-" # ## ## ## ## ##### ## ## ### # "
-" # ##    ##          ##    ### # "
-" # ##### ## ##### ######## ### # "
-" # ##### ## ##### ######## ### # "
-" # ##                          # "
-" # ## ##### ##### ##### ## ### # "
-" # ## ##### #   # #   # ## ### # "
-" # ##    ## #   # #   # ## ### # "
-" # ## ## ## #   # #   # ## ### # "
-" #    ##    #   # #   #        # "
-" ############   # #   ########## "
+" #....##....#   # #   #........# "
+" #.##.##.##.#   # #   #.##.###.# "
+" #.##....##.#   # #   #.##.###.# "
+" #.##.#####.#   # #   #.##.###.# "
+" #.##.#####.##### #####.##.###.# "
+" #.##..........................# "
+" #.#####.##.#####.########.###.# "
+" #.#####.##.#####.########.###.# "
+" #.##....##..........##....###.# "
+" #.##.##.##.##.#####.##.##.###.# "
+" #.##.##.##.##.#   #.##.##.###.# "
+" #....##....##.#   #....##.....# "
+" #.#####.#####.#    .#####.##### "
+" #.#####.#####.#    .#####.##### "
+" #....##....##.#   #....##.....# "
+" #.##.##.##.##.#   #.##.##.###.# "
+" #.##.##.##.##.#####.##.##.###.# "
+" #.##....##..........##....###.# "
+" #.#####.##.#####.########.###.# "
+" #.#####.##.#####.########.###.# "
+" #.##..........................# "
+" #.##.#####.##### #####.##.###.# "
+" #.##.#####.#   # #   #.##.###.# "
+" #.##....##.#   # #   #.##.###.# "
+" #.##.##.##.#   # #   #.##.###.# "
+" #....##....#   # #   #........# "
+".############   # #   ########## "
 "                # #              "
 ;
+
+const char g_wall_symbol = '#';
 
 const fixed16_t g_pacman_move_speed = g_fixed16_one / 64;
 
@@ -138,7 +140,7 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		// TODO - maybe prevent moving towards corners?
 		if( target_block[0] >= 0 && target_block[0] < int32_t(c_field_width ) &&
 			target_block[1] >= 0 && target_block[1] < int32_t(c_field_height) &&
-			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] == ' ')
+			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] != g_wall_symbol)
 		{
 			pacman_.target_position = new_target_position;
 		}
@@ -156,7 +158,6 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
 	const Color32 c_wall_color = 0x000000FF;
-	const char c_wall_symbol = '#';
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
 		const char* const line = g_game_field + y * c_field_width;
@@ -166,7 +167,11 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
 			const char block = line[x];
-			if(block == ' ')
+			if(block == '.')
+			{
+				DrawSprite(frame_buffer, Sprites::pacman_food, x * c_block_size + 3, y * c_block_size + 3);
+			}
+			if(block != g_wall_symbol)
 			{
 				continue;
 			}
@@ -181,14 +186,14 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			const uint32_t x_minus_one_clamped = std::max(x, 1u) - 1;
 			const uint32_t x_plus_one_clamped = std::min(x, c_field_width - 2) + 1;
 
-			const bool block_y_minus = line_y_minus[x] == c_wall_symbol;
-			const bool block_y_plus  = line_y_plus [x] == c_wall_symbol;
-			const bool block_x_minus = line[x_minus_one_clamped] == c_wall_symbol;
-			const bool block_x_plus  = line[x_plus_one_clamped ] == c_wall_symbol;
-			const bool block_x_minus_y_minus = line_y_minus[x_minus_one_clamped] == c_wall_symbol;
-			const bool block_x_minus_y_plus  = line_y_plus [x_minus_one_clamped] == c_wall_symbol;
-			const bool block_x_plus_y_minus  = line_y_minus[x_plus_one_clamped ] == c_wall_symbol;
-			const bool block_x_plus_y_plus   = line_y_plus [x_plus_one_clamped ] == c_wall_symbol;
+			const bool block_y_minus = line_y_minus[x] == g_wall_symbol;
+			const bool block_y_plus  = line_y_plus [x] == g_wall_symbol;
+			const bool block_x_minus = line[x_minus_one_clamped] == g_wall_symbol;
+			const bool block_x_plus  = line[x_plus_one_clamped ] == g_wall_symbol;
+			const bool block_x_minus_y_minus = line_y_minus[x_minus_one_clamped] == g_wall_symbol;
+			const bool block_x_minus_y_plus  = line_y_plus [x_minus_one_clamped] == g_wall_symbol;
+			const bool block_x_plus_y_minus  = line_y_minus[x_plus_one_clamped ] == g_wall_symbol;
+			const bool block_x_plus_y_plus   = line_y_plus [x_plus_one_clamped ] == g_wall_symbol;
 
 			// Sides.
 			if((block_x_plus && block_x_minus) || (!block_y_minus && !block_y_plus))
