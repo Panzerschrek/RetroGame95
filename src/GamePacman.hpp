@@ -18,8 +18,8 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	static const constexpr uint32_t c_field_width = 30;
-	static const constexpr uint32_t c_field_height = 33;
+	static const constexpr uint32_t c_field_width = 33;
+	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
 
 private:
