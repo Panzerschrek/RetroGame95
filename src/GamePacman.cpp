@@ -44,7 +44,7 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	pacman_position_ = {4, 6};
+	pacman_.position = {4, 6};
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -53,6 +53,8 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	(void)keyboard_state;
 
 	++tick_;
+
+	pacman_.direction = PacmanDirection(tick_ / 128 % 4);
 }
 
 void GamePacman::Draw(const FrameBuffer frame_buffer) const
@@ -237,12 +239,24 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		Sprites::pacman_1,
 	};
 
-	DrawSpriteWithAlpha(
-		frame_buffer,
-		pacman_sprites[tick_ / 12 % std::size(pacman_sprites)],
-		0,
-		pacman_position_[0] * c_block_size + 5,
-		pacman_position_[1] * c_block_size + 5);
+	const SpriteBMP current_sprite = pacman_sprites[tick_ / 12 % std::size(pacman_sprites)];
+	const uint32_t pacman_x = pacman_.position[0] * c_block_size + 5;
+	const uint32_t pacman_y = pacman_.position[1] * c_block_size + 5;
+	switch(pacman_.direction)
+	{
+	case PacmanDirection::XMinus:
+		DrawSpriteWithAlphaRotate180(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+		break;
+	case PacmanDirection::XPlus:
+		DrawSpriteWithAlpha         (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+		break;
+	case PacmanDirection::YMinus:
+		DrawSpriteWithAlphaRotate270(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+		break;
+	case PacmanDirection::YPlus:
+		DrawSpriteWithAlphaRotate90 (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+		break;
+	}
 }
 
 GameInterfacePtr GamePacman::AskForNextGameTransition()

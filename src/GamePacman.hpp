@@ -18,6 +18,20 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
+	enum class PacmanDirection
+	{
+		XPlus,
+		XMinus,
+		YPlus,
+		YMinus,
+	};
+
+	struct Pacman
+	{
+		std::array<uint32_t, 2> position{};
+		PacmanDirection direction = PacmanDirection::XPlus;
+	};
+
 	static const constexpr uint32_t c_field_width = 33;
 	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
@@ -28,7 +42,7 @@ private:
 
 	uint32_t tick_ = 0;
 
-	std::array<uint32_t, 2> pacman_position_{};
+	Pacman pacman_;
 
 	GameInterfacePtr next_game_;
 };
