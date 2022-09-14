@@ -332,8 +332,10 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	};
 
 	const SpriteBMP current_sprite = pacman_sprites[tick_ / 12 % std::size(pacman_sprites)];
-	const uint32_t pacman_x = uint32_t(Fixed16FloorToInt(pacman_.position[0] * c_block_size)) - 7;
-	const uint32_t pacman_y = uint32_t(Fixed16FloorToInt(pacman_.position[1] * c_block_size)) - 7;
+	const uint32_t pacman_x =
+		uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
+	const uint32_t pacman_y =
+		uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
 	switch(pacman_.direction)
 	{
 	case PacmanDirection::XMinus:
