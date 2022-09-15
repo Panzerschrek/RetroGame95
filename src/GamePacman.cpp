@@ -43,7 +43,7 @@ const char g_wall_symbol = '#';
 const char g_food_symbol = '.';
 const char g_bonus_deadly_symbol = '@';
 
-const fixed16_t g_pacman_move_speed = g_fixed16_one / 64;
+const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
 
 } // namespace
 
@@ -113,8 +113,6 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_pacman_move_speed)
 	{
 		pacman_.position = pacman_.target_position;
-		// TODO - maybe update direction only if we can move towards this direction?
-		pacman_.direction = pacman_.next_direction;
 
 		auto new_target_position = pacman_.target_position;
 		switch(pacman_.next_direction)
@@ -133,19 +131,68 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 			break;
 		}
 
+		auto forward_target_position = pacman_.target_position;
+		switch(pacman_.direction)
+		{
+		case PacmanDirection::XMinus:
+			forward_target_position[0] -= g_fixed16_one;
+			break;
+		case PacmanDirection::XPlus:
+			forward_target_position[0] += g_fixed16_one;
+			break;
+		case PacmanDirection::YMinus:
+			forward_target_position[1] -= g_fixed16_one;
+			break;
+		case PacmanDirection::YPlus:
+			forward_target_position[1] += g_fixed16_one;
+			break;
+		}
+
 		const std::array<int32_t, 2> target_block =
 		{
 			Fixed16FloorToInt(new_target_position[0]), Fixed16FloorToInt(new_target_position[1])
 		};
+		const std::array<int32_t, 2> forward_block =
+		{
+			Fixed16FloorToInt(forward_target_position[0]), Fixed16FloorToInt(forward_target_position[1])
+		};
 
-		// Do not allow moving towards walls.
-		// TODO - maybe prevent moving towards corners?
 		if( target_block[0] >= 0 && target_block[0] < int32_t(c_field_width ) &&
 			target_block[1] >= 0 && target_block[1] < int32_t(c_field_height) &&
 			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] != g_wall_symbol)
 		{
+			// Block towards target direction is free. Change target position and direction.
 			pacman_.target_position = new_target_position;
+			pacman_.direction = pacman_.next_direction;
 		}
+		else if(
+			forward_block[0] >= 0 && forward_block[0] < int32_t(c_field_width ) &&
+			forward_block[1] >= 0 && forward_block[1] < int32_t(c_field_height) &&
+			g_game_field[uint32_t(forward_block[0]) + uint32_t(forward_block[1]) * c_field_width] != g_wall_symbol)
+		{
+			// Forward block is free. Move towards it but do not change direction.
+			pacman_.target_position = forward_target_position;
+		}
+	}
+	else if(pacman_.direction == PacmanDirection::XPlus && pacman_.next_direction == PacmanDirection::XMinus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[0] -= g_fixed16_one;
+	}
+	else if(pacman_.direction == PacmanDirection::XMinus && pacman_.next_direction == PacmanDirection::XPlus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[0] += g_fixed16_one;
+	}
+	else if(pacman_.direction == PacmanDirection::YPlus && pacman_.next_direction == PacmanDirection::YMinus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[1] -= g_fixed16_one;
+	}
+	else if(pacman_.direction == PacmanDirection::YMinus && pacman_.next_direction == PacmanDirection::YPlus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[1] += g_fixed16_one;
 	}
 	else
 	{
