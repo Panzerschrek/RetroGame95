@@ -583,6 +583,13 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 	const GhostType ghost_type,
 	const std::array<int32_t, 2>& ghost_position)
 {
+	// If ghost is in the middle room - target towards exit from this room.
+	if (ghost_position[0] >= 16 && ghost_position[0] <= 18 &&
+		ghost_position[1] >= 12 && ghost_position[1] <= 17)
+	{
+		return {20, 15};
+	}
+
 	const std::array<int32_t, 2> pacman_block{
 		Fixed16FloorToInt(pacman_.target_position[0]),
 		Fixed16FloorToInt(pacman_.target_position[1])};
