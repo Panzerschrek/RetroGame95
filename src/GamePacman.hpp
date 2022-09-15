@@ -70,6 +70,7 @@ private:
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(GhostType ghost_type, const std::array<int32_t, 2>& ghost_position);
 	void TryTeleportCharacters();
+	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 
 private:
 	SoundPlayer& sound_player_;

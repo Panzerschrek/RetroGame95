@@ -63,15 +63,15 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 		Ghost& ghost = ghosts_[i];
 		const uint32_t index_wrapped = i % 4;
 		ghost.type = GhostType(index_wrapped % 4);
-		if(index_wrapped < 3)
+		if(ghost.type == GhostType::Blinky)
 		{
-			ghost.target_position = {
-				IntToFixed16(16) + g_fixed16_one / 2,
-				IntToFixed16(12 + int32_t(index_wrapped * 2)) + g_fixed16_one / 2};
+			ghost.target_position = {IntToFixed16(20) + g_fixed16_one / 2, IntToFixed16(14) + g_fixed16_one / 2};
 		}
 		else
 		{
-			ghost.target_position = {IntToFixed16(18) + g_fixed16_one / 2, IntToFixed16(14) + g_fixed16_one / 2};
+			ghost.target_position = {
+				IntToFixed16(17) + g_fixed16_one / 2,
+				IntToFixed16(10 + int32_t(index_wrapped * 2)) + g_fixed16_one / 2};
 		}
 		ghost.position = ghost.target_position;
 	}
@@ -465,7 +465,8 @@ void GamePacman::MovePacman()
 
 		if( target_block[0] >= 0 && target_block[0] < int32_t(c_field_width ) &&
 			target_block[1] >= 0 && target_block[1] < int32_t(c_field_height) &&
-			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] != g_wall_symbol)
+			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] != g_wall_symbol &&
+			!IsBlockInsideGhostsRoom(target_block))
 		{
 			// Block towards target direction is free. Change target position and direction.
 			pacman_.target_position = new_target_position;
@@ -474,7 +475,8 @@ void GamePacman::MovePacman()
 		else if(
 			forward_block[0] >= 0 && forward_block[0] < int32_t(c_field_width ) &&
 			forward_block[1] >= 0 && forward_block[1] < int32_t(c_field_height) &&
-			g_game_field[uint32_t(forward_block[0]) + uint32_t(forward_block[1]) * c_field_width] != g_wall_symbol)
+			g_game_field[uint32_t(forward_block[0]) + uint32_t(forward_block[1]) * c_field_width] != g_wall_symbol &&
+			!IsBlockInsideGhostsRoom(forward_block))
 		{
 			// Forward block is free. Move towards it but do not change direction.
 			pacman_.target_position = forward_target_position;
@@ -549,6 +551,12 @@ void GamePacman::MoveGhost(Ghost& ghost)
 		const auto add_next_block_candidate =
 		[&](const std::array<int32_t, 2>& next_block, const GridDirection direction)
 		{
+			if(!IsBlockInsideGhostsRoom(block) && IsBlockInsideGhostsRoom(next_block))
+			{
+				// Do not allow to move into start room from outside.
+				return;
+			}
+
 			const std::array<int32_t, 2> vec_to
 				{next_block[0] - destination_block[0], next_block[1] - destination_block[1]};
 			const int32_t square_distance = vec_to[0] * vec_to[0] + vec_to[1] * vec_to[1];
@@ -598,8 +606,7 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 	const std::array<int32_t, 2>& ghost_position)
 {
 	// If ghost is in the middle room - target towards exit from this room.
-	if (ghost_position[0] >= 16 && ghost_position[0] <= 18 &&
-		ghost_position[1] >= 12 && ghost_position[1] <= 17)
+	if(IsBlockInsideGhostsRoom(ghost_position))
 	{
 		return {20, 15};
 	}
@@ -743,4 +750,11 @@ void GamePacman::TryTeleportCharacters()
 			ghost.target_position[1] -= teleport_distance;
 		}
 	}
+}
+
+bool GamePacman::IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block)
+{
+	return
+		block[0] >= 16 && block[0] <= 19 &&
+		block[1] >= 12 && block[1] <= 17;
 }
