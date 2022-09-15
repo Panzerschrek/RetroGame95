@@ -364,9 +364,37 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	const SpriteBMP ghosts_sprites[4][4]
+	{
+		{
+			Sprites::pacman_ghost_0_right,
+			Sprites::pacman_ghost_0_left ,
+			Sprites::pacman_ghost_0_down ,
+			Sprites::pacman_ghost_0_up   ,
+		},
+		{
+			Sprites::pacman_ghost_1_right,
+			Sprites::pacman_ghost_1_left ,
+			Sprites::pacman_ghost_1_down ,
+			Sprites::pacman_ghost_1_up   ,
+		},
+		{
+			Sprites::pacman_ghost_2_right,
+			Sprites::pacman_ghost_2_left ,
+			Sprites::pacman_ghost_2_down ,
+			Sprites::pacman_ghost_2_up   ,
+		},
+		{
+			Sprites::pacman_ghost_3_right,
+			Sprites::pacman_ghost_3_left ,
+			Sprites::pacman_ghost_3_down ,
+			Sprites::pacman_ghost_3_up   ,
+		},
+	};
+
 	for(const Ghost& ghost : ghosts_)
 	{
-		const SpriteBMP sprite(Sprites::pacman_ghost);
+		const auto sprite = ghosts_sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
