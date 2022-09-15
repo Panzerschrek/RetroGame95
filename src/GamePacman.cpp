@@ -51,7 +51,9 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	pacman_.target_position = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(2) + g_fixed16_one / 2};
+	pacman_.target_position = {IntToFixed16(8) + g_fixed16_one / 2, IntToFixed16(12) + g_fixed16_one / 2};
+	pacman_.direction = PacmanDirection::YPlus;
+	pacman_.next_direction = pacman_.direction;
 	pacman_.position = pacman_.target_position;
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
