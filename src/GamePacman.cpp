@@ -47,6 +47,8 @@ constexpr char g_bonus_deadly_symbol = '@';
 const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
 const fixed16_t g_ghost_move_speed = g_fixed16_one / 32;
 
+const uint32_t g_frightened_mode_duration = 1200;
+
 } // namespace
 
 GamePacman::GamePacman(SoundPlayer& sound_player)
@@ -137,6 +139,11 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	}
 
 	TryTeleportCharacters();
+
+	if(ghosts_mode_ == GhostsMode::Frightened && tick_ >= frightened_mode_end_tick_)
+	{
+		ghosts_mode_ = GhostsMode::Scatter;
+	}
 }
 
 void GamePacman::Draw(const FrameBuffer frame_buffer) const
@@ -394,7 +401,10 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 	for(const Ghost& ghost : ghosts_)
 	{
-		const auto sprite = ghosts_sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
+		const auto sprite =
+			ghosts_mode_ == GhostsMode::Frightened
+				? Sprites::pacman_ghost_vulnerable
+				: ghosts_sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
@@ -442,6 +452,10 @@ void GamePacman::MovePacman()
 		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
 		if(bonus != Bonus::None)
 		{
+			if(bonus == Bonus::Deadly)
+			{
+				EnterFrightenedMode();
+			}
 			bonus = Bonus::None;
 			// TODO - add score here.
 		}
@@ -781,6 +795,35 @@ void GamePacman::TryTeleportCharacters()
 		{
 			ghost.position[1] -= teleport_distance;
 			ghost.target_position[1] -= teleport_distance;
+		}
+	}
+}
+
+void GamePacman::EnterFrightenedMode()
+{
+	ghosts_mode_ = GhostsMode::Frightened;
+	frightened_mode_end_tick_ = tick_ + g_frightened_mode_duration;
+
+	for(Ghost& ghost : ghosts_)
+	{
+		switch(ghost.direction)
+		{
+		case GridDirection::XPlus:
+			ghost.target_position[0] -= g_fixed16_one;
+			ghost.direction = GridDirection::XMinus;
+			break;
+		case GridDirection::XMinus:
+			ghost.target_position[0] += g_fixed16_one;
+			ghost.direction = GridDirection::XPlus;
+			break;
+		case GridDirection::YPlus :
+			ghost.target_position[1] -= g_fixed16_one;
+			ghost.direction = GridDirection::YMinus;
+			break;
+		case GridDirection::YMinus:
+			ghost.target_position[1] += g_fixed16_one;
+			ghost.direction = GridDirection::YPlus;
+			break;
 		}
 	}
 }

@@ -78,6 +78,8 @@ private:
 	std::array<int32_t, 2> GetGhostDestinationBlock(GhostType ghost_type, const std::array<int32_t, 2>& ghost_position);
 	void TryTeleportCharacters();
 
+	void EnterFrightenedMode();
+
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
 
@@ -90,6 +92,7 @@ private:
 	Pacman pacman_;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	GhostsMode ghosts_mode_ = GhostsMode::Scatter;
+	uint32_t frightened_mode_end_tick_ = 0;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 
 	GameInterfacePtr next_game_;
