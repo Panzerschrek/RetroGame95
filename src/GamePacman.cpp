@@ -58,9 +58,21 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	pacman_.next_direction = pacman_.direction;
 	pacman_.position = pacman_.target_position;
 
-	for(Ghost& ghost : ghosts_)
+	for(uint32_t i = 0; i < c_num_ghosts; ++i)
 	{
-		ghost.target_position = {IntToFixed16(17) + g_fixed16_one / 2, IntToFixed16(13) + g_fixed16_one / 2};
+		Ghost& ghost = ghosts_[i];
+		const uint32_t index_wrapped = i % 4;
+		ghost.type = GhostType(index_wrapped % 4);
+		if(index_wrapped < 3)
+		{
+			ghost.target_position = {
+				IntToFixed16(16) + g_fixed16_one / 2,
+				IntToFixed16(12 + int32_t(index_wrapped * 2)) + g_fixed16_one / 2};
+		}
+		else
+		{
+			ghost.target_position = {IntToFixed16(18) + g_fixed16_one / 2, IntToFixed16(14) + g_fixed16_one / 2};
+		}
 		ghost.position = ghost.target_position;
 	}
 

@@ -63,7 +63,7 @@ private:
 	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
 
-	static const constexpr uint32_t c_num_ghosts = 1;
+	static const constexpr uint32_t c_num_ghosts = 4;
 
 private:
 	void MovePacman();
