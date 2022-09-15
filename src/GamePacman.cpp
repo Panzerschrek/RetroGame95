@@ -582,60 +582,111 @@ void GamePacman::MoveGhost(Ghost& ghost)
 			Fixed16FloorToInt(ghost.target_position[0]),
 			Fixed16FloorToInt(ghost.target_position[1])};
 
-		// TODO - make destination depemndent on ghost personality instead.
-		// TODO - maybe avoid changing target in corridors?
-		const std::array<int32_t, 2> destination_block = GetGhostDestinationBlock(ghost.type, block);
-
-		int32_t best_square_distance  = 0x7FFFFFFF;
-		std::array<int32_t, 2> best_next_block = block;
-		GridDirection best_direction = ghost.direction;
-
-		const auto add_next_block_candidate =
-		[&](const std::array<int32_t, 2>& next_block, const GridDirection direction)
+		if(ghosts_mode_ == GhostsMode::Frightened)
 		{
-			if(!IsBlockInsideGhostsRoom(block) && IsBlockInsideGhostsRoom(next_block))
+			std::pair<std::array<int32_t, 2>, GridDirection> possible_targets[4];
+			uint32_t num_possible_targets = 0;
+
+			const auto add_next_block_candidate =
+			[&](const std::array<int32_t, 2>& next_block, const GridDirection direction)
 			{
-				// Do not allow to move into start room from outside.
-				return;
+				if(!IsBlockInsideGhostsRoom(block) && IsBlockInsideGhostsRoom(next_block))
+				{
+					// Do not allow to move into start room from outside.
+					return;
+				}
+				if(
+					next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
+					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
+					g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+				{
+					possible_targets[num_possible_targets] = std::make_pair(next_block, direction);
+					++num_possible_targets;
+				}
+			};
+
+			// Never make 180 degrees turn.
+			if(ghost.direction != GridDirection::YPlus )
+			{
+				add_next_block_candidate({block[0], block[1] - 1}, GridDirection::YMinus);
+			}
+			if(ghost.direction != GridDirection::XPlus )
+			{
+				add_next_block_candidate({block[0] - 1, block[1]}, GridDirection::XMinus);
+			}
+			if(ghost.direction != GridDirection::YMinus)
+			{
+				add_next_block_candidate({block[0], block[1] + 1}, GridDirection::YPlus );
+			}
+			if(ghost.direction != GridDirection::XMinus)
+			{
+				add_next_block_candidate({block[0] + 1, block[1]}, GridDirection::XPlus );
 			}
 
-			const std::array<int32_t, 2> vec_to
-				{next_block[0] - destination_block[0], next_block[1] - destination_block[1]};
-			const int32_t square_distance = vec_to[0] * vec_to[0] + vec_to[1] * vec_to[1];
-			if(square_distance < best_square_distance &&
-				next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
-				next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
-				g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+			if(num_possible_targets != 0)
 			{
-				best_square_distance = square_distance;
-				best_next_block = next_block;
-				best_direction = direction;
+				const auto selected_target = possible_targets[rand_.Next() % num_possible_targets];
+				ghost.target_position = {
+					IntToFixed16(selected_target.first[0]) + g_fixed16_one / 2,
+					IntToFixed16(selected_target.first[1]) + g_fixed16_one / 2};
+				ghost.direction = selected_target.second;
 			}
-		};
+		}
+		else
+		{
+			const std::array<int32_t, 2> destination_block = GetGhostDestinationBlock(ghost.type, block);
 
-		// Order conditions by priority as in original game, see https://youtu.be/ataGotQ7ir8?t=180.
-		// Newe make 180 degrees turn.
-		if(ghost.direction != GridDirection::YPlus )
-		{
-			add_next_block_candidate({block[0], block[1] - 1}, GridDirection::YMinus);
-		}
-		if(ghost.direction != GridDirection::XPlus )
-		{
-			add_next_block_candidate({block[0] - 1, block[1]}, GridDirection::XMinus);
-		}
-		if(ghost.direction != GridDirection::YMinus)
-		{
-			add_next_block_candidate({block[0], block[1] + 1}, GridDirection::YPlus );
-		}
-		if(ghost.direction != GridDirection::XMinus)
-		{
-			add_next_block_candidate({block[0] + 1, block[1]}, GridDirection::XPlus );
-		}
+			int32_t best_square_distance  = 0x7FFFFFFF;
+			std::array<int32_t, 2> best_next_block = block;
+			GridDirection best_direction = ghost.direction;
 
-		ghost.target_position = {
-			IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
-			IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
-		ghost.direction = best_direction;
+			const auto add_next_block_candidate =
+			[&](const std::array<int32_t, 2>& next_block, const GridDirection direction)
+			{
+				if(!IsBlockInsideGhostsRoom(block) && IsBlockInsideGhostsRoom(next_block))
+				{
+					// Do not allow to move into start room from outside.
+					return;
+				}
+
+				const std::array<int32_t, 2> vec_to
+					{next_block[0] - destination_block[0], next_block[1] - destination_block[1]};
+				const int32_t square_distance = vec_to[0] * vec_to[0] + vec_to[1] * vec_to[1];
+				if(square_distance < best_square_distance &&
+					next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
+					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
+					g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+				{
+					best_square_distance = square_distance;
+					best_next_block = next_block;
+					best_direction = direction;
+				}
+			};
+
+			// Order conditions by priority as in original game, see https://youtu.be/ataGotQ7ir8?t=180.
+			// Never make 180 degrees turn.
+			if(ghost.direction != GridDirection::YPlus )
+			{
+				add_next_block_candidate({block[0], block[1] - 1}, GridDirection::YMinus);
+			}
+			if(ghost.direction != GridDirection::XPlus )
+			{
+				add_next_block_candidate({block[0] - 1, block[1]}, GridDirection::XMinus);
+			}
+			if(ghost.direction != GridDirection::YMinus)
+			{
+				add_next_block_candidate({block[0], block[1] + 1}, GridDirection::YPlus );
+			}
+			if(ghost.direction != GridDirection::XMinus)
+			{
+				add_next_block_candidate({block[0] + 1, block[1]}, GridDirection::XPlus );
+			}
+
+			ghost.target_position = {
+				IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
+				IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
+			ghost.direction = best_direction;
+		}
 	}
 	else
 	{
