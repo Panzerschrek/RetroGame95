@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "Sprites.hpp"
+#include <cassert>
 
 namespace
 {
@@ -525,9 +526,7 @@ void GamePacman::MoveGhost(Ghost& ghost)
 
 		// TODO - make destination depemndent on ghost personality instead.
 		// TODO - maybe avoid changing target in corridors?
-		const std::array<int32_t, 2> destination_block{
-			Fixed16FloorToInt(pacman_.target_position[0]),
-			Fixed16FloorToInt(pacman_.target_position[1])};
+		const std::array<int32_t, 2> destination_block = GetGhostDestinationBlock(ghost.type, block);
 
 		int32_t best_square_distance  = 0x7FFFFFFF;
 		std::array<int32_t, 2> best_next_block = block;
@@ -578,4 +577,105 @@ void GamePacman::MoveGhost(Ghost& ghost)
 	{
 		ghost.position = new_position;
 	}
+}
+
+std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
+	const GhostType ghost_type,
+	const std::array<int32_t, 2>& ghost_position)
+{
+	const std::array<int32_t, 2> pacman_block{
+		Fixed16FloorToInt(pacman_.target_position[0]),
+		Fixed16FloorToInt(pacman_.target_position[1])};
+
+	switch(ghost_type)
+	{
+	case GhostType::Blinky:
+		return pacman_block;
+
+	case GhostType::Pinky:
+		{
+			auto block = pacman_block;
+			const int32_t offset = 4;
+			// TODO - maybe simulate original diagonal offset bug?
+			switch(pacman_.direction)
+			{
+			case GridDirection::XMinus:
+				block[0] -= offset;
+				break;
+			case GridDirection::XPlus :
+				block[0] += offset;
+				break;
+			case GridDirection::YMinus:
+				block[1] -= offset;
+				break;
+			case GridDirection::YPlus :
+				block[1] += offset;
+				break;
+			}
+			return block;
+		}
+
+	case GhostType::Inky:
+		for(const Ghost& other_ghost : ghosts_)
+		{
+			if(other_ghost.type != GhostType::Blinky)
+			{
+				continue;
+			}
+
+			auto block = pacman_block;
+			const int32_t offset = 2;
+			// TODO - maybe simulate original diagonal offset bug?
+			switch(pacman_.direction)
+			{
+			case GridDirection::XMinus:
+				block[0] -= offset;
+				break;
+			case GridDirection::XPlus :
+				block[0] += offset;
+				break;
+			case GridDirection::YMinus:
+				block[1] -= offset;
+				break;
+			case GridDirection::YPlus :
+				block[1] += offset;
+				break;
+			}
+
+			const std::array<int32_t, 2> vec_to_blinky
+			{
+				Fixed16FloorToInt(other_ghost.position[0]) - block[0],
+				Fixed16FloorToInt(other_ghost.position[1]) - block[1],
+			};
+
+			return
+			{
+				block[0] - vec_to_blinky[0],
+				block[1] - vec_to_blinky[1],
+			};
+		}
+		// Can't find Blinky.
+		return pacman_block;
+
+	case GhostType::Clyde:
+		{
+			const std::array<int32_t, 2> vec_to_pacman
+			{
+				pacman_block[0] - ghost_position[0],
+				pacman_block[1] - ghost_position[1],
+			};
+			const int32_t square_dist = vec_to_pacman[0] * vec_to_pacman[0] + vec_to_pacman[1] * vec_to_pacman[1];
+			const int32_t threshold_dist = 8;
+			if(square_dist >= threshold_dist * threshold_dist)
+			{
+				return pacman_block;
+			}
+
+			// TODO - move scatter mode constants to another place.
+			return {0, 1};
+		}
+	}
+
+	assert(false);
+	return pacman_block;
 }

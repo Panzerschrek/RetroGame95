@@ -36,8 +36,17 @@ private:
 		fixed16vec2_t target_position{};
 	};
 
+	enum class GhostType
+	{
+		Blinky,
+		Pinky,
+		Inky,
+		Clyde,
+	};
+
 	struct Ghost
 	{
+		GhostType type = GhostType::Blinky;
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::XPlus;
 		fixed16vec2_t target_position{};
@@ -59,6 +68,7 @@ private:
 private:
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
+	std::array<int32_t, 2> GetGhostDestinationBlock(GhostType ghost_type, const std::array<int32_t, 2>& ghost_position);
 
 private:
 	SoundPlayer& sound_player_;
