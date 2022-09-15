@@ -135,6 +135,8 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	{
 		MoveGhost(ghost);
 	}
+
+	TryTeleportCharacters();
 }
 
 void GamePacman::Draw(const FrameBuffer frame_buffer) const
@@ -697,4 +699,48 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 
 	assert(false);
 	return pacman_block;
+}
+
+void GamePacman::TryTeleportCharacters()
+{
+	const uint32_t teleport_x = 17;
+	const uint32_t teleport_y_0 = 0;
+	const uint32_t teleport_y_1 = c_field_height - 1;
+
+	const fixed16_t teleport_distance = IntToFixed16(int32_t(teleport_y_1 - teleport_y_0 - 1));
+
+	const std::array<uint32_t, 2> pacman_block{
+		uint32_t(Fixed16FloorToInt(pacman_.position[0])),
+		uint32_t(Fixed16FloorToInt(pacman_.position[1]))};
+
+	if(pacman_block[0] == teleport_x)
+	{
+		if(pacman_block[1] == teleport_y_0)
+		{
+			pacman_.position[1] += teleport_distance;
+			pacman_.target_position[1] += teleport_distance;
+		}
+		if(pacman_block[1] == teleport_y_1)
+		{
+			pacman_.position[1] -= teleport_distance;
+			pacman_.target_position[1] -= teleport_distance;
+		}
+	}
+
+	for(Ghost& ghost : ghosts_)
+	{
+		const std::array<uint32_t, 2> ghost_block{
+			uint32_t(Fixed16FloorToInt(ghost.position[0])),
+			uint32_t(Fixed16FloorToInt(ghost.position[1]))};
+		if(ghost_block[1] == teleport_y_0)
+		{
+			ghost.position[1] += teleport_distance;
+			ghost.target_position[1] += teleport_distance;
+		}
+		if(ghost_block[1] == teleport_y_1)
+		{
+			ghost.position[1] -= teleport_distance;
+			ghost.target_position[1] -= teleport_distance;
+		}
+	}
 }
