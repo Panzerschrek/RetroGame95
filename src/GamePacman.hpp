@@ -36,6 +36,13 @@ private:
 		fixed16vec2_t target_position{};
 	};
 
+	enum class Bonus
+	{
+		None,
+		Food,
+		Deadly,
+	};
+
 	static const constexpr uint32_t c_field_width = 33;
 	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
@@ -47,6 +54,7 @@ private:
 	uint32_t tick_ = 0;
 
 	Pacman pacman_;
+	Bonus bonuses_[c_field_width * c_field_height]{};
 
 	GameInterfacePtr next_game_;
 };

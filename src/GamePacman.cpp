@@ -39,9 +39,9 @@ constexpr char g_game_field[]=
 "                # #              "
 ;
 
-const char g_wall_symbol = '#';
-const char g_food_symbol = '.';
-const char g_bonus_deadly_symbol = '@';
+constexpr char g_wall_symbol = '#';
+constexpr char g_food_symbol = '.';
+constexpr char g_bonus_deadly_symbol = '@';
 
 const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
 
@@ -53,6 +53,25 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 {
 	pacman_.target_position = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(2) + g_fixed16_one / 2};
 	pacman_.position = pacman_.target_position;
+
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		const uint32_t address = x + y * c_field_width;
+		const char symbol = g_game_field[address];
+		Bonus& bonus = bonuses_[address];
+		switch(symbol)
+		{
+		case g_food_symbol:
+			bonus = Bonus::Food;
+			break;
+		case g_bonus_deadly_symbol:
+			bonus = Bonus::Deadly;
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -112,6 +131,17 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	};
 	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_pacman_move_speed)
 	{
+		// Reached the target.
+
+		const auto block_x = uint32_t(Fixed16FloorToInt(pacman_.target_position[0]));
+		const auto block_y = uint32_t(Fixed16FloorToInt(pacman_.target_position[1]));
+		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
+		if(bonus != Bonus::None)
+		{
+			bonus = Bonus::None;
+			// TODO - add score here.
+		}
+
 		pacman_.position = pacman_.target_position;
 
 		auto new_target_position = pacman_.target_position;
@@ -216,14 +246,6 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
 			const char block = line[x];
-			if(block == g_food_symbol)
-			{
-				DrawSprite(frame_buffer, Sprites::pacman_food, x * c_block_size + 3, y * c_block_size + 3);
-			}
-			if(block == g_bonus_deadly_symbol)
-			{
-				DrawSprite(frame_buffer, Sprites::pacman_bonus_deadly, x * c_block_size, y * c_block_size);
-			}
 			if(block != g_wall_symbol)
 			{
 				continue;
@@ -379,6 +401,26 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			}
 		} // for x
 	} // for y
+
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		const Bonus bonus = bonuses_[x + y * c_field_width];
+		const uint32_t block_x = x * c_block_size;
+		const uint32_t block_y = y * c_block_size;
+
+		switch(bonus)
+		{
+		case Bonus::None:
+			break;
+		case Bonus::Food:
+			DrawSprite(frame_buffer, Sprites::pacman_food, block_x + 3, block_y + 3);
+			break;
+		case Bonus::Deadly:
+			DrawSprite(frame_buffer, Sprites::pacman_bonus_deadly, block_x, block_y);
+			break;
+		}
+	}
 
 	const SpriteBMP pacman_sprites[]
 	{
