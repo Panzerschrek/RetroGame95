@@ -44,6 +44,7 @@ constexpr char g_food_symbol = '.';
 constexpr char g_bonus_deadly_symbol = '@';
 
 const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
+const fixed16_t g_ghost_move_speed = g_fixed16_one / 32;
 
 } // namespace
 
@@ -52,9 +53,15 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
 	pacman_.target_position = {IntToFixed16(8) + g_fixed16_one / 2, IntToFixed16(12) + g_fixed16_one / 2};
-	pacman_.direction = PacmanDirection::YPlus;
+	pacman_.direction = GridDirection::YPlus;
 	pacman_.next_direction = pacman_.direction;
 	pacman_.position = pacman_.target_position;
+
+	for(Ghost& ghost : ghosts_)
+	{
+		ghost.target_position = {IntToFixed16(17) + g_fixed16_one / 2, IntToFixed16(13) + g_fixed16_one / 2};
+		ghost.position = ghost.target_position;
+	}
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
@@ -90,145 +97,30 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		{
 			if(event.key.keysym.scancode == SDL_SCANCODE_LEFT)
 			{
-				pacman_.next_direction = PacmanDirection::XMinus;
+				pacman_.next_direction = GridDirection::XMinus;
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_RIGHT)
 			{
-				pacman_.next_direction = PacmanDirection::XPlus;
+				pacman_.next_direction = GridDirection::XPlus;
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_DOWN)
 			{
-				pacman_.next_direction = PacmanDirection::YPlus;
+				pacman_.next_direction = GridDirection::YPlus;
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_UP)
 			{
-				pacman_.next_direction = PacmanDirection::YMinus;
+				pacman_.next_direction = GridDirection::YMinus;
 			}
 		}
 	}
 
 	++tick_;
 
-	fixed16vec2_t new_position = pacman_.position;
-	switch(pacman_.direction)
-	{
-	case PacmanDirection::XMinus:
-		new_position[0] -= g_pacman_move_speed;
-		break;
-	case PacmanDirection::XPlus:
-		new_position[0] += g_pacman_move_speed;
-		break;
-	case PacmanDirection::YMinus:
-		new_position[1] -= g_pacman_move_speed;
-		break;
-	case PacmanDirection::YPlus:
-		new_position[1] += g_pacman_move_speed;
-		break;
-	}
+	MovePacman();
 
-	const fixed16vec2_t vec_to_target =
+	for(Ghost& ghost : ghosts_)
 	{
-		pacman_.target_position[0] - new_position[0],
-		pacman_.target_position[1] - new_position[1],
-	};
-	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_pacman_move_speed)
-	{
-		// Reached the target.
-
-		const auto block_x = uint32_t(Fixed16FloorToInt(pacman_.target_position[0]));
-		const auto block_y = uint32_t(Fixed16FloorToInt(pacman_.target_position[1]));
-		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
-		if(bonus != Bonus::None)
-		{
-			bonus = Bonus::None;
-			// TODO - add score here.
-		}
-
-		pacman_.position = pacman_.target_position;
-
-		auto new_target_position = pacman_.target_position;
-		switch(pacman_.next_direction)
-		{
-		case PacmanDirection::XMinus:
-			new_target_position[0] -= g_fixed16_one;
-			break;
-		case PacmanDirection::XPlus:
-			new_target_position[0] += g_fixed16_one;
-			break;
-		case PacmanDirection::YMinus:
-			new_target_position[1] -= g_fixed16_one;
-			break;
-		case PacmanDirection::YPlus:
-			new_target_position[1] += g_fixed16_one;
-			break;
-		}
-
-		auto forward_target_position = pacman_.target_position;
-		switch(pacman_.direction)
-		{
-		case PacmanDirection::XMinus:
-			forward_target_position[0] -= g_fixed16_one;
-			break;
-		case PacmanDirection::XPlus:
-			forward_target_position[0] += g_fixed16_one;
-			break;
-		case PacmanDirection::YMinus:
-			forward_target_position[1] -= g_fixed16_one;
-			break;
-		case PacmanDirection::YPlus:
-			forward_target_position[1] += g_fixed16_one;
-			break;
-		}
-
-		const std::array<int32_t, 2> target_block =
-		{
-			Fixed16FloorToInt(new_target_position[0]), Fixed16FloorToInt(new_target_position[1])
-		};
-		const std::array<int32_t, 2> forward_block =
-		{
-			Fixed16FloorToInt(forward_target_position[0]), Fixed16FloorToInt(forward_target_position[1])
-		};
-
-		if( target_block[0] >= 0 && target_block[0] < int32_t(c_field_width ) &&
-			target_block[1] >= 0 && target_block[1] < int32_t(c_field_height) &&
-			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] != g_wall_symbol)
-		{
-			// Block towards target direction is free. Change target position and direction.
-			pacman_.target_position = new_target_position;
-			pacman_.direction = pacman_.next_direction;
-		}
-		else if(
-			forward_block[0] >= 0 && forward_block[0] < int32_t(c_field_width ) &&
-			forward_block[1] >= 0 && forward_block[1] < int32_t(c_field_height) &&
-			g_game_field[uint32_t(forward_block[0]) + uint32_t(forward_block[1]) * c_field_width] != g_wall_symbol)
-		{
-			// Forward block is free. Move towards it but do not change direction.
-			pacman_.target_position = forward_target_position;
-		}
-	}
-	else if(pacman_.direction == PacmanDirection::XPlus && pacman_.next_direction == PacmanDirection::XMinus)
-	{
-		pacman_.direction = pacman_.next_direction;
-		pacman_.target_position[0] -= g_fixed16_one;
-	}
-	else if(pacman_.direction == PacmanDirection::XMinus && pacman_.next_direction == PacmanDirection::XPlus)
-	{
-		pacman_.direction = pacman_.next_direction;
-		pacman_.target_position[0] += g_fixed16_one;
-	}
-	else if(pacman_.direction == PacmanDirection::YPlus && pacman_.next_direction == PacmanDirection::YMinus)
-	{
-		pacman_.direction = pacman_.next_direction;
-		pacman_.target_position[1] -= g_fixed16_one;
-	}
-	else if(pacman_.direction == PacmanDirection::YMinus && pacman_.next_direction == PacmanDirection::YPlus)
-	{
-		pacman_.direction = pacman_.next_direction;
-		pacman_.target_position[1] += g_fixed16_one;
-	}
-	else
-	{
-		pacman_.position = new_position;
+		MoveGhost(ghost);
 	}
 }
 
@@ -424,35 +316,48 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP pacman_sprites[]
 	{
-		Sprites::pacman_0,
-		Sprites::pacman_1,
-		Sprites::pacman_2,
-		Sprites::pacman_3,
-		Sprites::pacman_2,
-		Sprites::pacman_1,
-	};
+		const SpriteBMP pacman_sprites[]
+		{
+			Sprites::pacman_0,
+			Sprites::pacman_1,
+			Sprites::pacman_2,
+			Sprites::pacman_3,
+			Sprites::pacman_2,
+			Sprites::pacman_1,
+		};
 
-	const SpriteBMP current_sprite = pacman_sprites[tick_ / 12 % std::size(pacman_sprites)];
-	const uint32_t pacman_x =
-		uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
-	const uint32_t pacman_y =
-		uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
-	switch(pacman_.direction)
+		const SpriteBMP current_sprite = pacman_sprites[tick_ / 12 % std::size(pacman_sprites)];
+		const uint32_t pacman_x =
+			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
+		const uint32_t pacman_y =
+			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
+		switch(pacman_.direction)
+		{
+		case GridDirection::XMinus:
+			DrawSpriteWithAlphaRotate180(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		case GridDirection::XPlus:
+			DrawSpriteWithAlpha         (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		case GridDirection::YMinus:
+			DrawSpriteWithAlphaRotate270(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		case GridDirection::YPlus:
+			DrawSpriteWithAlphaRotate90 (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		}
+	}
+
+	for(const Ghost& ghost : ghosts_)
 	{
-	case PacmanDirection::XMinus:
-		DrawSpriteWithAlphaRotate180(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
-		break;
-	case PacmanDirection::XPlus:
-		DrawSpriteWithAlpha         (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
-		break;
-	case PacmanDirection::YMinus:
-		DrawSpriteWithAlphaRotate270(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
-		break;
-	case PacmanDirection::YPlus:
-		DrawSpriteWithAlphaRotate90 (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
-		break;
+		const SpriteBMP sprite(Sprites::pacman_ghost);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			uint32_t(Fixed16FloorToInt(ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth() / 2,
+			uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 }
 
@@ -461,3 +366,216 @@ GameInterfacePtr GamePacman::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
+void GamePacman::MovePacman()
+{
+	fixed16vec2_t new_position = pacman_.position;
+	switch(pacman_.direction)
+	{
+	case GridDirection::XMinus:
+		new_position[0] -= g_pacman_move_speed;
+		break;
+	case GridDirection::XPlus:
+		new_position[0] += g_pacman_move_speed;
+		break;
+	case GridDirection::YMinus:
+		new_position[1] -= g_pacman_move_speed;
+		break;
+	case GridDirection::YPlus:
+		new_position[1] += g_pacman_move_speed;
+		break;
+	}
+
+	const fixed16vec2_t vec_to_target =
+	{
+		pacman_.target_position[0] - new_position[0],
+		pacman_.target_position[1] - new_position[1],
+	};
+	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_pacman_move_speed)
+	{
+		// Reached the target.
+
+		const auto block_x = uint32_t(Fixed16FloorToInt(pacman_.target_position[0]));
+		const auto block_y = uint32_t(Fixed16FloorToInt(pacman_.target_position[1]));
+		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
+		if(bonus != Bonus::None)
+		{
+			bonus = Bonus::None;
+			// TODO - add score here.
+		}
+
+		pacman_.position = pacman_.target_position;
+
+		auto new_target_position = pacman_.target_position;
+		switch(pacman_.next_direction)
+		{
+		case GridDirection::XMinus:
+			new_target_position[0] -= g_fixed16_one;
+			break;
+		case GridDirection::XPlus:
+			new_target_position[0] += g_fixed16_one;
+			break;
+		case GridDirection::YMinus:
+			new_target_position[1] -= g_fixed16_one;
+			break;
+		case GridDirection::YPlus:
+			new_target_position[1] += g_fixed16_one;
+			break;
+		}
+
+		auto forward_target_position = pacman_.target_position;
+		switch(pacman_.direction)
+		{
+		case GridDirection::XMinus:
+			forward_target_position[0] -= g_fixed16_one;
+			break;
+		case GridDirection::XPlus:
+			forward_target_position[0] += g_fixed16_one;
+			break;
+		case GridDirection::YMinus:
+			forward_target_position[1] -= g_fixed16_one;
+			break;
+		case GridDirection::YPlus:
+			forward_target_position[1] += g_fixed16_one;
+			break;
+		}
+
+		const std::array<int32_t, 2> target_block =
+		{
+			Fixed16FloorToInt(new_target_position[0]), Fixed16FloorToInt(new_target_position[1])
+		};
+		const std::array<int32_t, 2> forward_block =
+		{
+			Fixed16FloorToInt(forward_target_position[0]), Fixed16FloorToInt(forward_target_position[1])
+		};
+
+		if( target_block[0] >= 0 && target_block[0] < int32_t(c_field_width ) &&
+			target_block[1] >= 0 && target_block[1] < int32_t(c_field_height) &&
+			g_game_field[uint32_t(target_block[0]) + uint32_t(target_block[1]) * c_field_width] != g_wall_symbol)
+		{
+			// Block towards target direction is free. Change target position and direction.
+			pacman_.target_position = new_target_position;
+			pacman_.direction = pacman_.next_direction;
+		}
+		else if(
+			forward_block[0] >= 0 && forward_block[0] < int32_t(c_field_width ) &&
+			forward_block[1] >= 0 && forward_block[1] < int32_t(c_field_height) &&
+			g_game_field[uint32_t(forward_block[0]) + uint32_t(forward_block[1]) * c_field_width] != g_wall_symbol)
+		{
+			// Forward block is free. Move towards it but do not change direction.
+			pacman_.target_position = forward_target_position;
+		}
+	}
+	else if(pacman_.direction == GridDirection::XPlus && pacman_.next_direction == GridDirection::XMinus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[0] -= g_fixed16_one;
+	}
+	else if(pacman_.direction == GridDirection::XMinus && pacman_.next_direction == GridDirection::XPlus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[0] += g_fixed16_one;
+	}
+	else if(pacman_.direction == GridDirection::YPlus && pacman_.next_direction == GridDirection::YMinus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[1] -= g_fixed16_one;
+	}
+	else if(pacman_.direction == GridDirection::YMinus && pacman_.next_direction == GridDirection::YPlus)
+	{
+		pacman_.direction = pacman_.next_direction;
+		pacman_.target_position[1] += g_fixed16_one;
+	}
+	else
+	{
+		pacman_.position = new_position;
+	}
+}
+
+void GamePacman::MoveGhost(Ghost& ghost)
+{
+	fixed16vec2_t new_position = ghost.position;
+	switch(ghost.direction)
+	{
+	case GridDirection::XMinus:
+		new_position[0] -= g_ghost_move_speed;
+		break;
+	case GridDirection::XPlus:
+		new_position[0] += g_ghost_move_speed;
+		break;
+	case GridDirection::YMinus:
+		new_position[1] -= g_ghost_move_speed;
+		break;
+	case GridDirection::YPlus:
+		new_position[1] += g_ghost_move_speed;
+		break;
+	}
+
+	const fixed16vec2_t vec_to_target =
+	{
+		ghost.target_position[0] - new_position[0],
+		ghost.target_position[1] - new_position[1],
+	};
+	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_ghost_move_speed)
+	{
+		ghost.position = ghost.target_position;
+
+		const std::array<int32_t, 2> block{
+			Fixed16FloorToInt(ghost.target_position[0]),
+			Fixed16FloorToInt(ghost.target_position[1])};
+
+		// TODO - make destination depemndent on ghost personality instead.
+		// TODO - maybe avoid changing target in corridors?
+		const std::array<int32_t, 2> destination_block{
+			Fixed16FloorToInt(pacman_.target_position[0]),
+			Fixed16FloorToInt(pacman_.target_position[1])};
+
+		int32_t best_square_distance  = 0x7FFFFFFF;
+		std::array<int32_t, 2> best_next_block = block;
+		GridDirection best_direction = ghost.direction;
+
+		const auto add_next_block_candidate =
+		[&](const std::array<int32_t, 2>& next_block, const GridDirection direction)
+		{
+			const std::array<int32_t, 2> vec_to
+				{next_block[0] - destination_block[0], next_block[1] - destination_block[1]};
+			const int32_t square_distance = vec_to[0] * vec_to[0] + vec_to[1] * vec_to[1];
+			if(square_distance < best_square_distance &&
+				next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
+				next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
+				g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+			{
+				best_square_distance = square_distance;
+				best_next_block = next_block;
+				best_direction = direction;
+			}
+		};
+
+		// Order conditions by priority as in original game, see https://youtu.be/ataGotQ7ir8?t=180.
+		// Newe make 180 degrees turn.
+		if(ghost.direction != GridDirection::YPlus )
+		{
+			add_next_block_candidate({block[0], block[1] - 1}, GridDirection::YMinus);
+		}
+		if(ghost.direction != GridDirection::XPlus )
+		{
+			add_next_block_candidate({block[0] - 1, block[1]}, GridDirection::XMinus);
+		}
+		if(ghost.direction != GridDirection::YMinus)
+		{
+			add_next_block_candidate({block[0], block[1] + 1}, GridDirection::YPlus );
+		}
+		if(ghost.direction != GridDirection::XMinus)
+		{
+			add_next_block_candidate({block[0] + 1, block[1]}, GridDirection::XPlus );
+		}
+
+		ghost.target_position = {
+			IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
+			IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
+		ghost.direction = best_direction;
+	}
+	else
+	{
+		ghost.position = new_position;
+	}
+}

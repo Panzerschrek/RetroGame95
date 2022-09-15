@@ -19,7 +19,7 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	enum class PacmanDirection
+	enum class GridDirection
 	{
 		XPlus,
 		XMinus,
@@ -31,8 +31,15 @@ private:
 	{
 		fixed16vec2_t position{};
 		// Current moving direction.
-		PacmanDirection direction = PacmanDirection::XPlus;
-		PacmanDirection next_direction = PacmanDirection::XPlus;
+		GridDirection direction = GridDirection::XPlus;
+		GridDirection next_direction = GridDirection::XPlus;
+		fixed16vec2_t target_position{};
+	};
+
+	struct Ghost
+	{
+		fixed16vec2_t position{};
+		GridDirection direction = GridDirection::XPlus;
 		fixed16vec2_t target_position{};
 	};
 
@@ -47,6 +54,12 @@ private:
 	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
 
+	static const constexpr uint32_t c_num_ghosts = 1;
+
+private:
+	void MovePacman();
+	void MoveGhost(Ghost& ghost);
+
 private:
 	SoundPlayer& sound_player_;
 	Rand rand_;
@@ -54,6 +67,7 @@ private:
 	uint32_t tick_ = 0;
 
 	Pacman pacman_;
+	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 
 	GameInterfacePtr next_game_;
