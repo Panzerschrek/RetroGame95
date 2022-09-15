@@ -44,6 +44,13 @@ private:
 		Clyde,
 	};
 
+	enum class GhostsMode
+	{
+		Chase,
+		Scatter,
+		Frightened,
+	};
+
 	struct Ghost
 	{
 		GhostType type = GhostType::Blinky;
@@ -70,7 +77,9 @@ private:
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(GhostType ghost_type, const std::array<int32_t, 2>& ghost_position);
 	void TryTeleportCharacters();
+
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
+	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
 
 private:
 	SoundPlayer& sound_player_;
@@ -80,6 +89,7 @@ private:
 
 	Pacman pacman_;
 	std::array<Ghost, c_num_ghosts> ghosts_;
+	GhostsMode ghosts_mode_ = GhostsMode::Scatter;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 
 	GameInterfacePtr next_game_;

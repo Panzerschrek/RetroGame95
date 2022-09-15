@@ -639,6 +639,11 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 		return {20, 15};
 	}
 
+	if(ghosts_mode_ == GhostsMode::Scatter)
+	{
+		return GetScatterModeTarget(ghost_type);
+	}
+
 	const std::array<int32_t, 2> pacman_block{
 		Fixed16FloorToInt(pacman_.target_position[0]),
 		Fixed16FloorToInt(pacman_.target_position[1])};
@@ -728,7 +733,7 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 			}
 
 			// TODO - move scatter mode constants to another place.
-			return {0, 1};
+			return GetScatterModeTarget(ghost_type);
 		}
 	}
 
@@ -785,4 +790,18 @@ bool GamePacman::IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block)
 	return
 		block[0] >= 16 && block[0] <= 19 &&
 		block[1] >= 12 && block[1] <= 17;
+}
+
+std::array<int32_t, 2> GamePacman::GetScatterModeTarget(const GhostType ghost_type)
+{
+	switch(ghost_type)
+	{
+	case GhostType::Blinky: return {int32_t(c_field_width) + 2, int32_t(c_field_height - 4)};
+	case GhostType::Pinky: return {int32_t(c_field_width) + 2, 3};
+	case GhostType::Inky: return {0, int32_t(c_field_height - 1)};
+	case GhostType::Clyde: return {0, 1};
+	}
+
+	assert(false);
+	return {0, 0};
 }
