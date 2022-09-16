@@ -1098,6 +1098,7 @@ void GamePacman::UpdateGhostsMode()
 
 	if(ghosts_mode_switches_left_ == 0)
 	{
+		assert(current_ghosts_mode_ == GhostMode::Chase);
 		return;
 	}
 
@@ -1127,7 +1128,8 @@ void GamePacman::UpdateGhostsMode()
 	else
 	{
 		current_ghosts_mode_ = GhostMode::Scatter;
-		const uint32_t duration = ghosts_mode_switches_left_ >= 3 ? g_scatter_duration_first : g_scatter_duration_second;
+		const uint32_t duration =
+			ghosts_mode_switches_left_ >= 3 ? g_scatter_duration_first : g_scatter_duration_second;
 		next_ghosts_mode_swith_tick_ = tick_ + duration;
 	}
 
