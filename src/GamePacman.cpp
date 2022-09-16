@@ -44,9 +44,12 @@ constexpr char g_wall_symbol = '#';
 constexpr char g_food_symbol = '.';
 constexpr char g_bonus_deadly_symbol = '@';
 
-const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
-const fixed16_t g_ghost_move_speed = g_fixed16_one / 32;
-const fixed16_t g_ghost_eaten_speed = g_ghost_move_speed * 4;
+// See https://www.gamedeveloper.com/design/the-pac-man-dossier.
+const fixed16_t g_base_move_speed = g_fixed16_one * 6 / GameInterface::c_update_frequency;
+const fixed16_t g_pacman_move_speed = g_base_move_speed * 80 / 100;
+const fixed16_t g_ghost_move_speed = g_base_move_speed * 75 / 100;
+const fixed16_t g_ghost_frightened_move_speed = g_base_move_speed * 50 / 100;
+const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 3;
 
 const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
 
@@ -565,7 +568,7 @@ void GamePacman::MovePacman()
 
 void GamePacman::MoveGhost(Ghost& ghost)
 {
-	const fixed16_t speed = ghost.mode == GhostMode::Eaten ? g_ghost_eaten_speed : g_ghost_move_speed;
+	const fixed16_t speed = GetGhostSpeed(ghost.mode);
 
 	fixed16vec2_t new_position = ghost.position;
 	switch(ghost.direction)
@@ -1018,4 +1021,21 @@ void GamePacman::ReverseGhostMovement(Ghost& ghost)
 		ghost.direction = GridDirection::YPlus;
 		break;
 	}
+}
+
+fixed16_t GamePacman::GetGhostSpeed(const GhostMode ghost_mode)
+{
+	switch(ghost_mode)
+	{
+	case GhostMode::Chase:
+	case GhostMode::Scatter:
+		return g_ghost_move_speed;
+	case GhostMode::Frightened:
+		return g_ghost_frightened_move_speed;
+	case GhostMode::Eaten:
+		return g_ghost_eaten_move_speed;
+	}
+
+	assert(false);
+	return g_ghost_move_speed;
 }

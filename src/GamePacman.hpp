@@ -91,6 +91,7 @@ private:
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
 	static void ReverseGhostMovement(Ghost& ghost);
+	static fixed16_t GetGhostSpeed(GhostMode ghost_mode);
 
 private:
 	SoundPlayer& sound_player_;
