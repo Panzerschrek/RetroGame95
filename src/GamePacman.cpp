@@ -55,9 +55,9 @@ const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 
 const uint32_t g_death_animation_duration = GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_spawn_animation_duration = GameInterface::c_update_frequency * 3;
 
-const uint32_t g_scatter_duration_first = GameInterface::c_update_frequency * 7;
-const uint32_t g_scatter_duration_second = GameInterface::c_update_frequency * 5;
-const uint32_t g_chase_duration = GameInterface::c_update_frequency * 20;
+const uint32_t g_scatter_duration_first = 7 * GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_scatter_duration_second = 5 * GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_chase_duration = 20 * GameInterface::c_update_frequency * 3 / 2;
 
 } // namespace
 
@@ -65,10 +65,6 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	current_ghosts_mode_ = GhostMode::Scatter;
-	ghosts_mode_switches_left_ = 4;
-	next_ghosts_mode_swith_tick_ = g_scatter_duration_first;
-
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
@@ -514,6 +510,10 @@ void GamePacman::SpawnPacmanAndGhosts()
 	pacman_.direction = GridDirection::YPlus;
 	pacman_.next_direction = pacman_.direction;
 	pacman_.dead_animation_end_tick = std::nullopt;
+
+	current_ghosts_mode_ = GhostMode::Scatter;
+	ghosts_mode_switches_left_ = 4;
+	next_ghosts_mode_swith_tick_ = tick_ + g_spawn_animation_duration + g_scatter_duration_first;
 
 	for(uint32_t i = 0; i < c_num_ghosts; ++i)
 	{
