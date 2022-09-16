@@ -363,6 +363,17 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	const SpriteBMP life_spirte(Sprites::pacman_life);
+	for(uint32_t i = 0; i < lifes_; ++i)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			life_spirte,
+			0,
+			c_field_width * c_block_size + i % 4 * (life_spirte.GetWidth() + 1),
+			c_block_size + i / 4 * (life_spirte.GetHeight() + 2));
+	}
+
 	if(tick_ < spawn_animation_end_tick_)
 	{
 		DrawTextCentered(
@@ -381,10 +392,6 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			c_field_height * c_block_size / 2,
 			"game over");
 	}
-
-	char text[64];
-	std::snprintf(text, sizeof(text), "Lifes\n\n%3d", lifes_);
-	DrawText(frame_buffer, g_color_white, 260, 20, text);
 }
 
 GameInterfacePtr GamePacman::AskForNextGameTransition()
