@@ -351,9 +351,35 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	for(const Ghost& ghost : ghosts_)
+	{
+		if(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten)
+		{
+			DrawGhost(frame_buffer, ghost);
+		}
+	}
+
+	DrawPacman(frame_buffer);
+
+	for(const Ghost& ghost : ghosts_)
+	{
+		if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
+		{
+			DrawGhost(frame_buffer, ghost);
+		}
+	}
+}
+
+GameInterfacePtr GamePacman::AskForNextGameTransition()
+{
+	return std::move(next_game_);
+}
+
+void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
+{
 	if(pacman_.dead_animation_end_tick != std::nullopt)
 	{
-		const SpriteBMP pacman_sprites[]
+		const SpriteBMP sprites[]
 		{
 			Sprites::pacman_0,
 			Sprites::pacman_1,
@@ -365,16 +391,16 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			Sprites::pacman_7,
 		};
 
-		const uint32_t num_frames = uint32_t(std::size(pacman_sprites));
+		const uint32_t num_frames = uint32_t(std::size(sprites));
 
 		const uint32_t frame =
 			(g_death_animation_duration + tick_ - *pacman_.dead_animation_end_tick) *
 			num_frames /
 			g_death_animation_duration;
 
-		const SpriteBMP current_sprite = pacman_sprites[std::min(frame, num_frames - 1)];
+		const SpriteBMP current_sprite = sprites[std::min(frame, num_frames - 1)];
 		const uint32_t pacman_x =
-			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
+			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth () / 2;
 		const uint32_t pacman_y =
 			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
 		switch(pacman_.direction)
@@ -395,7 +421,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	}
 	else
 	{
-		const SpriteBMP pacman_sprites[]
+		const SpriteBMP sprites[]
 		{
 			Sprites::pacman_0,
 			Sprites::pacman_1,
@@ -405,7 +431,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			Sprites::pacman_1,
 		};
 
-		const SpriteBMP current_sprite = pacman_sprites[tick_ / 12 % std::size(pacman_sprites)];
+		const SpriteBMP current_sprite = sprites[tick_ / 12 % std::size(sprites)];
 		const uint32_t pacman_x =
 			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
 		const uint32_t pacman_y =
@@ -426,8 +452,11 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			break;
 		}
 	}
+}
 
-	const SpriteBMP ghosts_sprites[4][4]
+void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost)
+{
+	const SpriteBMP sprites[4][4]
 	{
 		{
 			Sprites::pacman_ghost_0_right,
@@ -455,28 +484,20 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		},
 	};
 
-	for(const Ghost& ghost : ghosts_)
-	{
-		const auto sprite =
-			ghost.mode == GhostMode::Eaten
-				? ((ghost.direction == GridDirection::XPlus || ghost.direction == GridDirection::YPlus)
-					? Sprites::pacman_ghost_dead_left
-					: Sprites::pacman_ghost_dead_right)
-				: (ghost.mode == GhostMode::Frightened
-					? Sprites::pacman_ghost_vulnerable
-					: ghosts_sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)]);
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			uint32_t(Fixed16FloorToInt(ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth() / 2,
-			uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
-	}
-}
-
-GameInterfacePtr GamePacman::AskForNextGameTransition()
-{
-	return std::move(next_game_);
+	const SpriteBMP sprite =
+		ghost.mode == GhostMode::Eaten
+			? ((ghost.direction == GridDirection::XPlus || ghost.direction == GridDirection::YPlus)
+				? Sprites::pacman_ghost_dead_left
+				: Sprites::pacman_ghost_dead_right)
+			: (ghost.mode == GhostMode::Frightened
+				? Sprites::pacman_ghost_vulnerable
+				: sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)]);
+	DrawSpriteWithAlpha(
+		frame_buffer,
+		sprite,
+		0,
+		uint32_t(Fixed16FloorToInt(ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+		uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 }
 
 void GamePacman::MovePacman()

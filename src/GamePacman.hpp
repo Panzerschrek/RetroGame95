@@ -80,6 +80,9 @@ private:
 	static const constexpr uint32_t c_num_ghosts = 4;
 
 private:
+	void DrawPacman(FrameBuffer frame_buffer) const;
+	static void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost);
+
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(
