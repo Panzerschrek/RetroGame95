@@ -48,7 +48,11 @@ const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
 const fixed16_t g_ghost_move_speed = g_fixed16_one / 32;
 const fixed16_t g_ghost_eaten_speed = g_ghost_move_speed * 4;
 
-const uint32_t g_frightened_mode_duration = 1200;
+const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
+
+const uint32_t g_scatter_duration_first = GameInterface::c_update_frequency * 7;
+const uint32_t g_scatter_duration_second = GameInterface::c_update_frequency * 5;
+const uint32_t g_chase_duration = GameInterface::c_update_frequency * 20;
 
 } // namespace
 
@@ -56,6 +60,10 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	current_ghosts_mode_ = GhostMode::Scatter;
+	ghosts_mode_switches_left_ = 4;
+	next_ghosts_mode_swith_tick_ = g_scatter_duration_first;
+
 	pacman_.target_position = {IntToFixed16(8) + g_fixed16_one / 2, IntToFixed16(12) + g_fixed16_one / 2};
 	pacman_.direction = GridDirection::YPlus;
 	pacman_.next_direction = pacman_.direction;
@@ -77,6 +85,8 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 				IntToFixed16(10 + int32_t(index_wrapped * 2)) + g_fixed16_one / 2};
 		}
 		ghost.position = ghost.target_position;
+
+		ghost.mode = current_ghosts_mode_;
 	}
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
@@ -131,6 +141,8 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	}
 
 	++tick_;
+
+	UpdateGhostsMode();
 
 	MovePacman();
 
@@ -587,7 +599,7 @@ void GamePacman::MoveGhost(Ghost& ghost)
 
 		if(ghost.mode == GhostMode::Eaten && IsBlockInsideGhostsRoom(block))
 		{
-			ghost.mode = GhostMode::Chase;
+			ghost.mode = current_ghosts_mode_;
 		}
 
 		if(ghost.mode == GhostMode::Frightened)
@@ -704,7 +716,7 @@ void GamePacman::MoveGhost(Ghost& ghost)
 
 	if(ghost.mode == GhostMode::Frightened && tick_ >= ghost.frightened_mode_end_tick)
 	{
-		ghost.mode = GhostMode::Chase;
+		ghost.mode = current_ghosts_mode_;
 	}
 }
 
@@ -904,6 +916,55 @@ void GamePacman::TryTeleportCharacters()
 	}
 }
 
+void GamePacman::UpdateGhostsMode()
+{
+	// See https://www.gamedeveloper.com/design/the-pac-man-dossier.
+
+	if(ghosts_mode_switches_left_ == 0)
+	{
+		return;
+	}
+
+	bool some_is_frightened = false;
+	for(const Ghost& ghost : ghosts_)
+	{
+		some_is_frightened |= ghost.mode == GhostMode::Frightened;
+	}
+
+	if(some_is_frightened)
+	{
+		// Pause mode switches while ghosts are frightened.
+		++next_ghosts_mode_swith_tick_;
+	}
+
+	if(tick_ < next_ghosts_mode_swith_tick_)
+	{
+		return;
+	}
+
+	if(current_ghosts_mode_ == GhostMode::Scatter)
+	{
+		current_ghosts_mode_ = GhostMode::Chase;
+		--ghosts_mode_switches_left_;
+		next_ghosts_mode_swith_tick_ = tick_ + g_chase_duration;
+	}
+	else
+	{
+		current_ghosts_mode_ = GhostMode::Scatter;
+		const uint32_t duration = ghosts_mode_switches_left_ >= 3 ? g_scatter_duration_first : g_scatter_duration_second;
+		next_ghosts_mode_swith_tick_ = tick_ + duration;
+	}
+
+	for(Ghost& ghost : ghosts_)
+	{
+		if(ghost.mode != GhostMode::Frightened && ghost.mode != GhostMode::Eaten)
+		{
+			ghost.mode = current_ghosts_mode_;
+			ReverseGhostMovement(ghost);
+		}
+	}
+}
+
 void GamePacman::EnterFrightenedMode()
 {
 	for(Ghost& ghost : ghosts_)
@@ -911,25 +972,7 @@ void GamePacman::EnterFrightenedMode()
 		ghost.mode = GhostMode::Frightened;
 		ghost.frightened_mode_end_tick = tick_ + g_frightened_mode_duration;
 
-		switch(ghost.direction)
-		{
-		case GridDirection::XPlus:
-			ghost.target_position[0] -= g_fixed16_one;
-			ghost.direction = GridDirection::XMinus;
-			break;
-		case GridDirection::XMinus:
-			ghost.target_position[0] += g_fixed16_one;
-			ghost.direction = GridDirection::XPlus;
-			break;
-		case GridDirection::YPlus :
-			ghost.target_position[1] -= g_fixed16_one;
-			ghost.direction = GridDirection::YMinus;
-			break;
-		case GridDirection::YMinus:
-			ghost.target_position[1] += g_fixed16_one;
-			ghost.direction = GridDirection::YPlus;
-			break;
-		}
+		ReverseGhostMovement(ghost);
 	}
 }
 
@@ -952,4 +995,27 @@ std::array<int32_t, 2> GamePacman::GetScatterModeTarget(const GhostType ghost_ty
 
 	assert(false);
 	return {0, 0};
+}
+
+void GamePacman::ReverseGhostMovement(Ghost& ghost)
+{
+	switch(ghost.direction)
+	{
+	case GridDirection::XPlus:
+		ghost.target_position[0] -= g_fixed16_one;
+		ghost.direction = GridDirection::XMinus;
+		break;
+	case GridDirection::XMinus:
+		ghost.target_position[0] += g_fixed16_one;
+		ghost.direction = GridDirection::XPlus;
+		break;
+	case GridDirection::YPlus :
+		ghost.target_position[1] -= g_fixed16_one;
+		ghost.direction = GridDirection::YMinus;
+		break;
+	case GridDirection::YMinus:
+		ghost.target_position[1] += g_fixed16_one;
+		ghost.direction = GridDirection::YPlus;
+		break;
+	}
 }

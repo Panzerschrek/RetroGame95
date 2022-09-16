@@ -85,10 +85,12 @@ private:
 	void ProcessPacmanGhostsTouch();
 	void TryTeleportCharacters();
 
+	void UpdateGhostsMode();
 	void EnterFrightenedMode();
 
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
+	static void ReverseGhostMovement(Ghost& ghost);
 
 private:
 	SoundPlayer& sound_player_;
@@ -99,6 +101,10 @@ private:
 	Pacman pacman_;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
+
+	GhostMode current_ghosts_mode_ = GhostMode::Scatter;
+	uint32_t ghosts_mode_switches_left_ = 0;
+	uint32_t next_ghosts_mode_swith_tick_ = 0;
 
 	GameInterfacePtr next_game_;
 };
