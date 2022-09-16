@@ -81,7 +81,7 @@ private:
 
 private:
 	void DrawPacman(FrameBuffer frame_buffer) const;
-	static void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost);
+	void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost) const;
 
 	void SpawnPacmanAndGhosts();
 	void MovePacman();

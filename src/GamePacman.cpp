@@ -448,7 +448,7 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 	}
 }
 
-void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost)
+void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) const
 {
 	const SpriteBMP sprites[4][4]
 	{
@@ -478,14 +478,27 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost)
 		},
 	};
 
-	const SpriteBMP sprite =
-		ghost.mode == GhostMode::Eaten
-			? ((ghost.direction == GridDirection::XPlus || ghost.direction == GridDirection::YPlus)
+	SpriteBMP sprite = sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
+	if(ghost.mode == GhostMode::Eaten)
+	{
+		sprite =
+			(ghost.direction == GridDirection::XPlus || ghost.direction == GridDirection::YPlus)
 				? Sprites::pacman_ghost_dead_left
-				: Sprites::pacman_ghost_dead_right)
-			: (ghost.mode == GhostMode::Frightened
-				? Sprites::pacman_ghost_vulnerable
-				: sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)]);
+				: Sprites::pacman_ghost_dead_right;
+	}
+	else if(ghost.mode == GhostMode::Frightened)
+	{
+		if(tick_ <= ghost.frightened_mode_end_tick)
+		{
+			const uint32_t time_left = ghost.frightened_mode_end_tick - tick_;
+			const uint32_t flicker_duration = 2 * GameInterface::c_update_frequency;
+			if(time_left >= flicker_duration || tick_ / 16 % 2 == 0)
+			{
+				sprite = Sprites::pacman_ghost_vulnerable;
+			}
+		}
+	}
+
 	DrawSpriteWithAlpha(
 		frame_buffer,
 		sprite,
