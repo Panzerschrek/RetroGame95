@@ -65,6 +65,10 @@ const uint32_t g_bonuses_eaten_for_clyde_release = g_bonuses_eaten_for_inky_rele
 
 const uint32_t g_max_lifes = 8;
 
+const uint32_t g_score_for_food = 10;
+const uint32_t g_score_for_deadly_bonus = 30;
+const uint32_t g_score_for_ghost = 200;
+
 } // namespace
 
 GamePacman::GamePacman(SoundPlayer& sound_player)
@@ -528,7 +532,7 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) c
 		uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 
 	char text[64];
-	std::snprintf(text, sizeof(text), "level %1d", level_);
+	std::snprintf(text, sizeof(text), "level\n%7d\n\nscore\n\n%7d", level_, score_);
 	DrawText(frame_buffer, g_color_white, 260, 40, text);
 }
 
@@ -638,14 +642,19 @@ void GamePacman::MovePacman()
 		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
 		if(bonus != Bonus::None)
 		{
+			if(bonus == Bonus::Food)
+			{
+				score_ += g_score_for_food;
+			}
 			if(bonus == Bonus::Deadly)
 			{
+				score_ += g_score_for_deadly_bonus;
 				EnterFrightenedMode();
 			}
 			bonus = Bonus::None;
 			--bonuses_left_;
 			++bonuses_eaten_;
-			// TODO - add score here.
+
 		}
 
 		pacman_.position = pacman_.target_position;
@@ -1067,6 +1076,7 @@ void GamePacman::ProcessPacmanGhostsTouch()
 			if(ghost.mode == GhostMode::Frightened)
 			{
 				ghost.mode = GhostMode::Eaten;
+				score_ += g_score_for_ghost;
 			}
 			else
 			{

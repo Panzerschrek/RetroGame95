@@ -116,6 +116,7 @@ private:
 	uint32_t bonuses_eaten_ = 0;
 	uint32_t level_ = 0;
 	uint32_t lifes_ = 3;
+	uint32_t score_ = 0;
 	bool game_over_ = false;
 
 	GhostMode current_ghosts_mode_ = GhostMode::Scatter;
