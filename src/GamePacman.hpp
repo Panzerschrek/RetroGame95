@@ -112,6 +112,7 @@ private:
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 	uint32_t bonuses_left_ = 0;
+	uint32_t bonuses_eaten_ = 0;
 	uint32_t lifes_ = 5;
 	bool game_over_ = false;
 

@@ -59,6 +59,10 @@ const uint32_t g_scatter_duration_first = 7 * GameInterface::c_update_frequency 
 const uint32_t g_scatter_duration_second = 5 * GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_chase_duration = 20 * GameInterface::c_update_frequency * 3 / 2;
 
+const uint32_t g_bonuses_eaten_for_pinky_release = 0;
+const uint32_t g_bonuses_eaten_for_inky_release = g_bonuses_eaten_for_pinky_release + 30;
+const uint32_t g_bonuses_eaten_for_clyde_release = g_bonuses_eaten_for_inky_release + 45;
+
 } // namespace
 
 GamePacman::GamePacman(SoundPlayer& sound_player)
@@ -535,6 +539,8 @@ void GamePacman::SpawnPacmanAndGhosts()
 	pacman_.next_direction = pacman_.direction;
 	pacman_.dead_animation_end_tick = std::nullopt;
 
+	bonuses_eaten_ = 0;
+
 	current_ghosts_mode_ = GhostMode::Scatter;
 	ghosts_mode_switches_left_ = 4;
 	next_ghosts_mode_swith_tick_ = tick_ + g_spawn_animation_duration + g_scatter_duration_first;
@@ -606,6 +612,7 @@ void GamePacman::MovePacman()
 			}
 			bonus = Bonus::None;
 			--bonuses_left_;
+			++bonuses_eaten_;
 			// TODO - add score here.
 		}
 
@@ -702,6 +709,31 @@ void GamePacman::MovePacman()
 void GamePacman::MoveGhost(Ghost& ghost)
 {
 	if(tick_ < spawn_animation_end_tick_)
+	{
+		return;
+	}
+
+	uint32_t bonuses_release_limit = 0;
+	switch(ghost.type)
+	{
+	case GhostType::Blinky:
+		bonuses_release_limit = 0;
+		break;
+	case GhostType::Pinky:
+		bonuses_release_limit = g_bonuses_eaten_for_pinky_release;
+		break;
+	case GhostType::Inky:
+		bonuses_release_limit = g_bonuses_eaten_for_inky_release;
+		break;
+	case GhostType::Clyde:
+		bonuses_release_limit = g_bonuses_eaten_for_clyde_release;
+		break;
+	}
+
+	// Keep ghost inside home in early stages of level.
+	// Use simple counter of bonuses for this.
+	// This is not a proper way, but it works fine.
+	if(bonuses_eaten_ < bonuses_release_limit)
 	{
 		return;
 	}
