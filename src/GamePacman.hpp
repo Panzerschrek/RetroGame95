@@ -44,11 +44,12 @@ private:
 		Clyde,
 	};
 
-	enum class GhostsMode
+	enum class GhostMode
 	{
 		Chase,
 		Scatter,
 		Frightened,
+		Eaten,
 	};
 
 	struct Ghost
@@ -57,7 +58,8 @@ private:
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::XPlus;
 		fixed16vec2_t target_position{};
-		bool is_eaten = false;
+		GhostMode mode = GhostMode::Chase;
+		uint32_t frightened_mode_end_tick = 0;
 	};
 
 	enum class Bonus
@@ -76,7 +78,10 @@ private:
 private:
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
-	std::array<int32_t, 2> GetGhostDestinationBlock(GhostType ghost_type, const std::array<int32_t, 2>& ghost_position);
+	std::array<int32_t, 2> GetGhostDestinationBlock(
+		GhostType ghost_type,
+		GhostMode ghost_mode,
+		const std::array<int32_t, 2>& ghost_position);
 	void ProcessPacmanGhostsTouch();
 	void TryTeleportCharacters();
 
@@ -93,8 +98,6 @@ private:
 
 	Pacman pacman_;
 	std::array<Ghost, c_num_ghosts> ghosts_;
-	GhostsMode ghosts_mode_ = GhostsMode::Scatter;
-	uint32_t frightened_mode_end_tick_ = 0;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 
 	GameInterfacePtr next_game_;
