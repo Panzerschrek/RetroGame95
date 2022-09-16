@@ -83,6 +83,7 @@ private:
 	void DrawPacman(FrameBuffer frame_buffer) const;
 	static void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost);
 
+	void SpawnPacmanAndGhosts();
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(
@@ -107,6 +108,7 @@ private:
 	uint32_t tick_ = 0;
 
 	Pacman pacman_;
+	uint32_t spawn_animation_end_tick_ = 0;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 

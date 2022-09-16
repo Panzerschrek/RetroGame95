@@ -53,6 +53,7 @@ const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 3;
 
 const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
 const uint32_t g_death_animation_duration = GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_spawn_animation_duration = GameInterface::c_update_frequency * 3;
 
 const uint32_t g_scatter_duration_first = GameInterface::c_update_frequency * 7;
 const uint32_t g_scatter_duration_second = GameInterface::c_update_frequency * 5;
@@ -67,31 +68,6 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	current_ghosts_mode_ = GhostMode::Scatter;
 	ghosts_mode_switches_left_ = 4;
 	next_ghosts_mode_swith_tick_ = g_scatter_duration_first;
-
-	pacman_.target_position = {IntToFixed16(8) + g_fixed16_one / 2, IntToFixed16(12) + g_fixed16_one / 2};
-	pacman_.direction = GridDirection::YPlus;
-	pacman_.next_direction = pacman_.direction;
-	pacman_.position = pacman_.target_position;
-
-	for(uint32_t i = 0; i < c_num_ghosts; ++i)
-	{
-		Ghost& ghost = ghosts_[i];
-		const uint32_t index_wrapped = i % 4;
-		ghost.type = GhostType(index_wrapped % 4);
-		if(ghost.type == GhostType::Blinky)
-		{
-			ghost.target_position = {IntToFixed16(20) + g_fixed16_one / 2, IntToFixed16(14) + g_fixed16_one / 2};
-		}
-		else
-		{
-			ghost.target_position = {
-				IntToFixed16(17) + g_fixed16_one / 2,
-				IntToFixed16(10 + int32_t(index_wrapped * 2)) + g_fixed16_one / 2};
-		}
-		ghost.position = ghost.target_position;
-
-		ghost.mode = current_ghosts_mode_;
-	}
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
@@ -111,6 +87,8 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 			break;
 		}
 	}
+
+	SpawnPacmanAndGhosts();
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -157,6 +135,11 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	ProcessPacmanGhostsTouch();
 	TryTeleportCharacters();
+
+	if(pacman_.dead_animation_end_tick != std::nullopt && tick_ > *pacman_.dead_animation_end_tick)
+	{
+		SpawnPacmanAndGhosts();
+	}
 }
 
 void GamePacman::Draw(const FrameBuffer frame_buffer) const
@@ -368,6 +351,16 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			DrawGhost(frame_buffer, ghost);
 		}
 	}
+
+	if(tick_ < spawn_animation_end_tick_)
+	{
+		DrawTextCentered(
+			frame_buffer,
+			g_color_white,
+			c_field_width  * c_block_size / 2,
+			c_field_height * c_block_size / 2,
+			"Ready!");
+	}
 }
 
 GameInterfacePtr GamePacman::AskForNextGameTransition()
@@ -431,7 +424,8 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 			Sprites::pacman_1,
 		};
 
-		const SpriteBMP current_sprite = sprites[tick_ / 12 % std::size(sprites)];
+		const SpriteBMP current_sprite =
+			tick_ < spawn_animation_end_tick_ ? sprites[1] : sprites[tick_ / 12 % std::size(sprites)];
 		const uint32_t pacman_x =
 			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
 		const uint32_t pacman_y =
@@ -500,9 +494,40 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost)
 		uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 }
 
+void GamePacman::SpawnPacmanAndGhosts()
+{
+	pacman_.target_position = {IntToFixed16(8) + g_fixed16_one / 2, IntToFixed16(12) + g_fixed16_one / 2};
+	pacman_.position = pacman_.target_position;
+	pacman_.direction = GridDirection::YPlus;
+	pacman_.next_direction = pacman_.direction;
+	pacman_.dead_animation_end_tick = std::nullopt;
+
+	for(uint32_t i = 0; i < c_num_ghosts; ++i)
+	{
+		Ghost& ghost = ghosts_[i];
+		const uint32_t index_wrapped = i % 4;
+		ghost.type = GhostType(index_wrapped % 4);
+		if(ghost.type == GhostType::Blinky)
+		{
+			ghost.target_position = {IntToFixed16(20) + g_fixed16_one / 2, IntToFixed16(14) + g_fixed16_one / 2};
+		}
+		else
+		{
+			ghost.target_position = {
+				IntToFixed16(17) + g_fixed16_one / 2,
+				IntToFixed16(10 + int32_t(index_wrapped * 2)) + g_fixed16_one / 2};
+		}
+		ghost.position = ghost.target_position;
+
+		ghost.mode = current_ghosts_mode_;
+	}
+
+	spawn_animation_end_tick_ = tick_ + g_spawn_animation_duration;
+}
+
 void GamePacman::MovePacman()
 {
-	if(pacman_.dead_animation_end_tick != std::nullopt)
+	if(pacman_.dead_animation_end_tick != std::nullopt || tick_ < spawn_animation_end_tick_)
 	{
 		return;
 	}
@@ -638,6 +663,11 @@ void GamePacman::MovePacman()
 
 void GamePacman::MoveGhost(Ghost& ghost)
 {
+	if(tick_ < spawn_animation_end_tick_)
+	{
+		return;
+	}
+
 	const fixed16_t speed = GetGhostSpeed(ghost.mode);
 
 	fixed16vec2_t new_position = ghost.position;
