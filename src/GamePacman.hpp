@@ -57,6 +57,7 @@ private:
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::XPlus;
 		fixed16vec2_t target_position{};
+		bool is_eaten = false;
 	};
 
 	enum class Bonus
@@ -76,6 +77,7 @@ private:
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(GhostType ghost_type, const std::array<int32_t, 2>& ghost_position);
+	void ProcessPacmanGhostsTouch();
 	void TryTeleportCharacters();
 
 	void EnterFrightenedMode();

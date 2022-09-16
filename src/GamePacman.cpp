@@ -46,6 +46,7 @@ constexpr char g_bonus_deadly_symbol = '@';
 
 const fixed16_t g_pacman_move_speed = g_fixed16_one / 32;
 const fixed16_t g_ghost_move_speed = g_fixed16_one / 32;
+const fixed16_t g_ghost_eaten_speed = g_ghost_move_speed * 4;
 
 const uint32_t g_frightened_mode_duration = 1200;
 
@@ -138,6 +139,7 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		MoveGhost(ghost);
 	}
 
+	ProcessPacmanGhostsTouch();
 	TryTeleportCharacters();
 
 	if(ghosts_mode_ == GhostsMode::Frightened && tick_ >= frightened_mode_end_tick_)
@@ -402,9 +404,13 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	for(const Ghost& ghost : ghosts_)
 	{
 		const auto sprite =
-			ghosts_mode_ == GhostsMode::Frightened
-				? Sprites::pacman_ghost_vulnerable
-				: ghosts_sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
+			ghost.is_eaten
+				? ((ghost.direction == GridDirection::XPlus || ghost.direction == GridDirection::YPlus)
+					? Sprites::pacman_ghost_dead_left
+					: Sprites::pacman_ghost_dead_right)
+				: (ghosts_mode_ == GhostsMode::Frightened
+					? Sprites::pacman_ghost_vulnerable
+					: ghosts_sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)]);
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
@@ -552,20 +558,22 @@ void GamePacman::MovePacman()
 
 void GamePacman::MoveGhost(Ghost& ghost)
 {
+	const fixed16_t speed = ghost.is_eaten ? g_ghost_eaten_speed : g_ghost_move_speed;
+
 	fixed16vec2_t new_position = ghost.position;
 	switch(ghost.direction)
 	{
 	case GridDirection::XMinus:
-		new_position[0] -= g_ghost_move_speed;
+		new_position[0] -= speed;
 		break;
 	case GridDirection::XPlus:
-		new_position[0] += g_ghost_move_speed;
+		new_position[0] += speed;
 		break;
 	case GridDirection::YMinus:
-		new_position[1] -= g_ghost_move_speed;
+		new_position[1] -= speed;
 		break;
 	case GridDirection::YPlus:
-		new_position[1] += g_ghost_move_speed;
+		new_position[1] += speed;
 		break;
 	}
 
@@ -574,7 +582,7 @@ void GamePacman::MoveGhost(Ghost& ghost)
 		ghost.target_position[0] - new_position[0],
 		ghost.target_position[1] - new_position[1],
 	};
-	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= g_ghost_move_speed)
+	if(Fixed16Abs(vec_to_target[0]) + Fixed16Abs(vec_to_target[1]) <= speed)
 	{
 		ghost.position = ghost.target_position;
 
@@ -582,7 +590,12 @@ void GamePacman::MoveGhost(Ghost& ghost)
 			Fixed16FloorToInt(ghost.target_position[0]),
 			Fixed16FloorToInt(ghost.target_position[1])};
 
-		if(ghosts_mode_ == GhostsMode::Frightened)
+		if(ghost.is_eaten && IsBlockInsideGhostsRoom(block))
+		{
+			ghost.is_eaten = false;
+		}
+
+		if(ghosts_mode_ == GhostsMode::Frightened && !ghost.is_eaten)
 		{
 			std::pair<std::array<int32_t, 2>, GridDirection> possible_targets[4];
 			uint32_t num_possible_targets = 0;
@@ -634,7 +647,9 @@ void GamePacman::MoveGhost(Ghost& ghost)
 		}
 		else
 		{
-			const std::array<int32_t, 2> destination_block = GetGhostDestinationBlock(ghost.type, block);
+			const std::array<int32_t, 2> c_ghosts_room_center = {16, 15};
+			const std::array<int32_t, 2> destination_block =
+				ghost.is_eaten ? c_ghosts_room_center : GetGhostDestinationBlock(ghost.type, block);
 
 			int32_t best_square_distance  = 0x7FFFFFFF;
 			std::array<int32_t, 2> best_next_block = block;
@@ -643,7 +658,7 @@ void GamePacman::MoveGhost(Ghost& ghost)
 			const auto add_next_block_candidate =
 			[&](const std::array<int32_t, 2>& next_block, const GridDirection direction)
 			{
-				if(!IsBlockInsideGhostsRoom(block) && IsBlockInsideGhostsRoom(next_block))
+				if(!ghost.is_eaten && !IsBlockInsideGhostsRoom(block) && IsBlockInsideGhostsRoom(next_block))
 				{
 					// Do not allow to move into start room from outside.
 					return;
@@ -804,6 +819,39 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 
 	assert(false);
 	return pacman_block;
+}
+
+void GamePacman::ProcessPacmanGhostsTouch()
+{
+	const fixed16_t touch_dist = g_fixed16_one / 3;
+	const fixed16_t touch_square_dist = Fixed16Mul(touch_dist, touch_dist);
+
+	for(Ghost& ghost : ghosts_)
+	{
+		if(ghost.is_eaten)
+		{
+			continue;
+		}
+
+		const fixed16vec2_t vec_from_ghost_to_pacman
+		{
+			ghost.position[0] - pacman_.position[0],
+			ghost.position[1] - pacman_.position[1],
+		};
+		const fixed16_t square_dist = Fixed16VecSquareLen(vec_from_ghost_to_pacman);
+		if(square_dist < touch_square_dist)
+		{
+			if(ghosts_mode_ == GhostsMode::Frightened)
+			{
+				ghost.is_eaten = true;
+			}
+			else
+			{
+				// TODO - eat pacman here
+			}
+		}
+	}
+
 }
 
 void GamePacman::TryTeleportCharacters()
