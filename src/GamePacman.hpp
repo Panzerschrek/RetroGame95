@@ -111,6 +111,9 @@ private:
 	uint32_t spawn_animation_end_tick_ = 0;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
+	uint32_t bonuses_left_ = 0;
+	uint32_t lifes_ = 5;
+	bool game_over_ = false;
 
 	GhostMode current_ghosts_mode_ = GhostMode::Scatter;
 	uint32_t ghosts_mode_switches_left_ = 0;

@@ -65,6 +65,7 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	bonuses_left_ = 0;
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
@@ -75,9 +76,11 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 		{
 		case g_food_symbol:
 			bonus = Bonus::Food;
+			++bonuses_left_;
 			break;
 		case g_bonus_deadly_symbol:
 			bonus = Bonus::Deadly;
+			++bonuses_left_;
 			break;
 		default:
 			break;
@@ -132,9 +135,17 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	ProcessPacmanGhostsTouch();
 	TryTeleportCharacters();
 
-	if(pacman_.dead_animation_end_tick != std::nullopt && tick_ > *pacman_.dead_animation_end_tick)
+	if(!game_over_ && pacman_.dead_animation_end_tick != std::nullopt && tick_ > *pacman_.dead_animation_end_tick)
 	{
-		SpawnPacmanAndGhosts();
+		if(lifes_ > 0)
+		{
+			--lifes_;
+			SpawnPacmanAndGhosts();
+		}
+		else
+		{
+			game_over_ = true;
+		}
 	}
 }
 
@@ -357,6 +368,19 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			c_field_height * c_block_size / 2,
 			"Ready!");
 	}
+	if(game_over_)
+	{
+		DrawTextCentered(
+			frame_buffer,
+			g_color_white,
+			c_field_width  * c_block_size / 2,
+			c_field_height * c_block_size / 2,
+			"game over");
+	}
+
+	char text[64];
+	std::snprintf(text, sizeof(text), "Lifes\n\n%3d", lifes_);
+	DrawText(frame_buffer, g_color_white, 260, 20, text);
 }
 
 GameInterfacePtr GamePacman::AskForNextGameTransition()
@@ -581,6 +605,7 @@ void GamePacman::MovePacman()
 				EnterFrightenedMode();
 			}
 			bonus = Bonus::None;
+			--bonuses_left_;
 			// TODO - add score here.
 		}
 
