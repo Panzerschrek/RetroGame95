@@ -83,6 +83,7 @@ private:
 	void DrawPacman(FrameBuffer frame_buffer) const;
 	void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost) const;
 
+	void NextLevel();
 	void SpawnPacmanAndGhosts();
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
@@ -113,7 +114,8 @@ private:
 	Bonus bonuses_[c_field_width * c_field_height]{};
 	uint32_t bonuses_left_ = 0;
 	uint32_t bonuses_eaten_ = 0;
-	uint32_t lifes_ = 5;
+	uint32_t level_ = 0;
+	uint32_t lifes_ = 3;
 	bool game_over_ = false;
 
 	GhostMode current_ghosts_mode_ = GhostMode::Scatter;

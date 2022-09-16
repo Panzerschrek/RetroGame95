@@ -63,34 +63,14 @@ const uint32_t g_bonuses_eaten_for_pinky_release = 0;
 const uint32_t g_bonuses_eaten_for_inky_release = g_bonuses_eaten_for_pinky_release + 30;
 const uint32_t g_bonuses_eaten_for_clyde_release = g_bonuses_eaten_for_inky_release + 45;
 
+const uint32_t g_max_lifes = 8;
+
 } // namespace
 
 GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	bonuses_left_ = 0;
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
-	{
-		const uint32_t address = x + y * c_field_width;
-		const char symbol = g_game_field[address];
-		Bonus& bonus = bonuses_[address];
-		switch(symbol)
-		{
-		case g_food_symbol:
-			bonus = Bonus::Food;
-			++bonuses_left_;
-			break;
-		case g_bonus_deadly_symbol:
-			bonus = Bonus::Deadly;
-			++bonuses_left_;
-			break;
-		default:
-			break;
-		}
-	}
-
 	SpawnPacmanAndGhosts();
 }
 
@@ -150,6 +130,11 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		{
 			game_over_ = true;
 		}
+	}
+
+	if(bonuses_left_ == 0)
+	{
+		NextLevel();
 	}
 }
 
@@ -541,6 +526,41 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) c
 		0,
 		uint32_t(Fixed16FloorToInt(ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
 		uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+
+	char text[64];
+	std::snprintf(text, sizeof(text), "level %1d", level_);
+	DrawText(frame_buffer, g_color_white, 260, 40, text);
+}
+
+void GamePacman::NextLevel()
+{
+	++level_;
+
+	lifes_ = std::min(lifes_ + 2, g_max_lifes);
+
+	bonuses_left_ = 0;
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		const uint32_t address = x + y * c_field_width;
+		const char symbol = g_game_field[address];
+		Bonus& bonus = bonuses_[address];
+		switch(symbol)
+		{
+		case g_food_symbol:
+			bonus = Bonus::Food;
+			++bonuses_left_;
+			break;
+		case g_bonus_deadly_symbol:
+			bonus = Bonus::Deadly;
+			++bonuses_left_;
+			break;
+		default:
+			break;
+		}
+	}
+
+	SpawnPacmanAndGhosts();
 }
 
 void GamePacman::SpawnPacmanAndGhosts()
