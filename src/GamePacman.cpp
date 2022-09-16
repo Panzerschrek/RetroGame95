@@ -52,6 +52,7 @@ const fixed16_t g_ghost_frightened_move_speed = g_base_move_speed * 50 / 100;
 const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 3;
 
 const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
+const uint32_t g_death_animation_duration = GameInterface::c_update_frequency * 3 / 2;
 
 const uint32_t g_scatter_duration_first = GameInterface::c_update_frequency * 7;
 const uint32_t g_scatter_duration_second = GameInterface::c_update_frequency * 5;
@@ -122,7 +123,7 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
-		if(event.type == SDL_KEYDOWN)
+		if(event.type == SDL_KEYDOWN && pacman_.dead_animation_end_tick == std::nullopt)
 		{
 			if(event.key.keysym.scancode == SDL_SCANCODE_LEFT)
 			{
@@ -350,6 +351,49 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	if(pacman_.dead_animation_end_tick != std::nullopt)
+	{
+		const SpriteBMP pacman_sprites[]
+		{
+			Sprites::pacman_0,
+			Sprites::pacman_1,
+			Sprites::pacman_2,
+			Sprites::pacman_3,
+			Sprites::pacman_4,
+			Sprites::pacman_5,
+			Sprites::pacman_6,
+			Sprites::pacman_7,
+		};
+
+		const uint32_t num_frames = uint32_t(std::size(pacman_sprites));
+
+		const uint32_t frame =
+			(g_death_animation_duration + tick_ - *pacman_.dead_animation_end_tick) *
+			num_frames /
+			g_death_animation_duration;
+
+		const SpriteBMP current_sprite = pacman_sprites[std::min(frame, num_frames - 1)];
+		const uint32_t pacman_x =
+			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
+		const uint32_t pacman_y =
+			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
+		switch(pacman_.direction)
+		{
+		case GridDirection::XMinus:
+			DrawSpriteWithAlphaRotate180(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		case GridDirection::XPlus:
+			DrawSpriteWithAlpha         (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		case GridDirection::YMinus:
+			DrawSpriteWithAlphaRotate270(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		case GridDirection::YPlus:
+			DrawSpriteWithAlphaRotate90 (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			break;
+		}
+	}
+	else
 	{
 		const SpriteBMP pacman_sprites[]
 		{
@@ -437,6 +481,11 @@ GameInterfacePtr GamePacman::AskForNextGameTransition()
 
 void GamePacman::MovePacman()
 {
+	if(pacman_.dead_animation_end_tick != std::nullopt)
+	{
+		return;
+	}
+
 	fixed16vec2_t new_position = pacman_.position;
 	switch(pacman_.direction)
 	{
@@ -868,7 +917,10 @@ void GamePacman::ProcessPacmanGhostsTouch()
 			}
 			else
 			{
-				// TODO - eat pacman here
+				if(pacman_.dead_animation_end_tick == std::nullopt)
+				{
+					pacman_.dead_animation_end_tick = tick_ + g_death_animation_duration;
+				}
 			}
 		}
 	}

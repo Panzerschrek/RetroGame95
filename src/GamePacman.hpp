@@ -3,6 +3,7 @@
 #include "Fixed.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
+#include <optional>
 
 class GamePacman final : public GameInterface
 {
@@ -34,6 +35,9 @@ private:
 		GridDirection direction = GridDirection::XPlus;
 		GridDirection next_direction = GridDirection::XPlus;
 		fixed16vec2_t target_position{};
+
+		// Non-empty if killed and dead animation is played.
+		std::optional<uint32_t> dead_animation_end_tick;
 	};
 
 	enum class GhostType
