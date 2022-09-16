@@ -49,7 +49,7 @@ const fixed16_t g_base_move_speed = g_fixed16_one * 6 / GameInterface::c_update_
 const fixed16_t g_pacman_move_speed = g_base_move_speed * 80 / 100;
 const fixed16_t g_ghost_move_speed = g_base_move_speed * 75 / 100;
 const fixed16_t g_ghost_frightened_move_speed = g_base_move_speed * 50 / 100;
-const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 3;
+const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 2;
 
 const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
 const uint32_t g_death_animation_duration = GameInterface::c_update_frequency * 3 / 2;
@@ -509,13 +509,18 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) c
 		},
 	};
 
+	const SpriteBMP sprites_dead[4]
+	{
+		Sprites::pacman_ghost_dead_right,
+		Sprites::pacman_ghost_dead_left ,
+		Sprites::pacman_ghost_dead_down ,
+		Sprites::pacman_ghost_dead_up   ,
+	};
+
 	SpriteBMP sprite = sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
 	if(ghost.mode == GhostMode::Eaten)
 	{
-		sprite =
-			(ghost.direction == GridDirection::XPlus || ghost.direction == GridDirection::YPlus)
-				? Sprites::pacman_ghost_dead_left
-				: Sprites::pacman_ghost_dead_right;
+		sprite = sprites_dead[uint32_t(ghost.direction)];
 	}
 	else if(ghost.mode == GhostMode::Frightened)
 	{
