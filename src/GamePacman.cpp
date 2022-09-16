@@ -159,7 +159,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const Color32 c_wall_color = 0x000000FF;
+	const Color32 c_wall_color = g_cga_palette[1];
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
 		const char* const line = g_game_field + y * c_field_width;
