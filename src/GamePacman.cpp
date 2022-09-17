@@ -444,8 +444,19 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 			Sprites::pacman_1,
 		};
 
+		const uint32_t num_frames = uint32_t(std::size(sprites));
+
+		const fixed16_t dist =
+			Fixed16Abs(pacman_.target_position[0] - pacman_.position[0]) +
+			Fixed16Abs(pacman_.target_position[1] - pacman_.position[1]);
+
+		const uint32_t frame =
+			std::min(
+				(uint32_t(std::max(g_fixed16_one - dist, 0)) * num_frames) >> g_fixed16_base,
+				num_frames - 1);
+
 		const SpriteBMP current_sprite =
-			tick_ < spawn_animation_end_tick_ ? sprites[1] : sprites[tick_ / 12 % std::size(sprites)];
+			tick_ < spawn_animation_end_tick_ ? sprites[1] : sprites[frame];
 		const uint32_t pacman_x =
 			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
 		const uint32_t pacman_y =
