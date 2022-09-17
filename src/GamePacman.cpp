@@ -1,6 +1,7 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "Progress.hpp"
 #include "Sprites.hpp"
 #include <cassert>
 
@@ -75,6 +76,8 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	OpenGame(GameId::Pacman);
+
 	SpawnPacmanAndGhosts();
 }
 

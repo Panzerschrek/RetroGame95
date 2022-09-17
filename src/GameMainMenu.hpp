@@ -21,6 +21,7 @@ private:
 	enum class MenuRow
 	{
 		NewGame,
+		ContinueGame,
 		Quit,
 		NumRows,
 	};

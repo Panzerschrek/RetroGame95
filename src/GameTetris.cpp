@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GameSnake.hpp"
+#include "Progress.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include <cassert>
@@ -60,6 +61,8 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	OpenGame(GameId::Tetris);
+
 	NextLevel();
 }
 

@@ -3,6 +3,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GameTetris.hpp"
+#include "Progress.hpp"
 #include "Sprites.hpp"
 #include <cassert>
 #include <cmath>
@@ -29,6 +30,8 @@ GameArkanoid::GameArkanoid(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	OpenGame(GameId::Arkanoid);
+
 	NextLevel();
 }
 

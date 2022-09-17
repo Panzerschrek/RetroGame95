@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GamePacman.hpp"
+#include "Progress.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
 #include <cassert>
@@ -38,6 +39,8 @@ GameSnake::GameSnake(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	OpenGame(GameId::Snake);
+
 	NextLevel();
 }
 

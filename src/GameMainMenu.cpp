@@ -4,6 +4,7 @@
 #include "GamePacman.hpp"
 #include "GameSnake.hpp"
 #include "GameTetris.hpp"
+#include "Progress.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include <SDL_keyboard.h>
@@ -12,17 +13,22 @@
 namespace
 {
 
-GameInterfacePtr CreateGameByIndex(const uint32_t index, SoundPlayer& sound_player)
+GameInterfacePtr CreateGameById(const GameId id, SoundPlayer& sound_player)
 {
-	switch(index)
+	switch(id)
 	{
-	case 0: return std::make_unique<GameArkanoid>(sound_player);
-	case 1: return std::make_unique<GameTetris>(sound_player);
-	case 2: return std::make_unique<GameSnake>(sound_player);
-	case 3: return std::make_unique<GamePacman>(sound_player);
+	case GameId::Arkanoid: return std::make_unique<GameArkanoid>(sound_player);
+	case GameId::Tetris: return std::make_unique<GameTetris>(sound_player);
+	case GameId::Snake: return std::make_unique<GameSnake>(sound_player);
+	case GameId::Pacman: return std::make_unique<GamePacman>(sound_player);
 	}
 
 	return nullptr;
+}
+
+GameInterfacePtr CreateGameByIndex(const uint32_t index, SoundPlayer& sound_player)
+{
+	return CreateGameById(GameId(index), sound_player);
 }
 
 } // namespace
@@ -52,6 +58,13 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 					if(next_game_ == nullptr)
 					{
 						next_game_ = CreateGameByIndex(0, sound_player_);
+					}
+					break;
+
+				case MenuRow::ContinueGame:
+					if(next_game_ == nullptr)
+					{
+						next_game_ = CreateGameById(LoadProgress().current_game, sound_player_);
 					}
 					break;
 
@@ -101,7 +114,7 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		title_offset_y,
 		"RetroGame95");
 
-	const char* const texts[] = {"New game", "Quit"};
+	const char* const texts[] = {"New game", "Continue game", "Quit"};
 	for(size_t i = 0; i < std::size(texts); ++i)
 	{
 		DrawText(
