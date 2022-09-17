@@ -66,7 +66,7 @@ void DrawSpriteWithAlphaRotate90(
 	uint32_t start_x,
 	uint32_t start_y);
 
-void DrawSpriteWithAlphaUncheckedRotate180(
+void DrawSpriteWithAlphaRotate180(
 	FrameBuffer frame_buffer,
 	SpriteBMP sprite,
 	uint8_t transparent_color_index,

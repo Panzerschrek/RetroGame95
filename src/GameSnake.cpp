@@ -207,7 +207,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 				if(segment.position[1] < next_segment.position[1])
 				{
 					sprite_offset_y = -5;
-					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+					draw_fn = DrawSpriteWithAlphaRotate180;
 				}
 			}
 			else if(i == snake_->segments.size() - 1)
@@ -225,7 +225,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 				}
 				if(segment.position[1] > prev_segment.position[1])
 				{
-					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+					draw_fn = DrawSpriteWithAlphaRotate180;
 				}
 				if(segment.position[1] < prev_segment.position[1])
 				{
@@ -246,7 +246,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 				}
 				else if(next_segment.position[1] < segment.position[1] && segment.position[1] < prev_segment.position[1])
 				{
-					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+					draw_fn = DrawSpriteWithAlphaRotate180;
 				}
 				else if(next_segment.position[1] > segment.position[1] && segment.position[1] > prev_segment.position[1])
 				{
@@ -257,14 +257,14 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 					sprite_offset_x = 1;
 					sprite_offset_y = 1;
 					sprite = body_segment_angle_sprite;
-					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+					draw_fn = DrawSpriteWithAlphaRotate180;
 				}
 				else if(prev_segment.position[0] > segment.position[0] && next_segment.position[1] > segment.position[1])
 				{
 					sprite_offset_x = 1;
 					sprite_offset_y = 1;
 					sprite = body_segment_angle_sprite;
-					draw_fn = DrawSpriteWithAlphaUncheckedRotate180;
+					draw_fn = DrawSpriteWithAlphaRotate180;
 				}
 				else if(next_segment.position[0] > segment.position[0] && prev_segment.position[1] < segment.position[1])
 				{

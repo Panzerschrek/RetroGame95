@@ -316,7 +316,7 @@ void DrawSpriteWithAlphaRotate90(
 	DrawSpriteWithAlphaTransformed(frame_buffer, sprite, transparent_color_index, matrix);
 }
 
-void DrawSpriteWithAlphaUncheckedRotate180(
+void DrawSpriteWithAlphaRotate180(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
 	const uint8_t transparent_color_index,
