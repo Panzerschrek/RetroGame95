@@ -645,11 +645,13 @@ void GamePacman::MovePacman()
 			if(bonus == Bonus::Food)
 			{
 				score_ += g_score_for_food;
+				sound_player_.PlaySound(SoundId::TetrisFigureStep);
 			}
 			if(bonus == Bonus::Deadly)
 			{
 				score_ += g_score_for_deadly_bonus;
 				EnterFrightenedMode();
+				sound_player_.PlaySound(SoundId::SnakeBonusEat);
 			}
 			bonus = Bonus::None;
 			--bonuses_left_;
@@ -1083,6 +1085,7 @@ void GamePacman::ProcessPacmanGhostsTouch()
 				if(pacman_.dead_animation_end_tick == std::nullopt)
 				{
 					pacman_.dead_animation_end_tick = tick_ + g_death_animation_duration;
+					sound_player_.PlaySound(SoundId::SnakeDeath);
 				}
 			}
 		}
