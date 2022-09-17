@@ -1,6 +1,7 @@
 #include "GameSnake.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "GamePacman.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
 #include <cassert>
@@ -9,6 +10,7 @@ namespace
 {
 
 const uint32_t g_max_lifes = 6;
+const uint32_t g_max_level = 3;
 
 const uint32_t g_grow_points_per_food_piece_small = 3;
 const uint32_t g_grow_points_per_food_piece_medium = 5;
@@ -111,7 +113,14 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	if(!game_over_ && death_animation_end_tick_ == std::nullopt &&
 		snake_ != std::nullopt && snake_->segments.size() >= GetLengthForNextLevelTransition(level_))
 	{
-		NextLevel();
+		if(level_ >= g_max_level)
+		{
+			next_game_ = std::make_unique<GamePacman>(sound_player_);
+		}
+		else
+		{
+			NextLevel();
+		}
 	}
 }
 
