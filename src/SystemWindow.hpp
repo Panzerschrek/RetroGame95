@@ -19,6 +19,9 @@ public:
 	void EndFrame();
 
 private:
+	void UpdateWindowSize();
+
+private:
 	SDL_Window* window_= nullptr;
 	SDL_Surface* surface_= nullptr;
 	uint32_t scale_ = 1;
