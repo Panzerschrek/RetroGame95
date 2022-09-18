@@ -14,20 +14,20 @@ void CopyImageWithScaleImpl(
 	Color32* const dst,
 	const uint32_t dst_stride)
 {
-	for(uint32_t y= 0; y < src_height; ++y)
+	for(uint32_t y = 0; y < src_height; ++y)
 	{
 		const Color32* const src_line = src + y * src_width;
 		Color32* dst_start_line = dst + y * scale * dst_stride;
-		for(uint32_t x= 0; x < src_width; ++x)
+		for(uint32_t x = 0; x < src_width; ++x)
 		{
 			const Color32 c = src_line[x];
+			Color32* const dst_span_sart = dst_start_line + x * scale;
 			for(uint32_t dy = 0; dy < scale; ++dy)
 			{
-				Color32* dst_line = dst_start_line + dy * dst_stride;
+				Color32* const dst_line = dst_span_sart + dy * dst_stride;
 				for(uint32_t dx = 0; dx < scale; ++dx)
 				{
-					const uint32_t dst_x = x * scale + dx;
-					dst_line[dst_x] = c;
+					dst_line[dx] = c;
 				}
 			}
 		}
@@ -94,21 +94,15 @@ std::vector<SDL_Event> SystemWindow::GetEvents()
 	{
 		if(event.type == SDL_KEYDOWN)
 		{
-			if(event.key.keysym.scancode == SDL_SCANCODE_MINUS)
+			if(event.key.keysym.scancode == SDL_SCANCODE_MINUS && scale_ > 1)
 			{
-				if(scale_ > 1)
-				{
-					--scale_;
-					UpdateWindowSize();
-				}
+				--scale_;
+				UpdateWindowSize();
 			}
-			if(event.key.keysym.scancode == SDL_SCANCODE_EQUALS)
+			if(event.key.keysym.scancode == SDL_SCANCODE_EQUALS && scale_ < g_max_scale)
 			{
-				if(scale_ < g_max_scale)
-				{
-					++scale_;
-					UpdateWindowSize();
-				}
+				++scale_;
+				UpdateWindowSize();
 			}
 		}
 
@@ -135,13 +129,13 @@ std::vector<bool> SystemWindow::GetKeyboardState()
 
 void SystemWindow::BeginFrame()
 {
-	surface_= SDL_GetWindowSurface(window_);
+	surface_ = SDL_GetWindowSurface(window_);
 }
 
 FrameBuffer SystemWindow::GetFrameBuffer()
 {
 	FrameBuffer frame_buffer;
-	frame_buffer.width = uint32_t(surface_->w) / scale_;
+	frame_buffer.width  = uint32_t(surface_->w) / scale_;
 	frame_buffer.height = uint32_t(surface_->h) / scale_;
 
 	frame_buffer_data_.resize(frame_buffer.width * frame_buffer.height, 0);
@@ -153,7 +147,9 @@ FrameBuffer SystemWindow::GetFrameBuffer()
 void SystemWindow::EndFrame()
 {
 	if(SDL_MUSTLOCK(surface_))
+	{
 		SDL_LockSurface(surface_);
+	}
 
 	CopyImageWithScale(
 		scale_,
@@ -164,7 +160,9 @@ void SystemWindow::EndFrame()
 		uint32_t(surface_->pitch) / sizeof(Color32));
 
 	if(SDL_MUSTLOCK(surface_))
+	{
 		SDL_UnlockSurface(surface_);
+	}
 
 	SDL_UpdateWindowSurface(window_);
 	surface_= nullptr;
