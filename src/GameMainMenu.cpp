@@ -4,7 +4,6 @@
 #include "GamePacman.hpp"
 #include "GameSnake.hpp"
 #include "GameTetris.hpp"
-#include "Progress.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include <SDL_keyboard.h>
@@ -34,7 +33,7 @@ GameInterfacePtr CreateGameByIndex(const uint32_t index, SoundPlayer& sound_play
 } // namespace
 
 GameMainMenu::GameMainMenu(SoundPlayer& sound_player)
-	: sound_player_(sound_player)
+	: sound_player_(sound_player), progress_(LoadProgress())
 {
 }
 
@@ -48,43 +47,81 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 		{
 			if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
 			{
-				quit_triggered_ = true;
+				if(std::get_if<MenuRow>(&current_row_) != nullptr)
+				{
+					quit_triggered_ = true;
+				}
+				else if( std::get_if<SelectGameMenuRow>(&current_row_) != nullptr)
+				{
+					current_row_ = MenuRow::SelectGame;
+				}
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_RETURN)
 			{
-				switch(current_row_)
+				if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
 				{
-				case MenuRow::NewGame:
-					if(next_game_ == nullptr)
+					switch(*main_menu_row)
 					{
-						next_game_ = CreateGameByIndex(0, sound_player_);
-					}
-					break;
+					case MenuRow::NewGame:
+						if(next_game_ == nullptr)
+						{
+							next_game_ = CreateGameByIndex(0, sound_player_);
+						}
+						break;
 
-				case MenuRow::ContinueGame:
-					if(next_game_ == nullptr)
+					case MenuRow::ContinueGame:
+						if(next_game_ == nullptr)
+						{
+							next_game_ = CreateGameById(progress_.current_game, sound_player_);
+						}
+						break;
+
+					case MenuRow::SelectGame:
+						current_row_ = SelectGameMenuRow(0);
+						break;
+
+					case MenuRow::Quit:
+						quit_triggered_ = true;
+						break;
+
+					case MenuRow::NumRows:
+						assert(false);
+						break;
+					}
+				}
+				else if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
+				{
+					if(next_game_ == nullptr &&
+						(uint32_t(*select_game_row) == 0 ||
+						(progress_.opened_games_mask & (1 << uint32_t(*select_game_row))) != 0))
 					{
-						next_game_ = CreateGameById(LoadProgress().current_game, sound_player_);
+						next_game_ = CreateGameById(*select_game_row, sound_player_);
 					}
-					break;
-
-				case MenuRow::Quit:
-					quit_triggered_ = true;
-					break;
-
-				case MenuRow::NumRows:
-					assert(false);
-					break;
 				}
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_UP)
 			{
-				current_row_ =
-					MenuRow((uint32_t(current_row_) + uint32_t(MenuRow::NumRows) - 1) % uint32_t(MenuRow::NumRows));
+				if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
+				{
+					*main_menu_row =
+						MenuRow((uint32_t(*main_menu_row) + uint32_t(MenuRow::NumRows) - 1) % uint32_t(MenuRow::NumRows));
+				}
+				else if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
+				{
+					*select_game_row =
+						SelectGameMenuRow((uint32_t(*select_game_row) + uint32_t(SelectGameMenuRow::NumGames) - 1) % uint32_t(SelectGameMenuRow::NumGames));
+				}
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_DOWN)
 			{
-				current_row_ = MenuRow((uint32_t(current_row_) + 1) % uint32_t(MenuRow::NumRows));
+				if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
+				{
+					*main_menu_row = MenuRow((uint32_t(*main_menu_row) + 1) % uint32_t(MenuRow::NumRows));
+				}
+				else if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
+				{
+					*select_game_row = SelectGameMenuRow((uint32_t(*select_game_row) + 1) % uint32_t(SelectGameMenuRow::NumGames));
+				}
 			}
 			if(event.key.keysym.scancode >= SDL_SCANCODE_F1 && event.key.keysym.scancode <= SDL_SCANCODE_F12)
 			{
@@ -106,6 +143,8 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t title_offset_y = 32;
 	const uint32_t offset_x = 112;
 	const uint32_t offset_y = 96;
+	const uint32_t row_step = 16;
+	const uint32_t cursor_offset = 16;
 
 	DrawText(
 		frame_buffer,
@@ -114,23 +153,54 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		title_offset_y,
 		"RetroGame95");
 
-	const char* const texts[] = {"New game", "Continue game", "Quit"};
-	for(size_t i = 0; i < std::size(texts); ++i)
+	if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
 	{
+		const char* const texts[] = {"New game", "Continue game", "Select game", "Quit"};
+		for(size_t i = 0; i < std::size(texts); ++i)
+		{
+			DrawText(
+				frame_buffer,
+				g_color_white,
+				offset_x,
+				offset_y + row_step * uint32_t(i),
+				texts[i]);
+		}
+
 		DrawText(
 			frame_buffer,
 			g_color_white,
-			offset_x,
-			offset_y + 16 * uint32_t(i),
-			texts[i]);
+			offset_x - cursor_offset,
+			offset_y + row_step * uint32_t(*main_menu_row),
+			">");
 	}
+	if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
+	{
+		const char* const game_names[]
+		{
+			"Arkanoid",
+			"Tetris",
+			"Snake",
+			"Pacman",
+		};
+		for(uint32_t i = 0; i < uint32_t(SelectGameMenuRow::NumGames); ++i)
+		{
+			DrawText(
+				frame_buffer,
+				g_color_white,
+				offset_x,
+				offset_y + row_step * uint32_t(i),
+				(i == 0 || ((1 << i) & progress_.opened_games_mask) != 0)
+					? game_names[i]
+					: "????????????????");
+		}
 
-	DrawText(
-		frame_buffer,
-		g_color_white,
-		offset_x - 16,
-		offset_y + 16 * uint32_t(current_row_),
-		">");
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			offset_x - cursor_offset,
+			offset_y + row_step * uint32_t(*select_game_row),
+			">");
+	}
 }
 
 GameInterfacePtr GameMainMenu::AskForNextGameTransition()

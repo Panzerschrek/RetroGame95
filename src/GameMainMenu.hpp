@@ -1,6 +1,8 @@
 #pragma once
 #include "GameInterface.hpp"
+#include "Progress.hpp"
 #include "SoundPlayer.hpp"
+#include <variant>
 
 class GameMainMenu final : public GameInterface
 {
@@ -22,14 +24,19 @@ private:
 	{
 		NewGame,
 		ContinueGame,
+		SelectGame,
 		Quit,
 		NumRows,
 	};
 
+	using SelectGameMenuRow = GameId;
+
 private:
 	SoundPlayer& sound_player_;
 
-	MenuRow current_row_ = MenuRow::NewGame;
+	const Progress progress_;
+
+	std::variant<MenuRow, SelectGameMenuRow> current_row_ = MenuRow::NewGame;
 
 	GameInterfacePtr next_game_ = nullptr;
 	bool quit_triggered_ = false;
