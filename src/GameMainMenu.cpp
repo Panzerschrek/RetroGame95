@@ -20,8 +20,10 @@ GameInterfacePtr CreateGameById(const GameId id, SoundPlayer& sound_player)
 	case GameId::Tetris: return std::make_unique<GameTetris>(sound_player);
 	case GameId::Snake: return std::make_unique<GameSnake>(sound_player);
 	case GameId::Pacman: return std::make_unique<GamePacman>(sound_player);
+	case GameId::NumGames: break;
 	}
 
+	assert(false);
 	return nullptr;
 }
 
