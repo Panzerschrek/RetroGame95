@@ -27,6 +27,8 @@ const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pie
 
 const fixed16_t g_bonus_drop_speed = g_fixed16_one / GameInterface::c_update_frequency;
 
+const uint32_t g_slow_down_bonus_duration = 960;
+
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 {
 	switch(lines_removed)
@@ -80,11 +82,16 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		}
 	}
 
-	++num_ticks_;
+	++tick_;
 
 	ManipulatePiece(events);
 
-	if(num_ticks_ % GetSpeedForLevel(level_) == 0)
+	uint32_t speed = GetSpeedForLevel(level_);
+	if(tick_ <= slow_down_end_tick_)
+	{
+		speed = speed * 3 / 2;
+	}
+	if(tick_ % speed == 0)
 	{
 		MovePieceDown();
 	}
@@ -254,7 +261,7 @@ GameInterfacePtr GameTetris::AskForNextGameTransition()
 
 void GameTetris::NextLevel()
 {
-	num_ticks_ = 0;
+	tick_ = 0;
 	level_ += 1;
 	lines_removed_for_this_level_ = 0;
 
@@ -555,7 +562,23 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 	bonus.position[1] += g_bonus_drop_speed;
 
 	// Kill the bonus if it reaches lower field border.
-	return bonus.position[1] > IntToFixed16(c_field_height + 1);
+	if(bonus.position[1] > IntToFixed16(c_field_height + 1))
+	{
+		// Pick-up bonus automatically,
+		switch(bonus.type)
+		{
+		case BonusType::SlowDown:
+			slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
+			break;
+
+		case BonusType::NumBonuses:
+			assert(false);
+			break;
+		}
+		return true;
+	}
+
+	return false;
 }
 
 void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)

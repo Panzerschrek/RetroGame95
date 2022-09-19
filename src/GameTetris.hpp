@@ -75,7 +75,7 @@ private:
 
 	Rand rand_;
 
-	uint32_t num_ticks_ = 0;
+	uint32_t tick_ = 0;
 	uint32_t score_= 0;
 	uint32_t level_ = 0;
 	uint32_t lines_removed_for_this_level_ = 0;
@@ -86,6 +86,7 @@ private:
 	Block next_piece_type_ = Block::Empty;
 
 	std::vector<Bonus> bonuses_;
+	uint32_t slow_down_end_tick_ = 0;
 
 	uint32_t pieces_spawnded_ = 0;
 
