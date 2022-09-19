@@ -26,7 +26,7 @@ const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pie
 	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
 }};
 
-const fixed16_t g_bonus_drop_speed = 4 * g_fixed16_one / GameInterface::c_update_frequency;
+const fixed16_t g_bonus_drop_speed = g_fixed16_one * 5 / 2 / GameInterface::c_update_frequency;
 
 const uint32_t g_slow_down_bonus_duration = 960;
 
@@ -690,32 +690,49 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 	// Kill the bonus if it reaches lower field border.
 	if(bonus.position[1] > IntToFixed16(c_field_height + 1))
 	{
-		// Pick-up bonus automatically,
-		switch(bonus.type)
+
+		if(active_piece_ != std::nullopt)
 		{
-		case BonusType::NextLevel:
-			next_level_triggered_ = true;
-			break;
-
-		case BonusType::ArkanoidBallsSpawn:
-			for(uint32_t i = 0; i < 3; ++i)
+			// Pick-up bonus only if it fails below current piece.
+			bool touches_shadow = false;
+			const fixed16_t half_bonus_size = g_fixed16_one;
+			for(const auto& block : active_piece_->blocks)
 			{
-				SpawnArkanoidBall();
+				touches_shadow |=
+					bonus.position[0] >= IntToFixed16(block[0]) - half_bonus_size &&
+					bonus.position[0] <= IntToFixed16(block[0] + 1) + half_bonus_size;
 			}
-			break;
 
-		case BonusType::IPiece:
-			i_pieces_left_ = 3;
-			break;
+			if(touches_shadow)
+			{
+				switch(bonus.type)
+				{
+				case BonusType::NextLevel:
+					next_level_triggered_ = true;
+					break;
 
-		case BonusType::SlowDown:
-			slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
-			break;
+				case BonusType::ArkanoidBallsSpawn:
+					for(uint32_t i = 0; i < 3; ++i)
+					{
+						SpawnArkanoidBall();
+					}
+					break;
 
-		case BonusType::NumBonuses:
-			assert(false);
-			break;
+				case BonusType::IPiece:
+					i_pieces_left_ = 3;
+					break;
+
+				case BonusType::SlowDown:
+					slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
+					break;
+
+				case BonusType::NumBonuses:
+					assert(false);
+					break;
+				}
+			}
 		}
+
 		return true;
 	}
 
@@ -728,7 +745,7 @@ void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 	Bonus bonus;
 	bonus.position = {
 		IntToFixed16(x) + g_fixed16_one / 2,
-		IntToFixed16(std::max(y, 1)) - g_fixed16_one / 2 };
+		IntToFixed16(std::max(std::min(int32_t(c_field_height - 5), y), 1)) - g_fixed16_one / 2 };
 	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
 
 	bonuses_.push_back(bonus);
