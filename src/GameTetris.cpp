@@ -223,6 +223,15 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 					field_offset_x + uint32_t(piece_block[0]) * block_width,
 					field_offset_y + uint32_t(piece_block[1]) * block_height);
 			}
+			if(piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width))
+			{
+				DrawSpriteWithAlpha(
+					frame_buffer,
+					Sprites::tetris_block_shadow,
+					0,
+					field_offset_x + uint32_t(piece_block[0]) * block_width,
+					field_offset_y + (c_field_height + 1) * block_height);
+			}
 		}
 	}
 
