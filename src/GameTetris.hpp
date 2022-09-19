@@ -1,4 +1,5 @@
 #pragma once
+#include "Fixed.hpp"
 #include "GameInterface.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
@@ -42,11 +43,29 @@ private:
 		std::array<std::array<int32_t, 2>, 4> blocks;
 	};
 
+	enum class BonusType : uint8_t
+	{
+		SlowDown,
+		NumBonuses,
+	};
+
+	struct Bonus
+	{
+		BonusType type = BonusType::SlowDown;
+		// Center position (in blocks).
+		fixed16vec2_t position{};
+	};
+
 private:
 	void NextLevel();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
 	void MovePieceDown();
 	void UpdateScore(uint32_t lines_removed);
+
+	// Returns true if need to kill it.
+	bool UpdateBonus(Bonus& ball);
+
+	void TrySpawnNewBonus(uint32_t line);
 
 	ActivePiece SpawnActivePiece();
 	void GenerateNextPieceType();
@@ -65,6 +84,8 @@ private:
 	Block field_[ c_field_width * c_field_height] {};
 	std::optional<ActivePiece> active_piece_;
 	Block next_piece_type_ = Block::Empty;
+
+	std::vector<Bonus> bonuses_;
 
 	uint32_t pieces_spawnded_ = 0;
 
