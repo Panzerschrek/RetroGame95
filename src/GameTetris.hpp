@@ -65,7 +65,7 @@ private:
 	// Returns true if need to kill it.
 	bool UpdateBonus(Bonus& ball);
 
-	void TrySpawnNewBonus(uint32_t line);
+	void TrySpawnNewBonus(int32_t x, int32_t y);
 
 	ActivePiece SpawnActivePiece();
 	void GenerateNextPieceType();

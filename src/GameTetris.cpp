@@ -207,8 +207,8 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			frame_buffer,
 			sprite,
 			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * bonus.position[0])) - sprite.GetWidth (),
-			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * bonus.position[1])) - sprite.GetHeight());
+			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * bonus.position[0])) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * bonus.position[1])) - sprite.GetHeight() / 2);
 	}
 
 	DrawText(
@@ -460,7 +460,6 @@ void GameTetris::MovePieceDown()
 
 			// Remove lines.
 			uint32_t lines_removed = 0;
-			uint32_t last_removed_line = 0;
 			for(uint32_t y = c_field_height -1;;)
 			{
 				bool line_is_full = true;
@@ -472,7 +471,6 @@ void GameTetris::MovePieceDown()
 				if(line_is_full)
 				{
 					++lines_removed;
-					last_removed_line = y;
 
 					// Remove this line.
 					for(uint32_t dst_y = y; ; --dst_y)
@@ -511,12 +509,16 @@ void GameTetris::MovePieceDown()
 				}
 			}
 
-			UpdateScore(lines_removed);
-
-			for(uint32_t i = 0; i < lines_removed; ++i)
+			if(!game_over_)
 			{
-				TrySpawnNewBonus(last_removed_line);
+				assert(lines_removed <= 4);
+				for(uint32_t i = 0; i < lines_removed; ++i)
+				{
+					TrySpawnNewBonus(active_piece_->blocks[i][0], active_piece_->blocks[i][1]);
+				}
 			}
+
+			UpdateScore(lines_removed);
 
 			active_piece_ = std::nullopt;
 		}
@@ -553,15 +555,16 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 	bonus.position[1] += g_bonus_drop_speed;
 
 	// Kill the bonus if it reaches lower field border.
-	return bonus.position[1] > IntToFixed16(c_field_height);
+	return bonus.position[1] > IntToFixed16(c_field_height + 1);
 }
 
-void GameTetris::TrySpawnNewBonus(const uint32_t line)
+void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 {
+	// TODO - randomize position a bit.
 	Bonus bonus;
 	bonus.position = {
-		fixed16_t(rand_.Next() % (c_field_width << g_fixed16_base)),
-		IntToFixed16(int32_t(std::max(line, 2u) - 2u)) };
+		IntToFixed16(x) + g_fixed16_one / 2,
+		IntToFixed16(std::max(y, 1)) - g_fixed16_one / 2 };
 	bonus.type = BonusType::SlowDown;
 
 	bonuses_.push_back(bonus);
