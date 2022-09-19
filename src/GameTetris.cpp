@@ -27,8 +27,11 @@ const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pie
 }};
 
 const fixed16_t g_bonus_drop_speed = g_fixed16_one * 5 / 2 / GameInterface::c_update_frequency;
+const fixed16_t g_laser_beam_speed = g_fixed16_one / 5;
 
 const uint32_t g_slow_down_bonus_duration = 960;
+const uint32_t g_laser_ship_bonus_duration = 960;
+const uint32_t g_min_shoot_interval = 45;
 
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 {
@@ -81,6 +84,36 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1 &&
+			tick_ <= laser_ship_end_tick_ &&
+			active_piece_ != std::nullopt && tick_ >= next_shoot_tick_)
+		{
+			const fixed16_t x_delta = g_fixed16_one;
+
+			int32_t x_center = 0;
+			for(const auto& piece_block : active_piece_->blocks)
+			{
+				x_center += (IntToFixed16(piece_block[0]) + g_fixed16_one / 2) / 4;
+			}
+
+			LaserBeam beam0;
+			beam0.position[0] = x_center + x_delta;
+			beam0.position[1] = g_fixed16_one;
+			if(beam0.position[0] >= 0 && beam0.position[0] <= IntToFixed16(int32_t(c_field_width)))
+			{
+				laser_beams_.push_back(beam0);
+			}
+
+			LaserBeam beam1;
+			beam1.position[0] = x_center - x_delta;
+			beam1.position[1] = g_fixed16_one;
+			if(beam1.position[0] >= 0 && beam1.position[0] <= IntToFixed16(int32_t(c_field_width)))
+			{
+				laser_beams_.push_back(beam1);
+			}
+
+			next_shoot_tick_ = tick_ + g_min_shoot_interval;
+		}
 	}
 
 	++tick_;
@@ -131,6 +164,23 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		}
 	} // for bonuses.
 
+	for(size_t b = 0; b < laser_beams_.size();)
+	{
+		if(UpdateLaserBeam(laser_beams_[b]))
+		{
+			// This laser beam is dead.
+			if(b + 1 < laser_beams_.size())
+			{
+				laser_beams_[b] = laser_beams_.back();
+			}
+			laser_beams_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for laser beams.
+
 	if(next_level_triggered_)
 	{
 		next_level_triggered_ = false;
@@ -164,12 +214,16 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t texts_offset_x = 8;
 	const uint32_t texts_offset_y = 180;
 
-	DrawHorisontalLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x - 1,
-		field_offset_y - 1,
-		block_width * c_field_width + 2);
+	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
+	if(!laser_ship_is_active)
+	{
+		DrawHorisontalLine(
+			frame_buffer,
+			g_color_white,
+			field_offset_x - 1,
+			field_offset_y - 1,
+			block_width * c_field_width + 2);
+	}
 	DrawHorisontalLine(
 		frame_buffer,
 		g_color_white,
@@ -177,18 +231,22 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		field_offset_y + block_height * c_field_height,
 		block_width * c_field_width + 2);
 
+	const uint32_t vertical_line_start = laser_ship_is_active ? (field_offset_y + 10) : (field_offset_y - 1);
+	const uint32_t vertical_line_end = field_offset_y - 1 + block_height * c_field_height + 2;
+	const uint32_t vertical_line_length = vertical_line_end - vertical_line_start;
+
 	DrawVerticaLine(
 		frame_buffer,
 		g_color_white,
 		field_offset_x - 1,
-		field_offset_y - 1,
-		block_height * c_field_height + 2);
+		vertical_line_start,
+		vertical_line_length);
 	DrawVerticaLine(
 		frame_buffer,
 		g_color_white,
 		field_offset_x + block_width * c_field_width,
-		field_offset_y - 1,
-		block_height * c_field_height + 2);
+		vertical_line_start,
+		vertical_line_length);
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
@@ -233,6 +291,34 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 					field_offset_y + (c_field_height + 1) * block_height);
 			}
 		}
+
+		if(laser_ship_is_active)
+		{
+			int32_t x_center_scaled = 0;
+			for(const auto& piece_block : active_piece_->blocks)
+			{
+				x_center_scaled += piece_block[0];
+			}
+
+			const SpriteBMP sprite(Sprites::arkanoid_ship_with_turrets);
+			DrawSpriteWithAlphaMirrorY(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + uint32_t(x_center_scaled) * block_width / 4 + block_width / 2 - sprite.GetWidth () / 2,
+				field_offset_y - sprite.GetHeight() / 2);
+		}
+	}
+
+	for(const LaserBeam& laser_beam : laser_beams_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_laser_beam);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			Sprites::arkanoid_laser_beam,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(laser_beam.position[0] * int32_t(block_width ))),
+			field_offset_y + uint32_t(Fixed16FloorToInt(laser_beam.position[1] * int32_t(block_height)))  - sprite.GetHeight() / 2);
 	}
 
 	const SpriteBMP bonuses_sprites[]
@@ -240,6 +326,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		Sprites::arkanoid_bonus_b,
 		Sprites::arkanoid_bonus_d,
 		Sprites::arkanoid_bonus_e,
+		Sprites::arkanoid_bonus_l,
 		Sprites::arkanoid_bonus_s,
 	};
 
@@ -326,7 +413,10 @@ void GameTetris::NextLevel()
 
 	arkanoid_balls_.clear();
 	bonuses_.clear();
+	laser_beams_.clear();
 	slow_down_end_tick_ = 0;
+	laser_ship_end_tick_ = 0;
+	next_shoot_tick_ = 0;
 	i_pieces_left_ = 0;
 
 	for (Block& block : field_)
@@ -722,6 +812,10 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 					i_pieces_left_ = 3;
 					break;
 
+				case BonusType::LaserShip:
+					laser_ship_end_tick_ = tick_ + g_laser_ship_bonus_duration;
+					break;
+
 				case BonusType::SlowDown:
 					slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
 					break;
@@ -749,6 +843,44 @@ void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
 
 	bonuses_.push_back(bonus);
+}
+
+bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
+{
+	laser_beam.position[1] += g_laser_beam_speed;
+
+	const fixed16_t beam_half_height = g_fixed16_one / 2;
+
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		Block& block = field_[x + y * c_field_width];
+		if(block == Block::Empty)
+		{
+			continue;
+		}
+
+		const fixed16vec2_t borders_min =
+		{
+			IntToFixed16(int32_t(x)),
+			IntToFixed16(int32_t(y)) - beam_half_height,
+		};
+		const fixed16vec2_t borders_max =
+		{
+			IntToFixed16(int32_t(x + 1)),
+			IntToFixed16(int32_t(y + 1)) + beam_half_height,
+		};
+
+		if( laser_beam.position[0] >= borders_min[0] && laser_beam.position[0] <= borders_max[0] &&
+			laser_beam.position[1] >= borders_min[1]&& laser_beam.position[1] <= borders_max[1])
+		{
+			block = Block::Empty;
+			// Destroy laser beam at first hit.
+			return true;
+		}
+	}
+
+	return laser_beam.position[1] <= 0 || laser_beam.position[1] >= IntToFixed16(int32_t(c_field_height));
 }
 
 void GameTetris::SpawnArkanoidBall()

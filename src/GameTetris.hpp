@@ -48,6 +48,7 @@ private:
 		NextLevel,
 		ArkanoidBallsSpawn,
 		IPiece,
+		LaserShip,
 		SlowDown,
 		NumBonuses,
 	};
@@ -67,6 +68,12 @@ private:
 		fixed16vec2_t velocity{};
 	};
 
+	struct LaserBeam
+	{
+		// Center position.
+		fixed16vec2_t position{};
+	};
+
 private:
 	void OnNextLeveltriggered();
 	void NextLevel();
@@ -79,6 +86,9 @@ private:
 
 	// Returns true if need to kill it.
 	bool UpdateBonus(Bonus& ball);
+
+	// Returns true if need to kill it.
+	bool UpdateLaserBeam(LaserBeam& laser_beam);
 
 	void TrySpawnNewBonus(int32_t x, int32_t y);
 	void SpawnArkanoidBall();
@@ -104,7 +114,10 @@ private:
 
 	std::vector<ArkanoidBall> arkanoid_balls_;
 	std::vector<Bonus> bonuses_;
+	std::vector<LaserBeam> laser_beams_;
 	uint32_t slow_down_end_tick_ = 0;
+	uint32_t laser_ship_end_tick_ = 0;
+	uint32_t next_shoot_tick_ = 0;
 	bool next_level_triggered_ = false;
 
 	uint32_t pieces_spawnded_ = 0;
