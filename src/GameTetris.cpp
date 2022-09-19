@@ -1,6 +1,7 @@
 #include "GameTetris.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "GamesCommon.hpp"
 #include "GameSnake.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
@@ -25,7 +26,7 @@ const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pie
 	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
 }};
 
-const fixed16_t g_bonus_drop_speed = g_fixed16_one / GameInterface::c_update_frequency;
+const fixed16_t g_bonus_drop_speed = 4 * g_fixed16_one / GameInterface::c_update_frequency;
 
 const uint32_t g_slow_down_bonus_duration = 960;
 
@@ -95,6 +96,23 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	{
 		MovePieceDown();
 	}
+
+	for(size_t b = 0; b < arkanoid_balls_.size();)
+	{
+		if(UpdateArkanoidBall(arkanoid_balls_[b]))
+		{
+			// This ball is dead.
+			if(b + 1 < arkanoid_balls_.size())
+			{
+				arkanoid_balls_[b] = arkanoid_balls_.back();
+			}
+			arkanoid_balls_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for balls.
 
 	for(size_t b = 0; b < bonuses_.size();)
 	{
@@ -211,6 +229,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	const SpriteBMP bonuses_sprites[]
 	{
 		Sprites::arkanoid_bonus_b,
+		Sprites::arkanoid_bonus_d,
 		Sprites::arkanoid_bonus_s,
 	};
 
@@ -223,6 +242,17 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * bonus.position[0])) - sprite.GetWidth () / 2,
 			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * bonus.position[1])) - sprite.GetHeight() / 2);
+	}
+
+	for(const ArkanoidBall& arkanoid_ball: arkanoid_balls_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_ball);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * arkanoid_ball.position[0])) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
 	}
 
 	DrawText(
@@ -284,6 +314,7 @@ void GameTetris::NextLevel()
 	level_ += 1;
 	lines_removed_for_this_level_ = 0;
 
+	arkanoid_balls_.clear();
 	bonuses_.clear();
 	slow_down_end_tick_ = 0;
 
@@ -571,6 +602,75 @@ void GameTetris::UpdateScore(const uint32_t lines_removed)
 	}
 }
 
+bool GameTetris::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
+{
+	arkanoid_ball.position[0] += arkanoid_ball.velocity[0];
+	arkanoid_ball.position[1] += arkanoid_ball.velocity[1];
+
+	const fixed16_t ball_half_size = IntToFixed16(3) / 20;
+
+	// Bounce ball from blocks.
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		Block& block = field_[x + y * c_field_width];
+		if(block == Block::Empty)
+		{
+			continue;
+		}
+
+		if(MakeCollisionBetweenObjectAndBox(
+			{
+				IntToFixed16(int32_t(x)),
+				IntToFixed16(int32_t(y)),
+			},
+			{
+				IntToFixed16(int32_t(x + 1)),
+				IntToFixed16(int32_t(y + 1)),
+			},
+			{ball_half_size, ball_half_size},
+			arkanoid_ball.position,
+			arkanoid_ball.velocity))
+		{
+			// TODO - add score here.
+			block = Block::Empty;
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+		}
+	}
+
+	// Bounce ball from walls.
+	// Do this only after blocks bouncing to make sure that ball is inside game field.
+	const fixed16vec2_t filed_mins =
+	{
+		ball_half_size,
+		// Reduce min_y to disable bounse from upper border.
+		ball_half_size - g_fixed16_one,
+	};
+	const fixed16vec2_t filed_maxs =
+	{
+		IntToFixed16(c_field_width ) - ball_half_size,
+		IntToFixed16(c_field_height) - ball_half_size,
+	};
+
+	for(size_t i = 0; i < 2; ++i)
+	{
+		if(arkanoid_ball.position[i] < filed_mins[i])
+		{
+			arkanoid_ball.velocity[i] = -arkanoid_ball.velocity[i];
+			arkanoid_ball.position[i] = 2 * filed_mins[i] - arkanoid_ball.position[i];
+			assert(arkanoid_ball.position[i] >= filed_mins[i]);
+		}
+		if(arkanoid_ball.position[i] > filed_maxs[i])
+		{
+			arkanoid_ball.velocity[i] = -arkanoid_ball.velocity[i];
+			arkanoid_ball.position[i] = 2 * filed_maxs[i] - arkanoid_ball.position[i];
+			assert(arkanoid_ball.position[i] <= filed_maxs[i]);
+		}
+	}
+
+	// Kill the ball if it reaches upper field border.
+	return arkanoid_ball.position[1] < 0;
+}
 
 bool GameTetris::UpdateBonus(Bonus& bonus)
 {
@@ -584,6 +684,13 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 		{
 		case BonusType::NextLevel:
 			next_level_triggered_ = true;
+			break;
+
+		case BonusType::ArkanoidBallsSpawn:
+			for(uint32_t i = 0; i < 3; ++i)
+			{
+				SpawnArkanoidBall();
+			}
 			break;
 
 		case BonusType::SlowDown:
@@ -610,6 +717,28 @@ void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
 
 	bonuses_.push_back(bonus);
+}
+
+void GameTetris::SpawnArkanoidBall()
+{
+	const fixed16_t speed = g_fixed16_one / 10;
+
+	ArkanoidBall arkanoid_ball;
+	arkanoid_ball.position = { fixed16_t(rand_.Next() % (c_field_width << g_fixed16_base)), 0 };
+
+	const fixed16_t max_cos = g_fixed16_one * 7 / 8;
+	const fixed16_t cos = fixed16_t(rand_.Next() % uint32_t(max_cos * 2)) - max_cos;
+	const fixed16_t sin =
+		fixed16_t(
+			std::sqrt(
+				std::max(
+					0.0f,
+					float(g_fixed16_one) * float(g_fixed16_one) - float(cos) * float(cos))));
+
+	arkanoid_ball.velocity[0] = Fixed16Mul(cos, speed);
+	arkanoid_ball.velocity[1] = Fixed16Mul(sin, speed);
+
+	arkanoid_balls_.push_back(arkanoid_ball);
 }
 
 GameTetris::ActivePiece GameTetris::SpawnActivePiece()

@@ -46,6 +46,7 @@ private:
 	enum class BonusType : uint8_t
 	{
 		NextLevel,
+		ArkanoidBallsSpawn,
 		SlowDown,
 		NumBonuses,
 	};
@@ -57,6 +58,14 @@ private:
 		fixed16vec2_t position{};
 	};
 
+	struct ArkanoidBall
+	{
+		// Center position (in blocks).
+		fixed16vec2_t position{};
+		// In fixed16 blocks / tick.
+		fixed16vec2_t velocity{};
+	};
+
 private:
 	void OnNextLeveltriggered();
 	void NextLevel();
@@ -65,9 +74,13 @@ private:
 	void UpdateScore(uint32_t lines_removed);
 
 	// Returns true if need to kill it.
+	bool UpdateArkanoidBall(ArkanoidBall& arkanoid_ball);
+
+	// Returns true if need to kill it.
 	bool UpdateBonus(Bonus& ball);
 
 	void TrySpawnNewBonus(int32_t x, int32_t y);
+	void SpawnArkanoidBall();
 
 	ActivePiece SpawnActivePiece();
 	void GenerateNextPieceType();
@@ -87,6 +100,7 @@ private:
 	std::optional<ActivePiece> active_piece_;
 	Block next_piece_type_ = Block::Empty;
 
+	std::vector<ArkanoidBall> arkanoid_balls_;
 	std::vector<Bonus> bonuses_;
 	uint32_t slow_down_end_tick_ = 0;
 	bool next_level_triggered_ = false;

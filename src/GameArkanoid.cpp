@@ -2,6 +2,7 @@
 #include "ArkanoidLevels.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include  "GamesCommon.hpp"
 #include "GameTetris.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
@@ -635,145 +636,22 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 			continue;
 		}
 
-		// Replace box<-> box collision with extended box<->point collision.
-
-		const fixed16vec2_t borders_min =
+		if(MakeCollisionBetweenObjectAndBox(
+			{
+				IntToFixed16(int32_t(x * c_block_width) ),
+				IntToFixed16(int32_t(y * c_block_height)),
+			},
+			{
+				IntToFixed16(int32_t((x + 1) * c_block_width )),
+				IntToFixed16(int32_t((y + 1) * c_block_height)),
+			},
+			{ball_half_size, ball_half_size},
+			ball.position,
+			ball.velocity))
 		{
-			IntToFixed16(int32_t(x * c_block_width) ) - ball_half_size,
-			IntToFixed16(int32_t(y * c_block_height)) - ball_half_size,
-		};
-		const fixed16vec2_t borders_max =
-		{
-			IntToFixed16(int32_t((x + 1) * c_block_width )) + ball_half_size,
-			IntToFixed16(int32_t((y + 1) * c_block_height)) + ball_half_size,
-		};
-
-		if( ball.position[0] <= borders_min[0] || ball.position[0] >= borders_max[0] ||
-			ball.position[1] <= borders_min[1] || ball.position[1] >= borders_max[1])
-		{
-			continue;
-		}
-
-		// Hit this block.
-		DamageBlock(x, y);
-		sound_player_.PlaySound(SoundId::ArkanoidBallHit);
-
-		// Ball intersectss with this block. Try to push it.
-		// Find closest intersection of negative velocity vector and extended block side in order to do this.
-
-		// TODO - extract this code into separate function.
-
-		int64_t closest_square_dist = 0x7FFFFFFFFFFFFFFF;
-		fixed16vec2_t closest_position = ball.position;
-		std::array<int32_t, 2> bounce_vec = {0, 0};
-		const fixed16_t vel_div_clamp = g_fixed16_one / 256; // Avoid overflow in division.
-		if(ball.velocity[0] > 0)
-		{
-			const fixed16vec2_t intersection_pos
-			{
-				borders_min[0],
-				ball.position[1] -
-					Fixed16MulDiv(
-						ball.position[0] - borders_min[0],
-						ball.velocity[1],
-						std::max(ball.velocity[0], vel_div_clamp)),
-			};
-			const fixed16vec2_t vec_to_intersection_pos
-			{
-				ball.position[0] - intersection_pos[0],
-				ball.position[1] - intersection_pos[1]
-			};
-			const int64_t square_dist = Fixed16VecSquareLenScaled(vec_to_intersection_pos);
-			if(square_dist < closest_square_dist)
-			{
-				closest_square_dist = square_dist;
-				closest_position = intersection_pos;
-				bounce_vec = {1, 0};
-			}
-		}
-		else if(ball.velocity[0] < 0)
-		{
-			const fixed16vec2_t intersection_pos
-			{
-				borders_max[0],
-				ball.position[1] +
-					Fixed16MulDiv(
-						borders_max[0] - ball.position[0],
-						ball.velocity[1],
-						std::min(ball.velocity[0], -vel_div_clamp)),
-			};
-			const fixed16vec2_t vec_to_intersection_pos
-			{
-				ball.position[0] - intersection_pos[0],
-				ball.position[1] - intersection_pos[1]
-			};
-			const int64_t square_dist = Fixed16VecSquareLenScaled(vec_to_intersection_pos);
-			if(square_dist < closest_square_dist)
-			{
-				closest_square_dist = square_dist;
-				closest_position = intersection_pos;
-				bounce_vec = {1, 0};
-			}
-		}
-
-		if(ball.velocity[1] > 0)
-		{
-			const fixed16vec2_t intersection_pos
-			{
-				ball.position[0] -
-					Fixed16MulDiv(
-						ball.position[1] - borders_min[1],
-						ball.velocity[0],
-						std::max(ball.velocity[1], vel_div_clamp)),
-				borders_min[1],
-			};
-			const fixed16vec2_t vec_to_intersection_pos
-			{
-				ball.position[0] - intersection_pos[0],
-				ball.position[1] - intersection_pos[1]
-			};
-			const int64_t square_dist = Fixed16VecSquareLenScaled(vec_to_intersection_pos);
-			if(square_dist < closest_square_dist)
-			{
-				closest_square_dist = square_dist;
-				closest_position = intersection_pos;
-				bounce_vec = {0, 1};
-			}
-		}
-		else if(ball.velocity[1] < 0)
-		{
-			const fixed16vec2_t intersection_pos
-			{
-				ball.position[0] +
-					Fixed16MulDiv(
-						borders_max[1] - ball.position[1],
-						ball.velocity[0],
-						std::min(ball.velocity[1], -vel_div_clamp)),
-				borders_max[1],
-			};
-			const fixed16vec2_t vec_to_intersection_pos
-			{
-				ball.position[0] - intersection_pos[0],
-				ball.position[1] - intersection_pos[1]
-			};
-			const int64_t square_dist = Fixed16VecSquareLenScaled(vec_to_intersection_pos);
-			if(square_dist < closest_square_dist)
-			{
-				closest_square_dist = square_dist;
-				closest_position = intersection_pos;
-				bounce_vec = {0, 1};
-			}
-		}
-
-		if(bounce_vec[0] != 0)
-		{
-			ball.position[0] = 2 * closest_position[0] - ball.position[0];
-			ball.velocity[0] = -ball.velocity[0];
-		}
-		if(bounce_vec[1] != 0)
-		{
-			ball.position[1] = 2 * closest_position[1] - ball.position[1];
-			ball.velocity[1] = -ball.velocity[1];
+			// Hit this block.
+			DamageBlock(x, y);
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 		}
 	} // for blocks.
 
