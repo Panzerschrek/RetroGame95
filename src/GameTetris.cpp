@@ -265,6 +265,9 @@ void GameTetris::NextLevel()
 	level_ += 1;
 	lines_removed_for_this_level_ = 0;
 
+	bonuses_.clear();
+	slow_down_end_tick_ = 0;
+
 	for (Block& block : field_)
 	{
 		block = Block::Empty;
