@@ -835,11 +835,14 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 
 void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 {
-	// TODO - randomize position a bit.
+	// TODO - reduce chance of some bonuses.
+
 	Bonus bonus;
 	bonus.position = {
-		IntToFixed16(x) + g_fixed16_one / 2,
-		IntToFixed16(std::max(std::min(int32_t(c_field_height - 5), y), 1)) - g_fixed16_one / 2 };
+		IntToFixed16(x) + fixed16_t((rand_.Next() % g_fixed16_one)) - g_fixed16_one / 2,
+		IntToFixed16(std::max(std::min(int32_t(c_field_height - 5), y), 1)) -
+			fixed16_t((rand_.Next() % g_fixed16_one)) + g_fixed16_one / 2
+	};
 	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
 
 	bonuses_.push_back(bonus);
