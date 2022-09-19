@@ -112,6 +112,12 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 			++b;
 		}
 	} // for bonuses.
+
+	if(next_level_triggered_)
+	{
+		next_level_triggered_ = false;
+		OnNextLeveltriggered();
+	}
 }
 
 void GameTetris::Draw(const FrameBuffer frame_buffer) const
@@ -204,6 +210,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	const SpriteBMP bonuses_sprites[]
 	{
+		Sprites::arkanoid_bonus_b,
 		Sprites::arkanoid_bonus_s,
 	};
 
@@ -257,6 +264,18 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 GameInterfacePtr GameTetris::AskForNextGameTransition()
 {
 	return std::move(next_game_);
+}
+
+void GameTetris::OnNextLeveltriggered()
+{
+	if(level_ >= g_max_level)
+	{
+		next_game_ = std::make_unique<GameSnake>(sound_player_);
+	}
+	else
+	{
+		NextLevel();
+	}
 }
 
 void GameTetris::NextLevel()
@@ -548,14 +567,7 @@ void GameTetris::UpdateScore(const uint32_t lines_removed)
 
 	if(lines_removed_for_this_level_ >= GetNumRemovedLinesForLevelFinish(level_))
 	{
-		if(level_ >= g_max_level)
-		{
-			next_game_ = std::make_unique<GameSnake>(sound_player_);
-		}
-		else
-		{
-			NextLevel();
-		}
+		OnNextLeveltriggered();
 	}
 }
 
@@ -570,6 +582,10 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 		// Pick-up bonus automatically,
 		switch(bonus.type)
 		{
+		case BonusType::NextLevel:
+			next_level_triggered_ = true;
+			break;
+
 		case BonusType::SlowDown:
 			slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
 			break;
@@ -591,7 +607,7 @@ void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 	bonus.position = {
 		IntToFixed16(x) + g_fixed16_one / 2,
 		IntToFixed16(std::max(y, 1)) - g_fixed16_one / 2 };
-	bonus.type = BonusType::SlowDown;
+	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
 
 	bonuses_.push_back(bonus);
 }

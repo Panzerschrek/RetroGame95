@@ -45,6 +45,7 @@ private:
 
 	enum class BonusType : uint8_t
 	{
+		NextLevel,
 		SlowDown,
 		NumBonuses,
 	};
@@ -57,6 +58,7 @@ private:
 	};
 
 private:
+	void OnNextLeveltriggered();
 	void NextLevel();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
 	void MovePieceDown();
@@ -87,6 +89,7 @@ private:
 
 	std::vector<Bonus> bonuses_;
 	uint32_t slow_down_end_tick_ = 0;
+	bool next_level_triggered_ = false;
 
 	uint32_t pieces_spawnded_ = 0;
 
