@@ -47,6 +47,7 @@ private:
 	{
 		NextLevel,
 		ArkanoidBallsSpawn,
+		IPiece,
 		SlowDown,
 		NumBonuses,
 	};
@@ -99,6 +100,7 @@ private:
 	Block field_[ c_field_width * c_field_height] {};
 	std::optional<ActivePiece> active_piece_;
 	Block next_piece_type_ = Block::Empty;
+	uint32_t i_pieces_left_ = 0;
 
 	std::vector<ArkanoidBall> arkanoid_balls_;
 	std::vector<Bonus> bonuses_;

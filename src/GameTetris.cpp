@@ -230,6 +230,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	{
 		Sprites::arkanoid_bonus_b,
 		Sprites::arkanoid_bonus_d,
+		Sprites::arkanoid_bonus_e,
 		Sprites::arkanoid_bonus_s,
 	};
 
@@ -317,6 +318,7 @@ void GameTetris::NextLevel()
 	arkanoid_balls_.clear();
 	bonuses_.clear();
 	slow_down_end_tick_ = 0;
+	i_pieces_left_ = 0;
 
 	for (Block& block : field_)
 	{
@@ -693,6 +695,10 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 			}
 			break;
 
+		case BonusType::IPiece:
+			i_pieces_left_ = 3;
+			break;
+
 		case BonusType::SlowDown:
 			slow_down_end_tick_ = tick_ + g_slow_down_bonus_duration;
 			break;
@@ -753,5 +759,13 @@ GameTetris::ActivePiece GameTetris::SpawnActivePiece()
 void GameTetris::GenerateNextPieceType()
 {
 	++pieces_spawnded_;
-	next_piece_type_ = Block(uint32_t(Block::I) + rand_.Next() % g_num_piece_types);
+	if(i_pieces_left_ > 0)
+	{
+		--i_pieces_left_;
+		next_piece_type_ = Block::I;
+	}
+	else
+	{
+		next_piece_type_ = Block(uint32_t(Block::I) + rand_.Next() % g_num_piece_types);
+	}
 }
