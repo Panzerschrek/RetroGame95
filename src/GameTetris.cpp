@@ -11,7 +11,7 @@
 namespace
 {
 
-const uint32_t g_max_level = 2;
+const uint32_t g_max_level = 3;
 
 const constexpr uint32_t g_num_piece_types = 7;
 
@@ -55,12 +55,12 @@ uint32_t GetScoreForLinesRemoval(const uint32_t level, const uint32_t lines_remo
 
 uint32_t GetSpeedForLevel(const uint32_t level)
 {
-	return 60 / level;
+	return std::max(120 / (level + 1), 30u);
 }
 
 uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 {
-	return 3 * (level + 3);
+	return std::min(3 * level + 7, 20u);
 }
 
 } // namespace
