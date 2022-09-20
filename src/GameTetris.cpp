@@ -48,9 +48,24 @@ uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 	return 0;
 }
 
+uint32_t GetLevelScoreMultiplier(const uint32_t level)
+{
+	return level + 1;
+}
+
 uint32_t GetScoreForLinesRemoval(const uint32_t level, const uint32_t lines_removed)
 {
-	return GetBaseLineRemovalScore(lines_removed) * (level + 1);
+	return GetBaseLineRemovalScore(lines_removed) * GetLevelScoreMultiplier(level) * 16;
+}
+
+uint32_t GetScoreForBonusPickup(const uint32_t level)
+{
+	return GetLevelScoreMultiplier(level) * 32;
+}
+
+uint32_t GetScoreForBlockDestruction(const uint32_t level)
+{
+	return GetLevelScoreMultiplier(level) * 3;
 }
 
 uint32_t GetSpeedForLevel(const uint32_t level)
@@ -742,8 +757,8 @@ bool GameTetris::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
 			arkanoid_ball.position,
 			arkanoid_ball.velocity))
 		{
-			// TODO - add score here.
 			block = Block::Empty;
+			score_ += GetScoreForBlockDestruction(level_);
 			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 		}
 	}
@@ -836,6 +851,7 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 				}
 
 				sound_player_.PlaySound(SoundId::SnakeBonusEat);
+				score_ += GetScoreForBonusPickup(level_);
 			}
 		}
 
@@ -929,6 +945,7 @@ bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
 			laser_beam.position[1] >= borders_min[1]&& laser_beam.position[1] <= borders_max[1])
 		{
 			block = Block::Empty;
+			score_ += GetScoreForBlockDestruction(level_);
 			// Destroy laser beam at first hit.
 			return true;
 		}
