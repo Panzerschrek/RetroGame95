@@ -835,7 +835,46 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 
 void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 {
-	// TODO - reduce chance of some bonuses.
+	if(rand_.Next() % 2 != 0)
+	{
+		return;
+	}
+
+	// Calculate base probability for each bonus.
+	uint32_t bonuses_probability[size_t(BonusType::NumBonuses)];
+	for(size_t i = 0; i < size_t(BonusType::NumBonuses); ++i)
+	{
+		bonuses_probability[i] = 256;
+	}
+
+	// Reduce probability for cool bonuses.
+	bonuses_probability[size_t(BonusType::NextLevel)] /= 4;
+
+	// Do not drop two bonuses of same type one after another.
+	bonuses_probability[size_t(prev_bonus_type_)] = 0;
+
+	uint32_t total_probability = 0;
+	uint32_t probability_integrated[size_t(BonusType::NumBonuses)];
+	for(size_t i = 0; i < size_t(BonusType::NumBonuses); ++i)
+	{
+		probability_integrated[i] = total_probability + bonuses_probability[i];
+		total_probability += bonuses_probability[i];
+	}
+	assert(total_probability > 0);
+
+	// Choose bonus type based on random value and probability.
+	const uint32_t rand_value = rand_.Next() % total_probability;
+	BonusType bonus_type = BonusType::SlowDown;
+	for(size_t i = 0; i < size_t(BonusType::NumBonuses); ++i)
+	{
+		if(bonuses_probability[i] != 0 && rand_value < probability_integrated[i])
+		{
+			bonus_type = BonusType(i);
+			break;
+		}
+	}
+
+	prev_bonus_type_ = bonus_type;
 
 	Bonus bonus;
 	bonus.position = {
@@ -843,7 +882,8 @@ void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 		IntToFixed16(std::max(std::min(int32_t(c_field_height - 5), y), 1)) -
 			fixed16_t((rand_.Next() % g_fixed16_one)) + g_fixed16_one / 2
 	};
-	bonus.type = BonusType(rand_.Next() % uint32_t(BonusType::NumBonuses));
+	bonus.type = bonus_type;
+
 
 	bonuses_.push_back(bonus);
 }

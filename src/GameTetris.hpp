@@ -114,6 +114,7 @@ private:
 
 	std::vector<ArkanoidBall> arkanoid_balls_;
 	std::vector<Bonus> bonuses_;
+	BonusType prev_bonus_type_ = BonusType::ArkanoidBallsSpawn;
 	std::vector<LaserBeam> laser_beams_;
 	uint32_t slow_down_end_tick_ = 0;
 	uint32_t laser_ship_end_tick_ = 0;
