@@ -1,7 +1,6 @@
 #include "GameTetris.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
-#include "GamesCommon.hpp"
 #include "GameSnake.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
@@ -12,19 +11,6 @@ namespace
 {
 
 const uint32_t g_max_level = 3;
-
-const constexpr uint32_t g_num_piece_types = 7;
-
-const std::array<std::array<std::array<int32_t, 2>, 4>, g_num_piece_types> g_pieces_blocks =
-{{
-	{{ { 4, -4}, {4, -3}, {4, -2}, {4, -1} }}, // I
-	{{ { 4, -1}, {5, -1}, {5, -2}, {5, -3} }}, // J
-	{{ { 5, -1}, {4, -1}, {4, -2}, {4, -3} }}, // L
-	{{ { 4, -2}, {5, -2}, {4, -1}, {5, -1} }}, // O
-	{{ { 4, -1}, {5, -1}, {5, -2}, {6, -2} }}, // S
-	{{ { 4, -1}, {6, -1}, {5, -1}, {5, -2} }}, // T
-	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
-}};
 
 const fixed16_t g_bonus_drop_speed = g_fixed16_one * 5 / 2 / GameInterface::c_update_frequency;
 const fixed16_t g_laser_beam_speed = g_fixed16_one / 5;
@@ -207,7 +193,7 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 void GameTetris::Draw(const FrameBuffer frame_buffer) const
 {
-	const SpriteBMP sprites[g_num_piece_types]
+	const SpriteBMP sprites[g_tetris_num_piece_types]
 	{
 		Sprites::tetris_block_4,
 		Sprites::tetris_block_7,
@@ -269,8 +255,8 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	{
 		for(uint32_t x = 0; x < c_field_width; ++x)
 		{
-			const Block block = field_[x + y * c_field_width];
-			if(block == Block::Empty)
+			const TetrisBlock block = field_[x + y * c_field_width];
+			if(block == TetrisBlock::Empty)
 			{
 				continue;
 			}
@@ -376,8 +362,8 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		next_piece_offset_y - block_height * 6,
 		"Next");
 
-	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(Block::I);
-	for(const auto& piece_block : g_pieces_blocks[next_piece_index])
+	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(TetrisBlock::I);
+	for(const auto& piece_block : g_tetris_pieces_blocks[next_piece_index])
 	{
 		DrawSpriteWithAlpha(
 			frame_buffer,
@@ -436,9 +422,9 @@ void GameTetris::NextLevel()
 	next_shoot_tick_ = 0;
 	i_pieces_left_ = 0;
 
-	for (Block& block : field_)
+	for (TetrisBlock& block : field_)
 	{
-		block = Block::Empty;
+		block = TetrisBlock::Empty;
 	}
 
 	GenerateNextPieceType();
@@ -477,7 +463,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 			const auto next_x = piece_block[0] + delta;
 			const auto next_y = piece_block[1];
 			if( next_x < 0 || next_x >= int32_t(c_field_width ) ||
-				(next_y >= 0 && next_y < int32_t(c_field_height) && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty))
+				(next_y >= 0 && next_y < int32_t(c_field_height) && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != TetrisBlock::Empty))
 			{
 				can_move = false;
 			}
@@ -509,7 +495,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 			const auto next_x = piece_block[0];
 			const auto next_y = piece_block[1] + 1;
 			if(next_y >= int32_t(c_field_height) ||
-				(next_y >= 0 && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty))
+				(next_y >= 0 && field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != TetrisBlock::Empty))
 			{
 				can_move = false;
 			}
@@ -525,7 +511,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 		}
 	}
 
-	if(has_rotate && active_piece_->type != Block::O)
+	if(has_rotate && active_piece_->type != TetrisBlock::O)
 	{
 		const auto center = active_piece_->blocks[2];
 
@@ -543,7 +529,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 
 			if(new_x < 0 || new_x >= int32_t(c_field_width) ||
 				new_y >= int32_t(c_field_height) ||
-				(new_y >= 0 && field_[uint32_t(new_x) + uint32_t(new_y) * c_field_width] != Block::Empty))
+				(new_y >= 0 && field_[uint32_t(new_x) + uint32_t(new_y) * c_field_width] != TetrisBlock::Empty))
 			{
 				can_rotate = false;
 			}
@@ -566,7 +552,7 @@ void GameTetris::MovePieceDown()
 	if (active_piece_ == std::nullopt)
 	{
 		// No active piece - try to spawn new piece.
-		ActivePiece next_active_piece = SpawnActivePiece();
+		TetrisPiece next_active_piece = SpawnActivePiece();
 		bool can_move = true;
 		for(const auto& piece_block : next_active_piece.blocks)
 		{
@@ -579,7 +565,7 @@ void GameTetris::MovePieceDown()
 			const auto next_y = piece_block[1] + 1;
 			if( next_x >= 0 && next_x < int32_t(c_field_width ) &&
 				next_y >= 0 && next_y < int32_t(c_field_height) &&
-				field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty)
+				field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != TetrisBlock::Empty)
 			{
 				can_move = false;
 			}
@@ -609,7 +595,7 @@ void GameTetris::MovePieceDown()
 			const auto next_y = piece_block[1] + 1;
 			if( next_x >= 0 && next_x < int32_t(c_field_width ) &&
 				next_y >= 0 && next_y < int32_t(c_field_height) &&
-				field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != Block::Empty)
+				field_[uint32_t(next_x) + uint32_t(next_y) * c_field_width] != TetrisBlock::Empty)
 			{
 				can_move = false;
 			}
@@ -645,7 +631,7 @@ void GameTetris::MovePieceDown()
 				bool line_is_full = true;
 				for(uint32_t x = 0; x < c_field_width; ++x)
 				{
-					line_is_full &= field_[x + y * c_field_width] != Block::Empty;
+					line_is_full &= field_[x + y * c_field_width] != TetrisBlock::Empty;
 				}
 
 				if(line_is_full)
@@ -659,7 +645,7 @@ void GameTetris::MovePieceDown()
 						{
 							for(uint32_t x = 0; x < c_field_width; ++x)
 							{
-								field_[x + dst_y * c_field_width] =Block::Empty;
+								field_[x + dst_y * c_field_width] =TetrisBlock::Empty;
 							}
 						}
 						else
@@ -669,7 +655,7 @@ void GameTetris::MovePieceDown()
 							for(uint32_t x = 0; x < c_field_width; ++x)
 							{
 								field_[x + dst_y * c_field_width] = field_[x + src_y * c_field_width];
-								field_[x + src_y * c_field_width] = Block::Empty;
+								field_[x + src_y * c_field_width] = TetrisBlock::Empty;
 							}
 						}
 
@@ -738,8 +724,8 @@ bool GameTetris::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		Block& block = field_[x + y * c_field_width];
-		if(block == Block::Empty)
+		TetrisBlock& block = field_[x + y * c_field_width];
+		if(block == TetrisBlock::Empty)
 		{
 			continue;
 		}
@@ -757,7 +743,7 @@ bool GameTetris::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
 			arkanoid_ball.position,
 			arkanoid_ball.velocity))
 		{
-			block = Block::Empty;
+			block = TetrisBlock::Empty;
 			score_ += GetScoreForBlockDestruction(level_);
 			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 		}
@@ -833,7 +819,7 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 					break;
 
 				case BonusType::IPiece:
-					next_piece_type_ = Block::I;
+					next_piece_type_ = TetrisBlock::I;
 					i_pieces_left_ = 2;
 					break;
 
@@ -924,8 +910,8 @@ bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
-		Block& block = field_[x + y * c_field_width];
-		if(block == Block::Empty)
+		TetrisBlock& block = field_[x + y * c_field_width];
+		if(block == TetrisBlock::Empty)
 		{
 			continue;
 		}
@@ -944,7 +930,7 @@ bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
 		if( laser_beam.position[0] >= borders_min[0] && laser_beam.position[0] <= borders_max[0] &&
 			laser_beam.position[1] >= borders_min[1]&& laser_beam.position[1] <= borders_max[1])
 		{
-			block = Block::Empty;
+			block = TetrisBlock::Empty;
 			score_ += GetScoreForBlockDestruction(level_);
 			// Destroy laser beam at first hit.
 			return true;
@@ -984,12 +970,12 @@ void GameTetris::SpawnArkanoidBall()
 	arkanoid_balls_.push_back(arkanoid_ball);
 }
 
-GameTetris::ActivePiece GameTetris::SpawnActivePiece()
+TetrisPiece GameTetris::SpawnActivePiece()
 {
-	ActivePiece piece;
+	TetrisPiece piece;
 	piece.type = next_piece_type_;
 	GenerateNextPieceType();
-	piece.blocks = g_pieces_blocks[uint32_t(piece.type) - uint32_t(Block::I)];
+	piece.blocks = g_tetris_pieces_blocks[uint32_t(piece.type) - uint32_t(TetrisBlock::I)];
 	return piece;
 }
 
@@ -999,10 +985,10 @@ void GameTetris::GenerateNextPieceType()
 	if(i_pieces_left_ > 0)
 	{
 		--i_pieces_left_;
-		next_piece_type_ = Block::I;
+		next_piece_type_ = TetrisBlock::I;
 	}
 	else
 	{
-		next_piece_type_ = Block(uint32_t(Block::I) + rand_.Next() % g_num_piece_types);
+		next_piece_type_ = TetrisBlock(uint32_t(TetrisBlock::I) + rand_.Next() % g_tetris_num_piece_types);
 	}
 }

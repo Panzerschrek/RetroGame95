@@ -1,6 +1,7 @@
 #pragma once
 #include "Fixed.hpp"
 #include "GameInterface.hpp"
+#include "GamesCommon.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
 #include <array>
@@ -21,27 +22,8 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	enum class Block : uint8_t
-	{
-		Empty,
-		I,
-		J,
-		L,
-		O,
-		S,
-		T,
-		Z,
-	};
-
 	static const constexpr uint32_t c_field_width = 10;
 	static const constexpr uint32_t c_field_height = 20;
-
-	struct ActivePiece
-	{
-		Block type = Block::I;
-		// Signerd coordinate to allow apperiance form screen top.
-		std::array<std::array<int32_t, 2>, 4> blocks;
-	};
 
 	enum class BonusType : uint8_t
 	{
@@ -94,7 +76,7 @@ private:
 	void TrySpawnRandomArkanoidBall();
 	void SpawnArkanoidBall();
 
-	ActivePiece SpawnActivePiece();
+	TetrisPiece SpawnActivePiece();
 	void GenerateNextPieceType();
 
 private:
@@ -108,9 +90,9 @@ private:
 	uint32_t lines_removed_for_this_level_ = 0;
 	bool game_over_ = false;
 
-	Block field_[ c_field_width * c_field_height] {};
-	std::optional<ActivePiece> active_piece_;
-	Block next_piece_type_ = Block::Empty;
+	TetrisBlock field_[ c_field_width * c_field_height] {};
+	std::optional<TetrisPiece> active_piece_;
+	TetrisBlock next_piece_type_ = TetrisBlock::Empty;
 	uint32_t i_pieces_left_ = 0;
 
 	std::vector<ArkanoidBall> arkanoid_balls_;
