@@ -577,6 +577,7 @@ void GameTetris::MovePieceDown()
 		else
 		{
 			game_over_ = true;
+			sound_player_.PlaySound(SoundId::SnakeDeath);
 		}
 	}
 	else
@@ -616,6 +617,7 @@ void GameTetris::MovePieceDown()
 				{
 					// HACK! prevent overflow.
 					game_over_ = true;
+					sound_player_.PlaySound(SoundId::SnakeDeath);
 					break;
 				}
 				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] = active_piece_->type;
@@ -679,6 +681,11 @@ void GameTetris::MovePieceDown()
 				{
 					TrySpawnNewBonus(active_piece_->blocks[i][0], active_piece_->blocks[i][1]);
 				}
+			}
+
+			if(lines_removed > 0)
+			{
+				sound_player_.PlaySound(SoundId::SnakeBonusEat);
 			}
 
 			UpdateScore(lines_removed);
@@ -827,6 +834,8 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 					assert(false);
 					break;
 				}
+
+				sound_player_.PlaySound(SoundId::SnakeBonusEat);
 			}
 		}
 
