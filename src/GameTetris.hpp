@@ -1,4 +1,5 @@
 #pragma once
+#include "Fixed.hpp"
 #include "GameInterface.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
@@ -42,11 +43,56 @@ private:
 		std::array<std::array<int32_t, 2>, 4> blocks;
 	};
 
+	enum class BonusType : uint8_t
+	{
+		NextLevel,
+		ArkanoidBallsSpawn,
+		IPiece,
+		LaserShip,
+		SlowDown,
+		NumBonuses,
+	};
+
+	struct Bonus
+	{
+		BonusType type = BonusType::SlowDown;
+		// Center position (in blocks).
+		fixed16vec2_t position{};
+	};
+
+	struct ArkanoidBall
+	{
+		// Center position (in blocks).
+		fixed16vec2_t position{};
+		// In fixed16 blocks / tick.
+		fixed16vec2_t velocity{};
+	};
+
+	struct LaserBeam
+	{
+		// Center position.
+		fixed16vec2_t position{};
+	};
+
 private:
+	void OnNextLeveltriggered();
 	void NextLevel();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
 	void MovePieceDown();
 	void UpdateScore(uint32_t lines_removed);
+
+	// Returns true if need to kill it.
+	bool UpdateArkanoidBall(ArkanoidBall& arkanoid_ball);
+
+	// Returns true if need to kill it.
+	bool UpdateBonus(Bonus& ball);
+
+	// Returns true if need to kill it.
+	bool UpdateLaserBeam(LaserBeam& laser_beam);
+
+	void TrySpawnNewBonus(int32_t x, int32_t y);
+	void TrySpawnRandomArkanoidBall();
+	void SpawnArkanoidBall();
 
 	ActivePiece SpawnActivePiece();
 	void GenerateNextPieceType();
@@ -56,7 +102,7 @@ private:
 
 	Rand rand_;
 
-	uint32_t num_ticks_ = 0;
+	uint32_t tick_ = 0;
 	uint32_t score_= 0;
 	uint32_t level_ = 0;
 	uint32_t lines_removed_for_this_level_ = 0;
@@ -65,6 +111,16 @@ private:
 	Block field_[ c_field_width * c_field_height] {};
 	std::optional<ActivePiece> active_piece_;
 	Block next_piece_type_ = Block::Empty;
+	uint32_t i_pieces_left_ = 0;
+
+	std::vector<ArkanoidBall> arkanoid_balls_;
+	std::vector<Bonus> bonuses_;
+	BonusType prev_bonus_type_ = BonusType::ArkanoidBallsSpawn;
+	std::vector<LaserBeam> laser_beams_;
+	uint32_t slow_down_end_tick_ = 0;
+	uint32_t laser_ship_end_tick_ = 0;
+	uint32_t next_shoot_tick_ = 0;
+	bool next_level_triggered_ = false;
 
 	uint32_t pieces_spawnded_ = 0;
 
