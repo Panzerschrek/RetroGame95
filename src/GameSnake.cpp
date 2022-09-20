@@ -88,9 +88,16 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 		return;
 	}
 
-	if(tick_ % GetSpeedForLevel(level_) == 0)
+	TrySpawnTetrisPiece();
+
+	const uint32_t speed = GetSpeedForLevel(level_);
+	if(tick_ % speed == 0)
 	{
 		MoveSnake();
+	}
+	if(tick_ % speed == speed / 2)
+	{
+		MoveTetrisPieceDown();
 	}
 
 	if(field_start_animation_end_tick_ != std::nullopt && tick_ > *field_start_animation_end_tick_)
@@ -337,6 +344,34 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		} // for snake segments
 	}
 
+	if(tetris_active_piece_ != std::nullopt)
+	{
+		const SpriteBMP sprites[g_tetris_num_piece_types]
+		{
+			Sprites::tetris_block_4,
+			Sprites::tetris_block_7,
+			Sprites::tetris_block_5,
+			Sprites::tetris_block_1,
+			Sprites::tetris_block_2,
+			Sprites::tetris_block_6,
+			Sprites::tetris_block_3,
+		};
+
+		for(const auto& piece_block : tetris_active_piece_->blocks)
+		{
+			if(piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width) &&
+				piece_block[1] >= 0 && piece_block[1] < int32_t(c_field_height))
+			{
+				DrawSpriteWithAlpha(
+					frame_buffer,
+					sprites[uint32_t(tetris_active_piece_->type) - 1],
+					0,
+					field_offset_x + uint32_t(piece_block[0]) * c_block_size,
+					field_offset_y + uint32_t(piece_block[1]) * c_block_size);
+			}
+		}
+	}
+
 	char text[64];
 
 	if(field_start_animation_end_tick_ != std::nullopt)
@@ -387,6 +422,8 @@ void GameSnake::NextLevel()
 void GameSnake::NewField()
 {
 	SpawnSnake();
+
+	tetris_active_piece_ = std::nullopt;
 
 	// Clear all bonuses.
 	for(Bonus& bonus : bonuses_)
@@ -541,6 +578,19 @@ void GameSnake::MoveSnake()
 	// TODO - check for obstacles collision.
 }
 
+void GameSnake::MoveTetrisPieceDown()
+{
+	if(tetris_active_piece_ == std::nullopt)
+	{
+		return;
+	}
+
+	for(TetrisPieceBlock& block : tetris_active_piece_->blocks)
+	{
+		block[1] += 1;
+	}
+}
+
 bool GameSnake::IsPositionFree(const std::array<uint32_t, 2>& position) const
 {
 	if(snake_ != std::nullopt)
@@ -598,4 +648,23 @@ GameSnake::Bonus GameSnake::SpawnBonus()
 	}
 
 	return bonus;
+}
+
+void GameSnake::TrySpawnTetrisPiece()
+{
+	if(tetris_active_piece_ != std::nullopt)
+	{
+		return;
+	}
+
+	if(rand_.Next() % (20 * GameInterface::c_update_frequency) != 987)
+	{
+		return;
+	}
+
+	TetrisPiece piece;
+	piece.type = TetrisBlock(uint32_t(TetrisBlock::I) + rand_.Next() % g_tetris_num_piece_types);
+	piece.blocks = g_tetris_pieces_blocks[uint32_t(piece.type) - uint32_t(TetrisBlock::I)];
+
+	tetris_active_piece_ = piece;
 }

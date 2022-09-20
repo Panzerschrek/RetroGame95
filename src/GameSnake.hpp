@@ -1,5 +1,6 @@
 #pragma once
 #include "GameInterface.hpp"
+#include "GamesCommon.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
 #include <array>
@@ -68,12 +69,15 @@ private:
 	void NewField();
 	void SpawnSnake();
 	void MoveSnake();
+	void MoveTetrisPieceDown();
 	bool IsPositionFree(const std::array<uint32_t, 2>& position) const;
 
 	std::array<uint32_t, 2> GetRandomPosition();
 	std::array<uint32_t, 2> GetRandomFreePosition();
 
 	Bonus SpawnBonus();
+
+	void TrySpawnTetrisPiece();
 
 private:
 	SoundPlayer& sound_player_;
@@ -89,6 +93,8 @@ private:
 	uint32_t level_ = 0;
 	uint32_t score_ = 0;
 	bool game_over_ = false;
+
+	std::optional<TetrisPiece> tetris_active_piece_;
 
 	GameInterfacePtr next_game_;
 };
