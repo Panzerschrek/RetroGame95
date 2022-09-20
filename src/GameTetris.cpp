@@ -118,6 +118,8 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	++tick_;
 
+	TrySpawnRandomArkanoidBall();
+
 	ManipulatePiece(events);
 
 	uint32_t speed = GetSpeedForLevel(level_);
@@ -924,6 +926,14 @@ bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
 	}
 
 	return laser_beam.position[1] <= 0 || laser_beam.position[1] >= IntToFixed16(int32_t(c_field_height));
+}
+
+void GameTetris::TrySpawnRandomArkanoidBall()
+{
+	if(rand_.Next() % (60 * GameInterface::c_update_frequency) == 73)
+	{
+		SpawnArkanoidBall();
+	}
 }
 
 void GameTetris::SpawnArkanoidBall()

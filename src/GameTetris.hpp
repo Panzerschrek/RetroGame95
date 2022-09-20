@@ -91,6 +91,7 @@ private:
 	bool UpdateLaserBeam(LaserBeam& laser_beam);
 
 	void TrySpawnNewBonus(int32_t x, int32_t y);
+	void TrySpawnRandomArkanoidBall();
 	void SpawnArkanoidBall();
 
 	ActivePiece SpawnActivePiece();
