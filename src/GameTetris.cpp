@@ -809,7 +809,8 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 					break;
 
 				case BonusType::IPiece:
-					i_pieces_left_ = 3;
+					next_piece_type_ = Block::I;
+					i_pieces_left_ = 2;
 					break;
 
 				case BonusType::LaserShip:
@@ -883,7 +884,6 @@ void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 			fixed16_t((rand_.Next() % g_fixed16_one)) + g_fixed16_one / 2
 	};
 	bonus.type = bonus_type;
-
 
 	bonuses_.push_back(bonus);
 }
