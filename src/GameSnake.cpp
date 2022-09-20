@@ -656,15 +656,65 @@ void GameSnake::TrySpawnTetrisPiece()
 	{
 		return;
 	}
-
-	if(rand_.Next() % (20 * GameInterface::c_update_frequency) != 987)
+	if(death_animation_end_tick_ != std::nullopt || field_start_animation_end_tick_ != std::nullopt)
 	{
 		return;
 	}
 
-	TetrisPiece piece;
-	piece.type = TetrisBlock(uint32_t(TetrisBlock::I) + rand_.Next() % g_tetris_num_piece_types);
-	piece.blocks = g_tetris_pieces_blocks[uint32_t(piece.type) - uint32_t(TetrisBlock::I)];
+	if(rand_.Next() % (20 * GameInterface::c_update_frequency / 10) != 17)
+	{
+		return;
+	}
 
-	tetris_active_piece_ = piece;
+	const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + rand_.Next() % g_tetris_num_piece_types);
+	const TetrisPieceBlocks blocks = g_tetris_pieces_blocks[uint32_t(type) - uint32_t(TetrisBlock::I)];
+
+	int32_t min_x = 99999, max_x = -9999;
+	for(const TetrisPieceBlock& block : blocks)
+	{
+		min_x = std::min(min_x, block[0]);
+		max_x = std::max(max_x, block[0]);
+	}
+
+	// Perform spawn possibility check for multiple random positions across game field.
+	// Spawn piece only over areas where there is no snake body.
+	const int32_t min_dx = -min_x;
+	const int32_t max_dx = int32_t(c_field_width) - max_x - 1;
+	for(uint32_t i = 0; i < c_field_width * 4; ++i)
+	{
+		const int32_t dx = min_dx + int32_t(rand_.Next() % uint32_t(max_dx - min_dx));
+		const int32_t cur_min_x = min_x + dx;
+		const int32_t cur_max_x = max_x + dx;
+
+		if(snake_ != std::nullopt)
+		{
+			bool may_hit_snake = false;
+			for(const SnakeSegment& segment : snake_->segments)
+			{
+				if(int32_t(segment.position[0]) >= cur_min_x && int32_t(segment.position[0]) <= cur_max_x)
+				{
+					may_hit_snake = true;
+					break;
+				}
+			}
+
+			if(may_hit_snake)
+			{
+				continue;
+			}
+		}
+
+		TetrisPieceBlocks blocks_shifted = blocks;
+		for(TetrisPieceBlock& block : blocks_shifted)
+		{
+			block[0] += dx;
+			assert(block[0] >= 0 && block[0] < int32_t(c_field_width));
+		}
+
+		TetrisPiece piece;
+		piece.type = type;
+		piece.blocks = blocks_shifted;
+		tetris_active_piece_ = piece;
+		return;
+	} // Try to spawn a piece.
 }
