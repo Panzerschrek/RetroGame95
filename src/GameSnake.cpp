@@ -468,7 +468,7 @@ void GameSnake::MoveSnake()
 	}
 
 	SnakeSegment new_segment = snake_->segments.front();
-	bool hit_border = false;
+	bool hit_obstacle = false;
 	switch(snake_->direction)
 	{
 	case SnakeDirection::XPlus:
@@ -478,7 +478,7 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	case SnakeDirection::XMinus:
@@ -488,7 +488,7 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	case SnakeDirection::YPlus:
@@ -498,7 +498,7 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	case SnakeDirection::YMinus:
@@ -508,15 +508,26 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	}
 
-	if(hit_border)
+	if(tetris_active_piece_ != std::nullopt)
 	{
-		death_animation_end_tick_ = tick_ + g_death_animation_duration;
-		sound_player_.PlaySound(SoundId::SnakeDeath);
+		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			hit_obstacle |=
+				block[0] == int32_t(new_segment.position[0]) &&
+				block[1] == int32_t(new_segment.position[1]);
+		}
+	}
+
+	// TODO - check for obstacles collision.
+
+	if(hit_obstacle)
+	{
+		OnSnakeDeath();
 		return;
 	}
 
@@ -569,13 +580,16 @@ void GameSnake::MoveSnake()
 	{
 		if(snake_->segments.front().position == snake_->segments[i].position)
 		{
-			death_animation_end_tick_ = tick_ + g_death_animation_duration;
-			sound_player_.PlaySound(SoundId::SnakeDeath);
+			OnSnakeDeath();
 			return;
 		}
 	}
+}
 
-	// TODO - check for obstacles collision.
+void GameSnake::OnSnakeDeath()
+{
+	death_animation_end_tick_ = tick_ + g_death_animation_duration;
+	sound_player_.PlaySound(SoundId::SnakeDeath);
 }
 
 void GameSnake::MoveTetrisPieceDown()
@@ -585,6 +599,34 @@ void GameSnake::MoveTetrisPieceDown()
 		return;
 	}
 
+	if(death_animation_end_tick_ != std::nullopt)
+	{
+		// Stop tetris piece on snake death.
+		return;
+	}
+
+	if(snake_ != std::nullopt)
+	{
+		bool hit_snake = false;
+		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			for(const SnakeSegment& segment : snake_->segments)
+			{
+				hit_snake |=
+					int32_t(segment.position[0]) == block[0] &&
+					int32_t(segment.position[1]) == block[1] + 1;
+			}
+		}
+
+		if(hit_snake)
+		{
+			OnSnakeDeath();
+			return;
+		}
+	}
+
+	// Can move.
+	// TODO - place piece into game field (in needed).
 	for(TetrisPieceBlock& block : tetris_active_piece_->blocks)
 	{
 		block[1] += 1;

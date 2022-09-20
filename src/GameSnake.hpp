@@ -69,6 +69,7 @@ private:
 	void NewField();
 	void SpawnSnake();
 	void MoveSnake();
+	void OnSnakeDeath();
 	void MoveTetrisPieceDown();
 	bool IsPositionFree(const std::array<uint32_t, 2>& position) const;
 
