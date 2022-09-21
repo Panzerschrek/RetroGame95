@@ -792,8 +792,6 @@ void GameSnake::TrySpawnTetrisPiece()
 		max_x = std::max(max_x, block[0]);
 	}
 
-	// TODO - disable spawn if can't place a piece.
-
 	// Perform spawn possibility check for multiple random positions across game field.
 	// Spawn piece only over areas where there is no snake body.
 	const int32_t min_dx = -min_x;
@@ -803,6 +801,9 @@ void GameSnake::TrySpawnTetrisPiece()
 		const int32_t dx = min_dx + int32_t(rand_.Next() % uint32_t(max_dx - min_dx));
 		const int32_t cur_min_x = min_x + dx;
 		const int32_t cur_max_x = max_x + dx;
+		assert(cur_min_x >= 0);
+		assert(cur_min_x <= cur_max_x);
+		assert(cur_max_x < int32_t(c_field_width));
 
 		if(snake_ != std::nullopt)
 		{
@@ -817,6 +818,26 @@ void GameSnake::TrySpawnTetrisPiece()
 			}
 
 			if(may_hit_snake)
+			{
+				continue;
+			}
+		}
+
+		// Keep upper 4 rows free.
+		{
+			bool may_hit_block = false;
+
+			for(uint32_t y = 0; y < 4; ++y)
+			for(uint32_t x = uint32_t(cur_min_x); x <= uint32_t(cur_max_x); ++x)
+			{
+				if(tetris_field_[x + y * c_field_width] != TetrisBlock::Empty)
+				{
+					may_hit_block = true;
+					break;
+				}
+			}
+
+			if(may_hit_block)
 			{
 				continue;
 			}
