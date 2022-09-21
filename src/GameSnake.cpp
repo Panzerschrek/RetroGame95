@@ -692,10 +692,28 @@ void GameSnake::MoveTetrisPieceDown()
 
 bool GameSnake::IsPositionFree(const std::array<uint32_t, 2>& position) const
 {
-	if(tetris_field_[position[0] + position[1] * c_field_width] != TetrisBlock::Empty)
+	// Consider positions near tetris blocks non-free.
+	for(int32_t dy = -1; dy <= 1; ++dy)
 	{
-		return false;
+		const int32_t y = dy + int32_t(position[1]);
+		if(y < 0 || y >= int32_t(c_field_height))
+		{
+			continue;
+		}
+		for(int32_t dx = -1; dx <= 1; ++dx)
+		{
+			const int32_t x = dx + int32_t(position[0]);
+			if(x < 0 || x >= int32_t(c_field_width))
+			{
+				continue;
+			}
+			if(tetris_field_[uint32_t(x) + uint32_t(y) * c_field_width] != TetrisBlock::Empty)
+			{
+				return false;
+			}
+		}
 	}
+
 	if(tetris_active_piece_ != std::nullopt)
 	{
 		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
