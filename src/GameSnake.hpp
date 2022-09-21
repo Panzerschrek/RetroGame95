@@ -95,6 +95,7 @@ private:
 	uint32_t score_ = 0;
 	bool game_over_ = false;
 
+	TetrisBlock tetris_field_[ c_field_width * c_field_height] {};
 	std::optional<TetrisPiece> tetris_active_piece_;
 
 	GameInterfacePtr next_game_;
