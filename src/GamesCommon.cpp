@@ -1,5 +1,29 @@
 #include "GamesCommon.hpp"
 
+TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece)
+{
+	if(piece.type == TetrisBlock::O)
+	{
+		return piece.blocks;
+	}
+
+	const auto center = piece.blocks[2];
+
+	std::array<std::array<int32_t, 2>, 4> blocks_transformed;
+	for(size_t i = 0; i < 4; ++i)
+	{
+		const TetrisPieceBlock& block = piece.blocks[i];
+		const int32_t rel_x = block[0] - center[0];
+		const int32_t rel_y = block[1] - center[1];
+		const int32_t new_x = center[0] + rel_y;
+		const int32_t new_y = center[1] - rel_x;
+
+		blocks_transformed[i] = {new_x, new_y};
+	}
+
+	return blocks_transformed;
+}
+
 bool MakeCollisionBetweenObjectAndBox(
 	const fixed16vec2_t& box_min,
 	const fixed16vec2_t& box_max,

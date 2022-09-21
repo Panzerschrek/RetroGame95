@@ -20,7 +20,7 @@ inline constexpr std::array<TetrisPieceBlocks, g_tetris_num_piece_types> g_tetri
 	{{ { 4, -2}, {5, -2}, {4, -1}, {5, -1} }}, // O
 	{{ { 4, -1}, {5, -1}, {5, -2}, {6, -2} }}, // S
 	{{ { 4, -1}, {6, -1}, {5, -1}, {5, -2} }}, // T
-	{{ { 5, -1}, {6, -1}, {4, -2}, {5, -2} }}, // Z
+	{{ { 5, -1}, {6, -1}, {5, -2}, {4, -2} }}, // Z
 }};
 
 enum class TetrisBlock : uint8_t
@@ -41,6 +41,8 @@ struct TetrisPiece
 	// Signerd coordinate to allow apperiance form screen top.
 	TetrisPieceBlocks blocks;
 };
+
+TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece);
 
 // Returns true if detected collision.
 bool MakeCollisionBetweenObjectAndBox(

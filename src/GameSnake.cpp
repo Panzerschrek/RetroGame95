@@ -628,8 +628,6 @@ void GameSnake::MoveTetrisPieceDown()
 		return;
 	}
 
-	// TODO - rotate tetris piece, sometimes.
-
 	if(snake_ != std::nullopt)
 	{
 		bool hit_snake = false;
@@ -790,6 +788,16 @@ void GameSnake::TrySpawnTetrisPiece()
 	for(TetrisPieceBlock& block : blocks)
 	{
 		block[1] += 1;
+	}
+
+	// Choose random rotation.
+	const uint32_t num_rotations = rand_.Next() / 47u % 4u;
+	for(uint32_t i = 0; i < num_rotations; ++i)
+	{
+		TetrisPiece piece;
+		piece.type = type;
+		piece.blocks = blocks;
+		blocks = RotateTetrisPieceBlocks(piece);
 	}
 
 	int32_t min_x = 99999, max_x = -9999;

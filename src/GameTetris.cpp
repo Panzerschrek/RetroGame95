@@ -511,25 +511,16 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 		}
 	}
 
-	if(has_rotate && active_piece_->type != TetrisBlock::O)
+	if(has_rotate)
 	{
-		const auto center = active_piece_->blocks[2];
+		const TetrisPieceBlocks blocks_rotated = RotateTetrisPieceBlocks(*active_piece_);
 
-		std::array<std::array<int32_t, 2>, 4> blocks_transformed;
 		bool can_rotate = true;
-		for(size_t i = 0; i < 4; ++i)
+		for(const TetrisPieceBlock& block : blocks_rotated)
 		{
-			const auto& block = active_piece_->blocks[i];
-			const int32_t rel_x = block[0] - center[0];
-			const int32_t rel_y = block[1] - center[1];
-			const int32_t new_x = center[0] + rel_y;
-			const int32_t new_y = center[1] - rel_x;
-
-			blocks_transformed[i] = {new_x, new_y};
-
-			if(new_x < 0 || new_x >= int32_t(c_field_width) ||
-				new_y >= int32_t(c_field_height) ||
-				(new_y >= 0 && field_[uint32_t(new_x) + uint32_t(new_y) * c_field_width] != TetrisBlock::Empty))
+			if(block[0] < 0 || block[0] >= int32_t(c_field_width) ||
+				block[1] >= int32_t(c_field_height) ||
+				(block[1] >= 0 && field_[uint32_t(block[0]) + uint32_t(block[1]) * c_field_width] != TetrisBlock::Empty))
 			{
 				can_rotate = false;
 			}
@@ -537,7 +528,7 @@ void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
 
 		if(can_rotate)
 		{
-			active_piece_->blocks = blocks_transformed;
+			active_piece_->blocks = blocks_rotated;
 		}
 	}
 }
