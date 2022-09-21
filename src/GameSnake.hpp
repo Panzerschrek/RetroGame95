@@ -58,6 +58,16 @@ private:
 		BonusType type = BonusType::FoodSmall;
 	};
 
+	struct ArkanoidBall
+	{
+		// Center position (in blocks).
+		fixed16vec2_t position{};
+		// In fixed16 blocks / tick.
+		fixed16vec2_t velocity{};
+
+		uint32_t bounces_left = 0;
+	};
+
 	static const constexpr uint32_t c_field_width = 30;
 	static const constexpr uint32_t c_field_height = 20;
 	static const constexpr uint32_t c_block_size = 10;
@@ -71,6 +81,8 @@ private:
 	void MoveSnake();
 	void OnSnakeDeath();
 	void MoveTetrisPieceDown();
+	// Returns true if need to kill it.
+	bool UpdateArkanoidBall(ArkanoidBall& arkanoid_ball);
 	bool IsPositionFree(const std::array<uint32_t, 2>& position) const;
 
 	std::array<uint32_t, 2> GetRandomPosition();
@@ -79,6 +91,7 @@ private:
 	Bonus SpawnBonus();
 
 	void TrySpawnTetrisPiece();
+	void TrySpawnArkanoidBall();
 
 private:
 	SoundPlayer& sound_player_;
@@ -97,6 +110,8 @@ private:
 
 	TetrisBlock tetris_field_[ c_field_width * c_field_height] {};
 	std::optional<TetrisPiece> tetris_active_piece_;
+
+	std::vector<ArkanoidBall> arkanoid_balls_;
 
 	GameInterfacePtr next_game_;
 };
