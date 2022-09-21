@@ -775,12 +775,12 @@ bool GameSnake::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
 		{
 			if(MakeCollisionBetweenObjectAndBox(
 				{
-					IntToFixed16(segment.position[0]),
-					IntToFixed16(segment.position[1]),
+					IntToFixed16(int32_t(segment.position[0])),
+					IntToFixed16(int32_t(segment.position[1])),
 				},
 				{
-					IntToFixed16(segment.position[0] + 1),
-					IntToFixed16(segment.position[1] + 1),
+					IntToFixed16(int32_t(segment.position[0] + 1)),
+					IntToFixed16(int32_t(segment.position[1] + 1)),
 				},
 				{ball_half_size, ball_half_size},
 				arkanoid_ball.position,
