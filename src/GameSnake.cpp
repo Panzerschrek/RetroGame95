@@ -1065,7 +1065,7 @@ void GameSnake::TrySpawnTetrisPiece()
 
 void GameSnake::TrySpawnArkanoidBall()
 {
-	if(rand_.Next() % 3 != 0)
+	if(rand_.Next() % 7 != 0)
 	{
 		return;
 	}
@@ -1074,20 +1074,20 @@ void GameSnake::TrySpawnArkanoidBall()
 
 	ArkanoidBall ball;
 
-	ball.bounces_left = 10;
+	ball.bounces_left = 7;
 
 	const float random_angle = float(rand_.Next()) * (2.0f * 3.1415926535f / float(Rand::c_max_rand_plus_one_));
 	ball.velocity[0] = fixed16_t(std::cos(random_angle) * float(speed));
 	ball.velocity[1] = fixed16_t(std::sin(random_angle) * float(speed));
 
 	// Try to select random position far enough from the snake and any tetris block.
-	for(uint32_t i = 0; i < 32; ++i)
+	for(uint32_t i = 0; i < 200; ++i)
 	{
 		ball.position[0] = fixed16_t(rand_.Next() % (c_field_width  << g_fixed16_base));
 		ball.position[1] = fixed16_t(rand_.Next() % (c_field_height << g_fixed16_base));
 
-		const int32_t ball_x = Fixed16RoundToInt(ball.position[0]);
-		const int32_t ball_y = Fixed16RoundToInt(ball.position[0]);
+		const int32_t ball_x = Fixed16FloorToInt(ball.position[0]);
+		const int32_t ball_y = Fixed16FloorToInt(ball.position[1]);
 
 		bool can_place = true;
 		for(int32_t dy = -2; dy <= 2; ++dy)
@@ -1105,7 +1105,7 @@ void GameSnake::TrySpawnArkanoidBall()
 					continue;
 				}
 				can_place &=
-					tetris_field_[uint32_t(x) + uint32_t(y) * c_field_width] != TetrisBlock::Empty;
+					tetris_field_[uint32_t(x) + uint32_t(y) * c_field_width] == TetrisBlock::Empty;
 			}
 		}
 
