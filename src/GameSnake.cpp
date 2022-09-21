@@ -793,7 +793,7 @@ void GameSnake::TrySpawnTetrisPiece()
 		return;
 	}
 
-	if(rand_.Next() % (20 * GameInterface::c_update_frequency / 10) != 17)
+	if(rand_.Next() % (7 * GameInterface::c_update_frequency) != 17)
 	{
 		return;
 	}
