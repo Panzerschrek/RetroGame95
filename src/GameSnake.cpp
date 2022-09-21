@@ -13,6 +13,8 @@ namespace
 const uint32_t g_max_lifes = 6;
 const uint32_t g_max_level = 3;
 
+const uint32_t g_min_snake_len = 3;
+
 const uint32_t g_grow_points_per_food_piece_small = 3;
 const uint32_t g_grow_points_per_food_piece_medium = 5;
 const uint32_t g_grow_points_per_food_piece_large = 7;
@@ -88,10 +90,34 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 		return;
 	}
 
-	if(tick_ % GetSpeedForLevel(level_) == 0)
+	TrySpawnTetrisPiece();
+
+	const uint32_t speed = GetSpeedForLevel(level_);
+	if(tick_ % speed == 0)
 	{
 		MoveSnake();
 	}
+	if(tick_ % speed == speed / 2)
+	{
+		MoveTetrisPieceDown();
+	}
+
+	for(size_t b = 0; b < arkanoid_balls_.size();)
+	{
+		if(UpdateArkanoidBall(arkanoid_balls_[b]))
+		{
+			// This ball is dead.
+			if(b + 1 < arkanoid_balls_.size())
+			{
+				arkanoid_balls_[b] = arkanoid_balls_.back();
+			}
+			arkanoid_balls_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for balls.
 
 	if(field_start_animation_end_tick_ != std::nullopt && tick_ > *field_start_animation_end_tick_)
 	{
@@ -159,6 +185,51 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		field_offset_x + c_block_size * c_field_width,
 		field_offset_y - 1,
 		c_block_size * c_field_height + 2);
+
+	const SpriteBMP tetris_blocks_sprites[g_tetris_num_piece_types]
+	{
+		Sprites::tetris_block_4,
+		Sprites::tetris_block_7,
+		Sprites::tetris_block_5,
+		Sprites::tetris_block_1,
+		Sprites::tetris_block_2,
+		Sprites::tetris_block_6,
+		Sprites::tetris_block_3,
+	};
+
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		const TetrisBlock block = tetris_field_[x + y * c_field_width];
+		if(block == TetrisBlock::Empty)
+		{
+			continue;
+		}
+
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			tetris_blocks_sprites[uint32_t(block) - 1],
+			0,
+			field_offset_x + x * c_block_size,
+			field_offset_y + y * c_block_size);
+	}
+
+	if(tetris_active_piece_ != std::nullopt)
+	{
+		for(const auto& piece_block : tetris_active_piece_->blocks)
+		{
+			if(piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width) &&
+				piece_block[1] >= 0 && piece_block[1] < int32_t(c_field_height))
+			{
+				DrawSpriteWithAlpha(
+					frame_buffer,
+					tetris_blocks_sprites[uint32_t(tetris_active_piece_->type) - 1],
+					0,
+					field_offset_x + uint32_t(piece_block[0]) * c_block_size,
+					field_offset_y + uint32_t(piece_block[1]) * c_block_size);
+			}
+		}
+	}
 
 	const SpriteBMP bonus_sprites[]
 	{
@@ -337,6 +408,17 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		} // for snake segments
 	}
 
+	for(const ArkanoidBall& arkanoid_ball: arkanoid_balls_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_ball);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(c_block_size) * arkanoid_ball.position[0])) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(c_block_size) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
+	}
+
 	char text[64];
 
 	if(field_start_animation_end_tick_ != std::nullopt)
@@ -388,6 +470,14 @@ void GameSnake::NewField()
 {
 	SpawnSnake();
 
+	for(TetrisBlock& block : tetris_field_)
+	{
+		block = TetrisBlock::Empty;
+	}
+	tetris_active_piece_ = std::nullopt;
+
+	arkanoid_balls_.clear();
+
 	// Clear all bonuses.
 	for(Bonus& bonus : bonuses_)
 	{
@@ -431,7 +521,7 @@ void GameSnake::MoveSnake()
 	}
 
 	SnakeSegment new_segment = snake_->segments.front();
-	bool hit_border = false;
+	bool hit_obstacle = false;
 	switch(snake_->direction)
 	{
 	case SnakeDirection::XPlus:
@@ -441,7 +531,7 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	case SnakeDirection::XMinus:
@@ -451,7 +541,7 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	case SnakeDirection::YPlus:
@@ -461,7 +551,7 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	case SnakeDirection::YMinus:
@@ -471,15 +561,28 @@ void GameSnake::MoveSnake()
 		}
 		else
 		{
-			hit_border = true;
+			hit_obstacle = true;
 		}
 		break;
 	}
 
-	if(hit_border)
+	hit_obstacle |=
+		tetris_field_[new_segment.position[0] + new_segment.position[1] * c_field_width] != TetrisBlock::Empty;
+
+	if(tetris_active_piece_ != std::nullopt)
 	{
-		death_animation_end_tick_ = tick_ + g_death_animation_duration;
-		sound_player_.PlaySound(SoundId::SnakeDeath);
+		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			hit_obstacle |=
+				block[0] == int32_t(new_segment.position[0]) &&
+				block[1] == int32_t(new_segment.position[1]);
+		}
+	}
+
+
+	if(hit_obstacle)
+	{
+		OnSnakeDeath();
 		return;
 	}
 
@@ -515,6 +618,9 @@ void GameSnake::MoveSnake()
 
 			// Respawn bonus.
 			bonus = SpawnBonus();
+
+			// Spawn Arkanoid balls on bonus pick-up.
+			TrySpawnArkanoidBall();
 		}
 	}
 
@@ -532,17 +638,265 @@ void GameSnake::MoveSnake()
 	{
 		if(snake_->segments.front().position == snake_->segments[i].position)
 		{
-			death_animation_end_tick_ = tick_ + g_death_animation_duration;
-			sound_player_.PlaySound(SoundId::SnakeDeath);
+			OnSnakeDeath();
+			return;
+		}
+	}
+}
+
+void GameSnake::OnSnakeDeath()
+{
+	death_animation_end_tick_ = tick_ + g_death_animation_duration;
+	sound_player_.PlaySound(SoundId::SnakeDeath);
+}
+
+void GameSnake::MoveTetrisPieceDown()
+{
+	if(tetris_active_piece_ == std::nullopt)
+	{
+		return;
+	}
+
+	if(death_animation_end_tick_ != std::nullopt)
+	{
+		// Stop tetris piece on snake death.
+		return;
+	}
+
+	if(snake_ != std::nullopt)
+	{
+		bool hit_snake = false;
+		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			for(const SnakeSegment& segment : snake_->segments)
+			{
+				hit_snake |=
+					int32_t(segment.position[0]) == block[0] &&
+					int32_t(segment.position[1]) == block[1] + 1;
+			}
+		}
+
+		if(hit_snake)
+		{
+			OnSnakeDeath();
 			return;
 		}
 	}
 
-	// TODO - check for obstacles collision.
+	bool can_move = true;
+	for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+	{
+		assert(block[0] >= 0 && block[0] < int32_t(c_field_width));
+		if(block[1] >= int32_t(c_field_height - 1) ||
+			(block[1] >= 0 && block[1] + 1 < int32_t(c_field_height) &&
+			tetris_field_[uint32_t(block[0]) + uint32_t(block[1] + 1) * c_field_width] != TetrisBlock::Empty))
+		{
+			can_move = false;
+		}
+	}
+
+	if(can_move)
+	{
+		for(TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			block[1] += 1;
+		}
+	}
+	else
+	{
+		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			assert(block[0] >= 0 && block[0] < int32_t(c_field_width ));
+			assert(block[1] >= 0 && block[1] < int32_t(c_field_height));
+			TetrisBlock& dst_block = tetris_field_[uint32_t(block[0]) + uint32_t(block[1]) * c_field_width];
+			assert(dst_block == TetrisBlock::Empty);
+			dst_block = tetris_active_piece_->type;
+
+			// Respawn bonus if it lies behin the block.
+			for(Bonus& bonus : bonuses_)
+			{
+				if(int32_t(bonus.position[0]) == block[0] && int32_t(bonus.position[1]) == block[1])
+				{
+					bonus = SpawnBonus();
+				}
+			}
+		}
+		tetris_active_piece_ = std::nullopt;
+	}
+}
+
+bool GameSnake::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
+{
+	arkanoid_ball.position[0] += arkanoid_ball.velocity[0];
+	arkanoid_ball.position[1] += arkanoid_ball.velocity[1];
+
+	const fixed16_t ball_half_size = IntToFixed16(3) / 20;
+
+	// Bounce ball from tetris blocks.
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		TetrisBlock& block = tetris_field_[x + y * c_field_width];
+		if(block == TetrisBlock::Empty)
+		{
+			continue;
+		}
+
+		if(MakeCollisionBetweenObjectAndBox(
+			{
+				IntToFixed16(int32_t(x)),
+				IntToFixed16(int32_t(y)),
+			},
+			{
+				IntToFixed16(int32_t(x + 1)),
+				IntToFixed16(int32_t(y + 1)),
+			},
+			{ball_half_size, ball_half_size},
+			arkanoid_ball.position,
+			arkanoid_ball.velocity))
+		{
+			block = TetrisBlock::Empty;
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+
+			assert(arkanoid_ball.bounces_left > 0);
+			--arkanoid_ball.bounces_left;
+			if(arkanoid_ball.bounces_left == 0)
+			{
+				return true;
+			}
+		}
+	}
+
+	// Bounse ball from snake segments.
+	if(snake_ != std::nullopt)
+	{
+		bool hit = false;
+		for(const SnakeSegment& segment : snake_->segments)
+		{
+			if(MakeCollisionBetweenObjectAndBox(
+				{
+					IntToFixed16(int32_t(segment.position[0])),
+					IntToFixed16(int32_t(segment.position[1])),
+				},
+				{
+					IntToFixed16(int32_t(segment.position[0] + 1)),
+					IntToFixed16(int32_t(segment.position[1] + 1)),
+				},
+				{ball_half_size, ball_half_size},
+				arkanoid_ball.position,
+				arkanoid_ball.velocity))
+			{
+				hit = true;
+				break;
+			}
+		}
+
+		if(hit)
+		{
+			// Reduce snake size on hit.
+			// TODO - maybe reduce size bu multiple segments?
+			if(snake_->segments.size() <= size_t(g_min_snake_len))
+			{
+				OnSnakeDeath();
+			}
+			snake_->segments.pop_back();
+
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+
+			assert(arkanoid_ball.bounces_left > 0);
+			--arkanoid_ball.bounces_left;
+			if(arkanoid_ball.bounces_left == 0)
+			{
+				return true;
+			}
+		}
+	}
+
+	// Bounce ball from walls.
+	// Do this only after blocks bouncing to make sure that ball is inside game field.
+	const fixed16vec2_t filed_mins =
+	{
+		ball_half_size,
+		ball_half_size,
+	};
+	const fixed16vec2_t filed_maxs =
+	{
+		IntToFixed16(c_field_width ) - ball_half_size,
+		IntToFixed16(c_field_height) - ball_half_size,
+	};
+
+	for(size_t i = 0; i < 2; ++i)
+	{
+		if(arkanoid_ball.position[i] < filed_mins[i])
+		{
+			arkanoid_ball.velocity[i] = -arkanoid_ball.velocity[i];
+			arkanoid_ball.position[i] = 2 * filed_mins[i] - arkanoid_ball.position[i];
+			assert(arkanoid_ball.position[i] >= filed_mins[i]);
+
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+
+			assert(arkanoid_ball.bounces_left > 0);
+			--arkanoid_ball.bounces_left;
+			if(arkanoid_ball.bounces_left == 0)
+			{
+				return true;
+			}
+		}
+		if(arkanoid_ball.position[i] > filed_maxs[i])
+		{
+			arkanoid_ball.velocity[i] = -arkanoid_ball.velocity[i];
+			arkanoid_ball.position[i] = 2 * filed_maxs[i] - arkanoid_ball.position[i];
+			assert(arkanoid_ball.position[i] <= filed_maxs[i]);
+
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+
+			assert(arkanoid_ball.bounces_left > 0);
+			--arkanoid_ball.bounces_left;
+			if(arkanoid_ball.bounces_left == 0)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 bool GameSnake::IsPositionFree(const std::array<uint32_t, 2>& position) const
 {
+	// Consider positions near tetris blocks non-free.
+	for(int32_t dy = -1; dy <= 1; ++dy)
+	{
+		const int32_t y = dy + int32_t(position[1]);
+		if(y < 0 || y >= int32_t(c_field_height))
+		{
+			continue;
+		}
+		for(int32_t dx = -1; dx <= 1; ++dx)
+		{
+			const int32_t x = dx + int32_t(position[0]);
+			if(x < 0 || x >= int32_t(c_field_width))
+			{
+				continue;
+			}
+			if(tetris_field_[uint32_t(x) + uint32_t(y) * c_field_width] != TetrisBlock::Empty)
+			{
+				return false;
+			}
+		}
+	}
+
+	if(tetris_active_piece_ != std::nullopt)
+	{
+		for(const TetrisPieceBlock& block : tetris_active_piece_->blocks)
+		{
+			if(int32_t(position[0]) == block[0] && int32_t(position[1]) == block[1])
+			{
+				return false;
+			}
+		}
+	}
+
 	if(snake_ != std::nullopt)
 	{
 		for(const SnakeSegment& segment : snake_->segments)
@@ -598,4 +952,182 @@ GameSnake::Bonus GameSnake::SpawnBonus()
 	}
 
 	return bonus;
+}
+
+void GameSnake::TrySpawnTetrisPiece()
+{
+	if(tetris_active_piece_ != std::nullopt)
+	{
+		return;
+	}
+	if(death_animation_end_tick_ != std::nullopt || field_start_animation_end_tick_ != std::nullopt)
+	{
+		return;
+	}
+
+	if(rand_.Next() % (7 * GameInterface::c_update_frequency) != 17)
+	{
+		return;
+	}
+
+	const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + rand_.Next() % g_tetris_num_piece_types);
+	TetrisPieceBlocks blocks = g_tetris_pieces_blocks[uint32_t(type) - uint32_t(TetrisBlock::I)];
+
+	// Move piece down to spawn in visible state.
+	// This helps player to turn snake to avoid collision.
+	for(TetrisPieceBlock& block : blocks)
+	{
+		block[1] += 1;
+	}
+
+	// Choose random rotation.
+	const uint32_t num_rotations = rand_.Next() / 47u % 4u;
+	for(uint32_t i = 0; i < num_rotations; ++i)
+	{
+		TetrisPiece piece;
+		piece.type = type;
+		piece.blocks = blocks;
+		blocks = RotateTetrisPieceBlocks(piece);
+	}
+
+	int32_t min_x = 99999, max_x = -9999;
+	for(const TetrisPieceBlock& block : blocks)
+	{
+		min_x = std::min(min_x, block[0]);
+		max_x = std::max(max_x, block[0]);
+	}
+
+	// Perform spawn possibility check for multiple random positions across game field.
+	// Spawn piece only over areas where there is no snake body.
+	const int32_t min_dx = -min_x;
+	const int32_t max_dx = int32_t(c_field_width) - max_x - 1;
+	for(uint32_t i = 0; i < c_field_width * 4; ++i)
+	{
+		const int32_t dx = min_dx + int32_t(rand_.Next() % uint32_t(max_dx - min_dx));
+		const int32_t cur_min_x = min_x + dx;
+		const int32_t cur_max_x = max_x + dx;
+		assert(cur_min_x >= 0);
+		assert(cur_min_x <= cur_max_x);
+		assert(cur_max_x < int32_t(c_field_width));
+
+		if(snake_ != std::nullopt)
+		{
+			bool may_hit_snake = false;
+			for(const SnakeSegment& segment : snake_->segments)
+			{
+				if(int32_t(segment.position[0]) + 1 >= cur_min_x && int32_t(segment.position[0]) - 1 <= cur_max_x)
+				{
+					may_hit_snake = true;
+					break;
+				}
+			}
+
+			if(may_hit_snake)
+			{
+				continue;
+			}
+		}
+
+		// Keep upper 4 rows free.
+		{
+			bool may_hit_block = false;
+
+			for(uint32_t y = 0; y < 4; ++y)
+			for(uint32_t x = uint32_t(cur_min_x); x <= uint32_t(cur_max_x); ++x)
+			{
+				if(tetris_field_[x + y * c_field_width] != TetrisBlock::Empty)
+				{
+					may_hit_block = true;
+					break;
+				}
+			}
+
+			if(may_hit_block)
+			{
+				continue;
+			}
+		}
+
+		TetrisPieceBlocks blocks_shifted = blocks;
+		for(TetrisPieceBlock& block : blocks_shifted)
+		{
+			block[0] += dx;
+			assert(block[0] >= 0 && block[0] < int32_t(c_field_width));
+		}
+
+		TetrisPiece piece;
+		piece.type = type;
+		piece.blocks = blocks_shifted;
+		tetris_active_piece_ = piece;
+		return;
+	} // Try to spawn a piece.
+}
+
+void GameSnake::TrySpawnArkanoidBall()
+{
+	if(rand_.Next() % 7 != 0)
+	{
+		return;
+	}
+
+	const fixed16_t speed = g_fixed16_one / 10;
+
+	ArkanoidBall ball;
+
+	ball.bounces_left = 7;
+
+	const float random_angle = float(rand_.Next()) * (2.0f * 3.1415926535f / float(Rand::c_max_rand_plus_one_));
+	ball.velocity[0] = fixed16_t(std::cos(random_angle) * float(speed));
+	ball.velocity[1] = fixed16_t(std::sin(random_angle) * float(speed));
+
+	// Try to select random position far enough from the snake and any tetris block.
+	for(uint32_t i = 0; i < 200; ++i)
+	{
+		ball.position[0] = fixed16_t(rand_.Next() % (c_field_width  << g_fixed16_base));
+		ball.position[1] = fixed16_t(rand_.Next() % (c_field_height << g_fixed16_base));
+
+		const int32_t ball_x = Fixed16FloorToInt(ball.position[0]);
+		const int32_t ball_y = Fixed16FloorToInt(ball.position[1]);
+
+		bool can_place = true;
+		for(int32_t dy = -2; dy <= 2; ++dy)
+		{
+			const int32_t y = ball_y + dy;
+			if(y < 0 || y >= int32_t(c_field_height))
+			{
+				continue;
+			}
+			for(int32_t dx = -2; dx <= 2; ++dx)
+			{
+				const int32_t x = ball_x + dx;
+				if(x < 0 || x >= int32_t(c_field_width))
+				{
+					continue;
+				}
+				can_place &=
+					tetris_field_[uint32_t(x) + uint32_t(y) * c_field_width] == TetrisBlock::Empty;
+			}
+		}
+
+		if(snake_ != std::nullopt)
+		{
+			const int32_t min_dist = 3;
+			for(const SnakeSegment& segment : snake_->segments)
+			{
+				const int32_t dx = int32_t(segment.position[0]) - ball_x;
+				const int32_t dy = int32_t(segment.position[1]) - ball_y;
+				if(dx * dx + dy * dy < min_dist * min_dist)
+				{
+					can_place = false;
+					break;
+				}
+			}
+		}
+
+		if(can_place)
+		{
+			arkanoid_balls_.push_back(ball);
+			return;
+		}
+	} // for tries.
 }
