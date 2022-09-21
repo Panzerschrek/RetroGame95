@@ -13,6 +13,8 @@ namespace
 const uint32_t g_max_lifes = 6;
 const uint32_t g_max_level = 3;
 
+const uint32_t g_min_snake_len = 3;
+
 const uint32_t g_grow_points_per_food_piece_small = 3;
 const uint32_t g_grow_points_per_food_piece_medium = 5;
 const uint32_t g_grow_points_per_food_piece_large = 7;
@@ -765,6 +767,51 @@ bool GameSnake::UpdateArkanoidBall(ArkanoidBall& arkanoid_ball)
 		}
 	}
 
+	// Bounse ball from snake segments.
+	if(snake_ != std::nullopt)
+	{
+		bool hit = false;
+		for(const SnakeSegment& segment : snake_->segments)
+		{
+			if(MakeCollisionBetweenObjectAndBox(
+				{
+					IntToFixed16(segment.position[0]),
+					IntToFixed16(segment.position[1]),
+				},
+				{
+					IntToFixed16(segment.position[0] + 1),
+					IntToFixed16(segment.position[1] + 1),
+				},
+				{ball_half_size, ball_half_size},
+				arkanoid_ball.position,
+				arkanoid_ball.velocity))
+			{
+				hit = true;
+				break;
+			}
+		}
+
+		if(hit)
+		{
+			// Reduce snake size on hit.
+			// TODO - maybe reduce size bu multiple segments?
+			if(snake_->segments.size() <= size_t(g_min_snake_len))
+			{
+				OnSnakeDeath();
+			}
+			snake_->segments.pop_back();
+
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+
+			assert(arkanoid_ball.bounces_left > 0);
+			--arkanoid_ball.bounces_left;
+			if(arkanoid_ball.bounces_left == 0)
+			{
+				return true;
+			}
+		}
+	}
+
 	// Bounce ball from walls.
 	// Do this only after blocks bouncing to make sure that ball is inside game field.
 	const fixed16vec2_t filed_mins =
@@ -1023,18 +1070,64 @@ void GameSnake::TrySpawnArkanoidBall()
 		return;
 	}
 
-	const fixed16_t speed = g_fixed16_one / 20;
+	const fixed16_t speed = g_fixed16_one / 10;
 
 	ArkanoidBall ball;
 
-	ball.bounces_left = 4;
+	ball.bounces_left = 10;
 
 	const float random_angle = float(rand_.Next()) * (2.0f * 3.1415926535f / float(Rand::c_max_rand_plus_one_));
 	ball.velocity[0] = fixed16_t(std::cos(random_angle) * float(speed));
 	ball.velocity[1] = fixed16_t(std::sin(random_angle) * float(speed));
 
-	ball.position[0] = fixed16_t(rand_.Next() % (c_field_width  << g_fixed16_base));
-	ball.position[1] = fixed16_t(rand_.Next() % (c_field_height << g_fixed16_base));
+	// Try to select random position far enough from the snake and any tetris block.
+	for(uint32_t i = 0; i < 32; ++i)
+	{
+		ball.position[0] = fixed16_t(rand_.Next() % (c_field_width  << g_fixed16_base));
+		ball.position[1] = fixed16_t(rand_.Next() % (c_field_height << g_fixed16_base));
 
-	arkanoid_balls_.push_back(ball);
+		const int32_t ball_x = Fixed16RoundToInt(ball.position[0]);
+		const int32_t ball_y = Fixed16RoundToInt(ball.position[0]);
+
+		bool can_place = true;
+		for(int32_t dy = -2; dy <= 2; ++dy)
+		{
+			const int32_t y = ball_y + dy;
+			if(y < 0 || y >= int32_t(c_field_height))
+			{
+				continue;
+			}
+			for(int32_t dx = -2; dx <= 2; ++dx)
+			{
+				const int32_t x = ball_x + dx;
+				if(x < 0 || x >= int32_t(c_field_width))
+				{
+					continue;
+				}
+				can_place &=
+					tetris_field_[uint32_t(x) + uint32_t(y) * c_field_width] != TetrisBlock::Empty;
+			}
+		}
+
+		if(snake_ != std::nullopt)
+		{
+			const int32_t min_dist = 3;
+			for(const SnakeSegment& segment : snake_->segments)
+			{
+				const int32_t dx = int32_t(segment.position[0]) - ball_x;
+				const int32_t dy = int32_t(segment.position[1]) - ball_y;
+				if(dx * dx + dy * dy < min_dist * min_dist)
+				{
+					can_place = false;
+					break;
+				}
+			}
+		}
+
+		if(can_place)
+		{
+			arkanoid_balls_.push_back(ball);
+			return;
+		}
+	} // for tries.
 }
