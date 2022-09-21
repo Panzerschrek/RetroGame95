@@ -783,7 +783,14 @@ void GameSnake::TrySpawnTetrisPiece()
 	}
 
 	const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + rand_.Next() % g_tetris_num_piece_types);
-	const TetrisPieceBlocks blocks = g_tetris_pieces_blocks[uint32_t(type) - uint32_t(TetrisBlock::I)];
+	TetrisPieceBlocks blocks = g_tetris_pieces_blocks[uint32_t(type) - uint32_t(TetrisBlock::I)];
+
+	// Move piece down to spawn in visible state.
+	// This helps player to turn snake to avoid collision.
+	for(TetrisPieceBlock& block : blocks)
+	{
+		block[1] += 1;
+	}
 
 	int32_t min_x = 99999, max_x = -9999;
 	for(const TetrisPieceBlock& block : blocks)
