@@ -810,7 +810,7 @@ void GameSnake::TrySpawnTetrisPiece()
 			bool may_hit_snake = false;
 			for(const SnakeSegment& segment : snake_->segments)
 			{
-				if(int32_t(segment.position[0]) >= cur_min_x && int32_t(segment.position[0]) <= cur_max_x)
+				if(int32_t(segment.position[0]) + 1 >= cur_min_x && int32_t(segment.position[0]) - 1 <= cur_max_x)
 				{
 					may_hit_snake = true;
 					break;
