@@ -323,14 +323,13 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		Sprites::pacman_food,
 		Sprites::pacman_food,
 		Sprites::pacman_bonus_deadly,
-		// TODO - use proper sprites
-		Sprites::tetris_block_4,
-		Sprites::tetris_block_7,
-		Sprites::tetris_block_5,
-		Sprites::tetris_block_1,
-		Sprites::tetris_block_2,
-		Sprites::tetris_block_6,
-		Sprites::tetris_block_3,
+		Sprites::tetris_block_small_4,
+		Sprites::tetris_block_small_7,
+		Sprites::tetris_block_small_5,
+		Sprites::tetris_block_small_1,
+		Sprites::tetris_block_small_2,
+		Sprites::tetris_block_small_6,
+		Sprites::tetris_block_small_3,
 	};
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
