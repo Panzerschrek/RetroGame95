@@ -330,6 +330,10 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_small_2,
 		Sprites::tetris_block_small_6,
 		Sprites::tetris_block_small_3,
+		Sprites::snake_food_small,
+		Sprites::snake_food_medium,
+		Sprites::snake_food_large,
+		Sprites::snake_extra_life,
 	};
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
@@ -687,11 +691,36 @@ void GamePacman::MovePacman()
 				EnterFrightenedMode();
 				sound_player_.PlaySound(SoundId::SnakeBonusEat);
 			}
+			if(bonus == Bonus::SnakeFoodSmall)
+			{
+				// TODO - process this bonus specially.
+				score_ += g_score_for_food;
+				sound_player_.PlaySound(SoundId::TetrisFigureStep);
+			}
+			if(bonus == Bonus::SnakeFoodMedium)
+			{
+				// TODO - process this bonus specially.
+				score_ += g_score_for_food;
+				sound_player_.PlaySound(SoundId::TetrisFigureStep);
+			}
+			if(bonus == Bonus::SnakeFoodLarge)
+			{
+				// TODO - process this bonus specially.
+				score_ += g_score_for_food;
+				sound_player_.PlaySound(SoundId::TetrisFigureStep);
+			}
+			if(bonus == Bonus::SnakeExtraLife)
+			{
+				// TODO - process this bonus specially.
+				score_ += g_score_for_food;
+				sound_player_.PlaySound(SoundId::TetrisFigureStep);
+			}
 			bonus = Bonus::None;
 			--bonuses_left_;
 			++bonuses_eaten_;
 
 			TryPlaceRandomTetrisPiece();
+			TrySpawnSnakeBonus();
 		}
 
 		pacman_.position = pacman_.target_position;
@@ -1368,6 +1397,53 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 					Bonus(uint32_t(Bonus::TetrisBlock0) + type_index);
 				++bonuses_left_;
 			}
+			break;
+		}
+	}
+}
+
+void GamePacman::TrySpawnSnakeBonus()
+{
+	if(rand_.Next() % 32 != 3)
+	{
+		return;
+	}
+
+	// Perform spawn possibility check for multiple random positions across game field.
+	for(size_t i = 0; i < 256; ++i)
+	{
+		const uint32_t x = 1 + rand_.Next() % (c_field_width  - 2);
+		const uint32_t y = 1 + rand_.Next() % (c_field_height - 2);
+
+		bool can_place = true;
+
+		const uint32_t address = x + y * c_field_width;
+		can_place &= g_game_field[address] != g_wall_symbol;
+		can_place &= bonuses_[address] == Bonus::None;
+		can_place &= !IsBlockInsideGhostsRoom({int32_t(x), int32_t(y)});
+
+		// Unreachable areas.
+		if(x >= 13 && x <= 15)
+		{
+			can_place &= !(y >= 0 && y <= 5);
+			can_place &= !(y >= 24 && y <= 29);
+		}
+		if(x >= 19 && x <= 21)
+		{
+			can_place &= !(y >= 0 && y <= 5);
+			can_place &= !(y >= 24 && y <= 29);
+		}
+
+		if(can_place)
+		{
+			bonuses_[address] = Bonus(uint32_t(Bonus::SnakeFoodSmall) + rand_.Next() % 4);
+			if(bonuses_[address] == Bonus::SnakeExtraLife)
+			{
+				// Reduce probability of extra life spawn.
+				bonuses_[address] = Bonus(uint32_t(Bonus::SnakeFoodSmall) + rand_.Next() % 4);
+			}
+
+			++bonuses_left_;
 			break;
 		}
 	}

@@ -80,6 +80,10 @@ private:
 		TetrisBlock4,
 		TetrisBlock5,
 		TetrisBlock6,
+		SnakeFoodSmall,
+		SnakeFoodMedium,
+		SnakeFoodLarge,
+		SnakeExtraLife,
 	};
 
 	static const constexpr uint32_t c_field_width = 33;
@@ -107,6 +111,7 @@ private:
 	void EnterFrightenedMode();
 
 	void TryPlaceRandomTetrisPiece();
+	void TrySpawnSnakeBonus();
 
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
