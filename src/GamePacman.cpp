@@ -1,6 +1,7 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "GamesCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
 #include <cassert>
@@ -113,6 +114,8 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	}
 
 	++tick_;
+
+	TryPlaceRandomTetrisPiece();
 
 	UpdateGhostsMode();
 
@@ -317,24 +320,35 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		} // for x
 	} // for y
 
+	const SpriteBMP bonus_sprites[]
+	{
+		Sprites::pacman_food,
+		Sprites::pacman_food,
+		Sprites::pacman_bonus_deadly,
+		// TODO - use proper sprites
+		Sprites::tetris_block_4,
+		Sprites::tetris_block_7,
+		Sprites::tetris_block_5,
+		Sprites::tetris_block_1,
+		Sprites::tetris_block_2,
+		Sprites::tetris_block_6,
+		Sprites::tetris_block_3,
+	};
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
 		const Bonus bonus = bonuses_[x + y * c_field_width];
-		const uint32_t block_x = x * c_block_size;
-		const uint32_t block_y = y * c_block_size;
-
-		switch(bonus)
+		if(bonus == Bonus::None)
 		{
-		case Bonus::None:
-			break;
-		case Bonus::Food:
-			DrawSprite(frame_buffer, Sprites::pacman_food, block_x + 3, block_y + 3);
-			break;
-		case Bonus::Deadly:
-			DrawSprite(frame_buffer, Sprites::pacman_bonus_deadly, block_x, block_y);
-			break;
+			continue;
 		}
+
+		const SpriteBMP sprite = bonus_sprites[uint32_t(bonus)];
+		DrawSprite(
+			frame_buffer,
+			sprite,
+			x * c_block_size + c_block_size / 2 - sprite.GetWidth () / 2,
+			y * c_block_size + c_block_size / 2 - sprite.GetHeight() / 2);
 	}
 
 	for(const Ghost& ghost : ghosts_)
@@ -1210,6 +1224,79 @@ void GamePacman::EnterFrightenedMode()
 		ghost.frightened_mode_end_tick = tick_ + g_frightened_mode_duration;
 
 		ReverseGhostMovement(ghost);
+	}
+}
+
+void GamePacman::TryPlaceRandomTetrisPiece()
+{
+	// Perform spawn possibility check for multiple random positions across game field.
+	for(size_t i = 0; i < 256; ++i)
+	{
+		const uint32_t type_index = rand_.Next() % g_tetris_num_piece_types;
+		const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + type_index);
+		TetrisPieceBlocks blocks = g_tetris_pieces_blocks[type_index];
+
+		// Choose random rotation.
+		const uint32_t num_rotations = rand_.Next() / 47u % 4u;
+		for(uint32_t i = 0; i < num_rotations; ++i)
+		{
+			TetrisPiece piece;
+			piece.type = type;
+			piece.blocks = blocks;
+			blocks = RotateTetrisPieceBlocks(piece);
+		}
+
+		int32_t min_x = 99999, max_x = -9999;
+		int32_t min_y = 99999, max_y = -9999;
+		for(const TetrisPieceBlock& block : blocks)
+		{
+			min_x = std::min(min_x, block[0]);
+			max_x = std::max(max_x, block[0]);
+			min_y = std::min(min_y, block[1]);
+			max_y = std::max(max_y, block[1]);
+		}
+
+		const int32_t min_dx = 1 - min_x;
+		const int32_t max_dx = int32_t(c_field_width ) - max_x - 2;
+
+		const int32_t min_dy = 1 - min_y;
+		const int32_t max_dy = int32_t(c_field_height) - max_y - 2;
+
+		const int32_t dx = min_dx + int32_t(rand_.Next() % uint32_t(max_dx - min_dx));
+		const int32_t dy = min_dy + int32_t(rand_.Next() % uint32_t(max_dy - min_dy));
+
+		TetrisPieceBlocks bocks_shifted = blocks;
+		for(TetrisPieceBlock& block : bocks_shifted)
+		{
+			const int32_t x = block[0] + dx;
+			const int32_t y = block[1] + dy;
+			assert(x >= 1 && x < int32_t(c_field_width ) - 1);
+			assert(y >= 1 && y < int32_t(c_field_height) - 1);
+
+			block[0] = x;
+			block[1] = y;
+		}
+
+		bool can_place = true;
+		for(const TetrisPieceBlock& block : bocks_shifted)
+		{
+			const uint32_t address = uint32_t(block[0]) + uint32_t(block[1]) * c_field_width;
+			can_place &= g_game_field[address] != g_wall_symbol;
+			can_place &= bonuses_[address] == Bonus::None;
+		}
+
+		// TODO - avoid spawning tetris piece atop of pacman and ghosts.
+		// TODO - do not spawn piece that ay block ghost home entrance.
+
+		if(can_place)
+		{
+			for(const TetrisPieceBlock& block : bocks_shifted)
+			{
+				bonuses_[uint32_t(block[0]) + uint32_t(block[1]) * c_field_width] =
+					Bonus(uint32_t(Bonus::TetrisBlock0) + type_index);
+			}
+			break;
+		}
 	}
 }
 
