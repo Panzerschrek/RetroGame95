@@ -858,13 +858,16 @@ void GamePacman::MoveGhost(Ghost& ghost)
 					// Do not allow to move into start room from outside.
 					return;
 				}
-				if(
-					next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
-					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
-					g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+				if( next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
+					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height))
 				{
-					possible_targets[num_possible_targets] = std::make_pair(next_block, direction);
-					++num_possible_targets;
+					const uint32_t address = uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width;
+					if(g_game_field[address] != g_wall_symbol &&
+						!(bonuses_[address] >= Bonus::TetrisBlock0 && bonuses_[address] <= Bonus::TetrisBlock6))
+					{
+						possible_targets[num_possible_targets] = std::make_pair(next_block, direction);
+						++num_possible_targets;
+					}
 				}
 			};
 
@@ -894,6 +897,11 @@ void GamePacman::MoveGhost(Ghost& ghost)
 					IntToFixed16(selected_target.first[1]) + g_fixed16_one / 2};
 				ghost.direction = selected_target.second;
 			}
+			else
+			{
+				// Dead end.
+				ReverseGhostMovement(ghost);
+			}
 		}
 		else
 		{
@@ -918,12 +926,16 @@ void GamePacman::MoveGhost(Ghost& ghost)
 				const int32_t square_distance = vec_to[0] * vec_to[0] + vec_to[1] * vec_to[1];
 				if(square_distance < best_square_distance &&
 					next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
-					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
-					g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height))
 				{
-					best_square_distance = square_distance;
-					best_next_block = next_block;
-					best_direction = direction;
+					const uint32_t address = uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width;
+					if(g_game_field[address] != g_wall_symbol &&
+						!(bonuses_[address] >= Bonus::TetrisBlock0 && bonuses_[address] <= Bonus::TetrisBlock6))
+					{
+						best_square_distance = square_distance;
+						best_next_block = next_block;
+						best_direction = direction;
+					}
 				}
 			};
 
@@ -946,10 +958,18 @@ void GamePacman::MoveGhost(Ghost& ghost)
 				add_next_block_candidate({block[0] + 1, block[1]}, GridDirection::XPlus );
 			}
 
-			ghost.target_position = {
-				IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
-				IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
-			ghost.direction = best_direction;
+			if(best_square_distance == 0x7FFFFFFF)
+			{
+				// Dead end.
+				ReverseGhostMovement(ghost);
+			}
+			else
+			{
+				ghost.target_position = {
+					IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
+					IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
+				ghost.direction = best_direction;
+			}
 		}
 	}
 	else
