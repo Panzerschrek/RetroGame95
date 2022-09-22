@@ -38,6 +38,8 @@ private:
 
 		// Non-empty if killed and dead animation is played.
 		std::optional<uint32_t> dead_animation_end_tick;
+
+		uint32_t turret_shots_left = 0;
 	};
 
 	enum class GhostType

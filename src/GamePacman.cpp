@@ -475,21 +475,29 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
 		const uint32_t pacman_y =
 			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
+
+		auto func = DrawSpriteWithAlpha;
 		switch(pacman_.direction)
 		{
 		case GridDirection::XMinus:
-			DrawSpriteWithAlphaRotate180(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlphaRotate180;
 			break;
 		case GridDirection::XPlus:
-			DrawSpriteWithAlpha         (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlpha;
 			break;
 		case GridDirection::YMinus:
-			DrawSpriteWithAlphaRotate270(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlphaRotate270;
 			break;
 		case GridDirection::YPlus:
-			DrawSpriteWithAlphaRotate90 (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlphaRotate90;
 			break;
 		}
+
+		if(pacman_.turret_shots_left > 0)
+		{
+			func(frame_buffer, Sprites::pacman_turret, 0, pacman_x, pacman_y);
+		}
+		func(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
 	}
 }
 
@@ -599,6 +607,7 @@ void GamePacman::SpawnPacmanAndGhosts()
 	pacman_.direction = GridDirection::YPlus;
 	pacman_.next_direction = pacman_.direction;
 	pacman_.dead_animation_end_tick = std::nullopt;
+	pacman_.turret_shots_left = 0;
 
 	bonuses_eaten_ = 0;
 
