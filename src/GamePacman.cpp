@@ -115,8 +115,6 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	++tick_;
 
-	TryPlaceRandomTetrisPiece();
-
 	UpdateGhostsMode();
 
 	MovePacman();
@@ -670,7 +668,7 @@ void GamePacman::MovePacman()
 		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
 		if(bonus != Bonus::None)
 		{
-			if(bonus == Bonus::Food)
+			if(bonus == Bonus::Food || (bonus >= Bonus::TetrisBlock0 && bonus <= Bonus::TetrisBlock6))
 			{
 				score_ += g_score_for_food;
 				sound_player_.PlaySound(SoundId::TetrisFigureStep);
@@ -685,6 +683,7 @@ void GamePacman::MovePacman()
 			--bonuses_left_;
 			++bonuses_eaten_;
 
+			TryPlaceRandomTetrisPiece();
 		}
 
 		pacman_.position = pacman_.target_position;
@@ -1229,10 +1228,20 @@ void GamePacman::EnterFrightenedMode()
 
 void GamePacman::TryPlaceRandomTetrisPiece()
 {
+	if(rand_.Next() % 32 != 3)
+	{
+		return;
+	}
+
 	// Perform spawn possibility check for multiple random positions across game field.
 	for(size_t i = 0; i < 256; ++i)
 	{
-		const uint32_t type_index = rand_.Next() % g_tetris_num_piece_types;
+		uint32_t type_index = rand_.Next() % g_tetris_num_piece_types;
+		if(type_index == 0)
+		{
+			// Reduce probability of "I" piece, because it is too boring.
+			type_index = rand_.Next() % g_tetris_num_piece_types;
+		}
 		const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + type_index);
 		TetrisPieceBlocks blocks = g_tetris_pieces_blocks[type_index];
 
@@ -1277,16 +1286,51 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 			block[1] = y;
 		}
 
+		const fixed16_t character_half_size = g_fixed16_one + 1;
+
 		bool can_place = true;
 		for(const TetrisPieceBlock& block : bocks_shifted)
 		{
 			const uint32_t address = uint32_t(block[0]) + uint32_t(block[1]) * c_field_width;
 			can_place &= g_game_field[address] != g_wall_symbol;
 			can_place &= bonuses_[address] == Bonus::None;
-		}
+			can_place &= !IsBlockInsideGhostsRoom(block);
 
-		// TODO - avoid spawning tetris piece atop of pacman and ghosts.
-		// TODO - do not spawn piece that ay block ghost home entrance.
+			// Ghost room entrance.
+			can_place &=
+				!(block[0] == 20 && block[1] >= 11 && block[1] <= 19);
+
+			// Unreachable areas.
+			if(block[0] >= 13 && block[0] <= 15)
+			{
+				can_place &= !(block[1] >= 0 && block[1] <= 5);
+				can_place &= !(block[1] >= 24 && block[1] <= 29);
+			}
+			if(block[0] >= 19 && block[0] <= 21)
+			{
+				can_place &= !(block[1] >= 0 && block[1] <= 5);
+				can_place &= !(block[1] >= 24 && block[1] <= 29);
+			}
+
+			// Do not place block atop of characters.
+			if(pacman_.position[0] >= IntToFixed16(block[0]) - character_half_size &&
+			   pacman_.position[0] <= IntToFixed16(block[0] + 1) + character_half_size &&
+			   pacman_.position[1] >= IntToFixed16(block[1]) - character_half_size &&
+			   pacman_.position[1] <= IntToFixed16(block[1] + 1) + character_half_size)
+			{
+				can_place = false;
+			}
+			for(const Ghost& ghost : ghosts_)
+			{
+				if(ghost.position[0] >= IntToFixed16(block[0]) - character_half_size &&
+				   ghost.position[0] <= IntToFixed16(block[0] + 1) + character_half_size &&
+				   ghost.position[1] >= IntToFixed16(block[1]) - character_half_size &&
+				   ghost.position[1] <= IntToFixed16(block[1] + 1) + character_half_size)
+				{
+					can_place = false;
+				}
+			}
+		}
 
 		if(can_place)
 		{
@@ -1294,6 +1338,7 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 			{
 				bonuses_[uint32_t(block[0]) + uint32_t(block[1]) * c_field_width] =
 					Bonus(uint32_t(Bonus::TetrisBlock0) + type_index);
+				++bonuses_left_;
 			}
 			break;
 		}
