@@ -52,10 +52,14 @@ const fixed16_t g_pacman_move_speed = g_base_move_speed * 80 / 100;
 const fixed16_t g_ghost_move_speed = g_base_move_speed * 75 / 100;
 const fixed16_t g_ghost_frightened_move_speed = g_base_move_speed * 50 / 100;
 const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 2;
+const fixed16_t g_laser_beam_speed = g_base_move_speed * 400 / 100;
+
+const fixed16_t g_character_half_size = g_fixed16_one + 1;
 
 const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
 const uint32_t g_death_animation_duration = GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_spawn_animation_duration = GameInterface::c_update_frequency * 3;
+const uint32_t g_min_shoot_interval = 45;
 
 const uint32_t g_scatter_duration_first = 7 * GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_scatter_duration_second = 5 * GameInterface::c_update_frequency * 3 / 2;
@@ -113,6 +117,16 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 			{
 				pacman_.next_direction = GridDirection::YMinus;
 			}
+			if(event.key.keysym.scancode == SDL_SCANCODE_RCTRL ||
+				event.key.keysym.scancode == SDL_SCANCODE_LCTRL ||
+				event.key.keysym.scancode == SDL_SCANCODE_SPACE)
+			{
+				ProcessShootRequest();
+			}
+		}
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1)
+		{
+			ProcessShootRequest();
 		}
 	}
 
@@ -126,6 +140,23 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	{
 		MoveGhost(ghost);
 	}
+
+	for(size_t b = 0; b < laser_beams_.size();)
+	{
+		if(UpdateLaserBeam(laser_beams_[b]))
+		{
+			// This laser beam is dead.
+			if(b + 1 < laser_beams_.size())
+			{
+				laser_beams_[b] = laser_beams_.back();
+			}
+			laser_beams_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for laser beams.
 
 	ProcessPacmanGhostsTouch();
 	TryTeleportCharacters();
@@ -371,6 +402,33 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
 		{
 			DrawGhost(frame_buffer, ghost);
+		}
+	}
+
+	for(const LaserBeam& laser_beam : laser_beams_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_laser_beam);
+		const uint32_t x = uint32_t(Fixed16FloorToInt(laser_beam.position[0] * int32_t(c_block_size)));
+		const uint32_t y = uint32_t(Fixed16FloorToInt(laser_beam.position[1] * int32_t(c_block_size)));
+		const uint32_t half_height = sprite.GetHeight() / 2;
+		switch(laser_beam.direction)
+		{
+		case GridDirection::XMinus:
+			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y - 2);
+			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y + 1);
+			break;
+		case GridDirection::XPlus:
+			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y - 2);
+			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y + 1);
+			break;
+		case GridDirection::YMinus:
+			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x - 2, y - half_height);
+			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x + 1, y - half_height);
+			break;
+		case GridDirection::YPlus:
+			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x - 2, y - half_height);
+			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x + 1, y - half_height);
+			break;
 		}
 	}
 
@@ -626,9 +684,12 @@ void GamePacman::SpawnPacmanAndGhosts()
 	pacman_.next_direction = pacman_.direction;
 	pacman_.dead_animation_end_tick = std::nullopt;
 	pacman_.turret_shots_left = 0;
+	pacman_.next_shoot_tick = 0;
 	pacman_.arkanoid_ball = std::nullopt;
 
 	bonuses_eaten_ = 0;
+
+	laser_beams_.clear();
 
 	current_ghosts_mode_ = GhostMode::Scatter;
 	ghosts_mode_switches_left_ = 4;
@@ -655,6 +716,27 @@ void GamePacman::SpawnPacmanAndGhosts()
 	}
 
 	spawn_animation_end_tick_ = tick_ + g_spawn_animation_duration;
+}
+
+void GamePacman::ProcessShootRequest()
+{
+	if(pacman_.turret_shots_left == 0)
+	{
+		return;
+	}
+	if(tick_ < pacman_.next_shoot_tick)
+	{
+		return;
+	}
+
+	--pacman_.turret_shots_left;
+	pacman_.next_shoot_tick = tick_ + g_min_shoot_interval;
+
+	LaserBeam beam;
+	beam.position = pacman_.position;
+	beam.direction = pacman_.direction;
+
+	laser_beams_.push_back(beam);
 }
 
 void GamePacman::MovePacman()
@@ -1227,7 +1309,6 @@ void GamePacman::ProcessPacmanGhostsTouch()
 			}
 		}
 	}
-
 }
 
 void GamePacman::TryTeleportCharacters()
@@ -1274,6 +1355,107 @@ void GamePacman::TryTeleportCharacters()
 	}
 }
 
+bool GamePacman::UpdateLaserBeam(LaserBeam& laser_beam)
+{
+	switch(laser_beam.direction)
+	{
+	case GridDirection::XMinus:
+		laser_beam.position[0] -= g_laser_beam_speed;
+		break;
+	case GridDirection::XPlus:
+		laser_beam.position[0] += g_laser_beam_speed;
+		break;
+	case GridDirection::YMinus:
+		laser_beam.position[1] -= g_laser_beam_speed;
+		break;
+	case GridDirection::YPlus:
+		laser_beam.position[1] += g_laser_beam_speed;
+		break;
+	}
+
+	const fixed16_t beam_half_size = g_fixed16_one / 32;
+
+	for(Ghost& ghost : ghosts_)
+	{
+		if(ghost.mode == GhostMode::Eaten)
+		{
+			continue;
+		}
+
+		const fixed16vec2_t borders_min =
+		{
+			ghost.position[0] - (beam_half_size + g_character_half_size),
+			ghost.position[1] - (beam_half_size + g_character_half_size),
+		};
+		const fixed16vec2_t borders_max =
+		{
+			ghost.position[0] + (beam_half_size + g_character_half_size),
+			ghost.position[1] + (beam_half_size + g_character_half_size),
+		};
+
+		if( laser_beam.position[0] >= borders_min[0] && laser_beam.position[0] <= borders_max[0] &&
+			laser_beam.position[1] >= borders_min[1] && laser_beam.position[1] <= borders_max[1])
+		{
+			ghost.mode = GhostMode::Eaten;
+			score_ += g_score_for_ghost;
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+			// Destroy laser beam at first hit.
+			return true;
+		}
+	}
+
+	const int32_t x_center = Fixed16RoundToInt(laser_beam.position[0]);
+	const int32_t y_center = Fixed16RoundToInt(laser_beam.position[1]);
+
+	for(int32_t dy = -3; dy <= 3; ++dy)
+	{
+		const int32_t y = y_center + dy;
+		if(y < 0 || y >= int32_t(c_field_height))
+		{
+			continue;
+		}
+
+		for(int32_t dx = -3; dx <= 3; ++dx)
+		{
+			const int32_t x = x_center + dx;
+			if(x < 0 || x >= int32_t(c_field_width))
+			{
+				continue;
+			}
+
+			const uint32_t address = uint32_t(x) + uint32_t(y) * c_field_width;
+
+			if(!(g_game_field[address] == g_wall_symbol || IsBlockInsideGhostsRoom({x, y})))
+			{
+				continue;
+			}
+
+			const fixed16vec2_t borders_min =
+			{
+				IntToFixed16(x) - beam_half_size,
+				IntToFixed16(y) - beam_half_size,
+			};
+			const fixed16vec2_t borders_max =
+			{
+				IntToFixed16(x + 1) + beam_half_size,
+				IntToFixed16(y + 1) + beam_half_size,
+			};
+
+			if( laser_beam.position[0] >= borders_min[0] && laser_beam.position[0] <= borders_max[0] &&
+				laser_beam.position[1] >= borders_min[1] && laser_beam.position[1] <= borders_max[1])
+			{
+				sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+				// Destroy laser beam at first hit.
+				return true;
+			}
+		}
+	}
+
+	return
+		laser_beam.position[0] <= g_fixed16_one || laser_beam.position[0] >= IntToFixed16(int32_t(c_field_width  - 1)) ||
+		laser_beam.position[1] <= g_fixed16_one || laser_beam.position[1] >= IntToFixed16(int32_t(c_field_height - 1));
+}
+
 void GamePacman::PickUpBonus(Bonus& bonus)
 {
 	if(bonus == Bonus::None)
@@ -1303,7 +1485,7 @@ void GamePacman::PickUpBonus(Bonus& bonus)
 	}
 	if(bonus == Bonus::SnakeFoodMedium)
 	{
-		// TODO - process this bonus specially.
+		pacman_.turret_shots_left = 3;
 		score_ += g_score_for_snake_bonus;
 		sound_player_.PlaySound(SoundId::TetrisFigureStep);
 	}
@@ -1457,8 +1639,6 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 			block[1] = y;
 		}
 
-		const fixed16_t character_half_size = g_fixed16_one + 1;
-
 		bool can_place = true;
 		for(const TetrisPieceBlock& block : bocks_shifted)
 		{
@@ -1484,19 +1664,19 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 			}
 
 			// Do not place block atop of characters.
-			if(pacman_.position[0] >= IntToFixed16(block[0]) - character_half_size &&
-			   pacman_.position[0] <= IntToFixed16(block[0] + 1) + character_half_size &&
-			   pacman_.position[1] >= IntToFixed16(block[1]) - character_half_size &&
-			   pacman_.position[1] <= IntToFixed16(block[1] + 1) + character_half_size)
+			if(pacman_.position[0] >= IntToFixed16(block[0]) - g_character_half_size &&
+			   pacman_.position[0] <= IntToFixed16(block[0] + 1) + g_character_half_size &&
+			   pacman_.position[1] >= IntToFixed16(block[1]) - g_character_half_size &&
+			   pacman_.position[1] <= IntToFixed16(block[1] + 1) + g_character_half_size)
 			{
 				can_place = false;
 			}
 			for(const Ghost& ghost : ghosts_)
 			{
-				if(ghost.position[0] >= IntToFixed16(block[0]) - character_half_size &&
-				   ghost.position[0] <= IntToFixed16(block[0] + 1) + character_half_size &&
-				   ghost.position[1] >= IntToFixed16(block[1]) - character_half_size &&
-				   ghost.position[1] <= IntToFixed16(block[1] + 1) + character_half_size)
+				if(ghost.position[0] >= IntToFixed16(block[0]) - g_character_half_size &&
+				   ghost.position[0] <= IntToFixed16(block[0] + 1) + g_character_half_size &&
+				   ghost.position[1] >= IntToFixed16(block[1]) - g_character_half_size &&
+				   ghost.position[1] <= IntToFixed16(block[1] + 1) + g_character_half_size)
 				{
 					can_place = false;
 				}

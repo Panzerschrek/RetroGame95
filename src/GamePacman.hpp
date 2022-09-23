@@ -49,6 +49,7 @@ private:
 		std::optional<ArkanoidBallModifier> arkanoid_ball;
 
 		uint32_t turret_shots_left = 0;
+		uint32_t next_shoot_tick = 0;
 	};
 
 	enum class GhostType
@@ -75,6 +76,13 @@ private:
 		fixed16vec2_t target_position{};
 		GhostMode mode = GhostMode::Chase;
 		uint32_t frightened_mode_end_tick = 0;
+	};
+
+	struct LaserBeam
+	{
+		// Center position.
+		fixed16vec2_t position{};
+		GridDirection direction = GridDirection::XPlus;
 	};
 
 	enum class Bonus
@@ -107,6 +115,7 @@ private:
 
 	void NextLevel();
 	void SpawnPacmanAndGhosts();
+	void ProcessShootRequest();
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(
@@ -115,6 +124,9 @@ private:
 		const std::array<int32_t, 2>& ghost_position);
 	void ProcessPacmanGhostsTouch();
 	void TryTeleportCharacters();
+
+	// Returns true if need to kill it.
+	bool UpdateLaserBeam(LaserBeam& laser_beam);
 
 	void PickUpBonus(Bonus& bonus);
 
@@ -139,6 +151,7 @@ private:
 	uint32_t spawn_animation_end_tick_ = 0;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
+	std::vector<LaserBeam> laser_beams_;
 	uint32_t bonuses_left_ = 0;
 	uint32_t bonuses_eaten_ = 0;
 	uint32_t level_ = 0;
