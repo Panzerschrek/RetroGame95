@@ -1435,11 +1435,22 @@ void GamePacman::TrySpawnSnakeBonus()
 
 		if(can_place)
 		{
-			bonuses_[address] = Bonus(uint32_t(Bonus::SnakeFoodSmall) + rand_.Next() % 4);
-			if(bonuses_[address] == Bonus::SnakeExtraLife)
+			const uint32_t r = rand_.Next() % 10;
+			if(r < 4)
 			{
-				// Reduce probability of extra life spawn.
-				bonuses_[address] = Bonus(uint32_t(Bonus::SnakeFoodSmall) + rand_.Next() % 4);
+				bonuses_[address] = Bonus::SnakeFoodSmall;
+			}
+			else if(r < 7)
+			{
+				bonuses_[address] = Bonus::SnakeFoodMedium;
+			}
+			else if(r < 9)
+			{
+				bonuses_[address] = Bonus::SnakeFoodLarge;
+			}
+			else
+			{
+				bonuses_[address] = Bonus::SnakeExtraLife;
 			}
 
 			++bonuses_left_;
