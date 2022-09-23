@@ -1399,7 +1399,7 @@ void GamePacman::EnterFrightenedMode()
 
 void GamePacman::TryPlaceRandomTetrisPiece()
 {
-	if(rand_.Next() % 32 != 3)
+	if(rand_.Next() % 48 != 17)
 	{
 		return;
 	}
@@ -1518,7 +1518,7 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 
 void GamePacman::TrySpawnSnakeBonus()
 {
-	if(rand_.Next() % 32 != 3)
+	if(rand_.Next() % 24 != 3)
 	{
 		return;
 	}
@@ -1550,7 +1550,7 @@ void GamePacman::TrySpawnSnakeBonus()
 
 		if(can_place)
 		{
-			const uint32_t r = rand_.Next() % 10;
+			const uint32_t r = rand_.Next() % 11;
 			if(r < 4)
 			{
 				bonuses_[address] = Bonus::SnakeFoodSmall;
