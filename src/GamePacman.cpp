@@ -711,8 +711,7 @@ void GamePacman::MovePacman()
 			}
 			if(bonus == Bonus::SnakeExtraLife)
 			{
-				// TODO - process this bonus specially.
-				score_ += g_score_for_food;
+				lifes_ = std::min(lifes_ + 1, g_max_lifes);
 				sound_player_.PlaySound(SoundId::TetrisFigureStep);
 			}
 			bonus = Bonus::None;
