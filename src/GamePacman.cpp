@@ -69,6 +69,7 @@ const uint32_t g_max_lifes = 8;
 
 const uint32_t g_score_for_food = 10;
 const uint32_t g_score_for_deadly_bonus = 30;
+const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
 } // namespace
@@ -693,20 +694,23 @@ void GamePacman::MovePacman()
 			}
 			if(bonus == Bonus::SnakeFoodSmall)
 			{
-				// TODO - process this bonus specially.
-				score_ += g_score_for_food;
-				sound_player_.PlaySound(SoundId::TetrisFigureStep);
+				for(Ghost& ghost : ghosts_)
+				{
+					ReverseGhostMovement(ghost);
+				}
+				score_ += g_score_for_snake_bonus;
+				sound_player_.PlaySound(SoundId::SnakeBonusEat);
 			}
 			if(bonus == Bonus::SnakeFoodMedium)
 			{
 				// TODO - process this bonus specially.
-				score_ += g_score_for_food;
+				score_ += g_score_for_snake_bonus;
 				sound_player_.PlaySound(SoundId::TetrisFigureStep);
 			}
 			if(bonus == Bonus::SnakeFoodLarge)
 			{
 				// TODO - process this bonus specially.
-				score_ += g_score_for_food;
+				score_ += g_score_for_snake_bonus;
 				sound_player_.PlaySound(SoundId::TetrisFigureStep);
 			}
 			if(bonus == Bonus::SnakeExtraLife)
