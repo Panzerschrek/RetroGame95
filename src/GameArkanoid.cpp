@@ -360,7 +360,18 @@ GameInterfacePtr GameArkanoid::AskForNextGameTransition()
 
 void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	(void)keyboard_state;
+	const fixed16_t keyboard_move_sensetivity = g_fixed16_one * 3 / 2; // TODO - make this configurable.
+
+	if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
+	{
+		ship_->position[0] -= keyboard_move_sensetivity;
+		CorrectShipPosition();
+	}
+	if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
+	{
+		ship_->position[0] += keyboard_move_sensetivity;
+		CorrectShipPosition();
+	}
 
 	for(const SDL_Event& event : events)
 	{
@@ -368,7 +379,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		{
 			if (ship_ != std::nullopt)
 			{
-				const fixed16_t sensetivity =g_fixed16_one / 3; // TODO - make this configurable.
+				const fixed16_t sensetivity = g_fixed16_one / 3; // TODO - make this configurable.
 				ship_->position[0] += event.motion.xrel * sensetivity;
 				CorrectShipPosition();
 			}
