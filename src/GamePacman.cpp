@@ -61,6 +61,8 @@ const uint32_t g_scatter_duration_first = 7 * GameInterface::c_update_frequency 
 const uint32_t g_scatter_duration_second = 5 * GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_chase_duration = 20 * GameInterface::c_update_frequency * 3 / 2;
 
+const uint32_t g_arkanoid_ball_mode_duration = 15 * GameInterface::c_update_frequency;
+
 const uint32_t g_bonuses_eaten_for_pinky_release = 0;
 const uint32_t g_bonuses_eaten_for_inky_release = g_bonuses_eaten_for_pinky_release + 30;
 const uint32_t g_bonuses_eaten_for_clyde_release = g_bonuses_eaten_for_inky_release + 45;
@@ -409,7 +411,17 @@ GameInterfacePtr GamePacman::AskForNextGameTransition()
 
 void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 {
-	if(pacman_.dead_animation_end_tick != std::nullopt)
+	if(pacman_.arkanoid_ball != std::nullopt)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_ball);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+	else if(pacman_.dead_animation_end_tick != std::nullopt)
 	{
 		const SpriteBMP sprites[]
 		{
@@ -613,6 +625,7 @@ void GamePacman::SpawnPacmanAndGhosts()
 	pacman_.next_direction = pacman_.direction;
 	pacman_.dead_animation_end_tick = std::nullopt;
 	pacman_.turret_shots_left = 0;
+	pacman_.arkanoid_ball = std::nullopt;
 
 	bonuses_eaten_ = 0;
 
@@ -650,6 +663,87 @@ void GamePacman::MovePacman()
 		return;
 	}
 
+	if(pacman_.arkanoid_ball != std::nullopt)
+	{
+		pacman_.position[0] += pacman_.arkanoid_ball->velocity[0];
+		pacman_.position[1] += pacman_.arkanoid_ball->velocity[1];
+
+		const int32_t x_center = Fixed16RoundToInt(pacman_.position[0]);
+		const int32_t y_center = Fixed16RoundToInt(pacman_.position[1]);
+
+		// Make ball very small in order to compensate wrong walls size.
+		const fixed16_t ball_half_size = g_fixed16_one / 32;
+
+		for(int32_t dy = -3; dy <= 3; ++dy)
+		{
+			const int32_t y = y_center + dy;
+			if(y < 0 || y >= int32_t(c_field_height))
+			{
+				continue;
+			}
+			const fixed16_t dist_dy = pacman_.position[1] - (IntToFixed16(y) + g_fixed16_one / 2);
+
+			for(int32_t dx = -3; dx <= 3; ++dx)
+			{
+				const int32_t x = x_center + dx;
+				if(x < 0 || x >= int32_t(c_field_width))
+				{
+					continue;
+				}
+
+				const uint32_t address = uint32_t(x) + uint32_t(y) * c_field_width;
+
+				const fixed16_t dist_dx = pacman_.position[0] - (IntToFixed16(x) + g_fixed16_one / 2);
+				if(Fixed16VecSquareLen({dist_dx, dist_dy}) <= g_fixed16_one / 4)
+				{
+					PickUpBonus(bonuses_[address]);
+				}
+
+				if(!(g_game_field[address] == g_wall_symbol || IsBlockInsideGhostsRoom({x, y})))
+				{
+					continue;
+				}
+
+				if(MakeCollisionBetweenObjectAndBox(
+					{
+						IntToFixed16(x),
+						IntToFixed16(y),
+					},
+					{
+						IntToFixed16(x + 1),
+						IntToFixed16(y + 1),
+					},
+					{ball_half_size, ball_half_size},
+					pacman_.position,
+					pacman_.arkanoid_ball->velocity))
+				{
+					// Rotate slightly velocity vector.
+					const float random_angle = (float(rand_.Next()) / float(Rand::c_max_rand_plus_one_) - 0.5f) * 0.5f;
+					const fixed16_t s = fixed16_t(std::sin(random_angle) * float(g_fixed16_one));
+					const fixed16_t c = fixed16_t(std::cos(random_angle) * float(g_fixed16_one));
+
+					pacman_.arkanoid_ball->velocity =
+					{
+						Fixed16Mul(pacman_.arkanoid_ball->velocity[0], c) - Fixed16Mul(pacman_.arkanoid_ball->velocity[1], s),
+						Fixed16Mul(pacman_.arkanoid_ball->velocity[0], s) + Fixed16Mul(pacman_.arkanoid_ball->velocity[1], c),
+					};
+
+					sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+				}
+			}
+		}
+
+		if(tick_ >= pacman_.arkanoid_ball->end_tick)
+		{
+			pacman_.arkanoid_ball = std::nullopt;
+			pacman_.position[0] = IntToFixed16(Fixed16FloorToInt(pacman_.position[0])) + g_fixed16_one / 2;
+			pacman_.position[1] = IntToFixed16(Fixed16FloorToInt(pacman_.position[1])) + g_fixed16_one / 2;
+			pacman_.target_position = pacman_.position;
+		}
+
+		return;
+	}
+
 	fixed16vec2_t new_position = pacman_.position;
 	switch(pacman_.direction)
 	{
@@ -678,53 +772,7 @@ void GamePacman::MovePacman()
 
 		const auto block_x = uint32_t(Fixed16FloorToInt(pacman_.target_position[0]));
 		const auto block_y = uint32_t(Fixed16FloorToInt(pacman_.target_position[1]));
-		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
-		if(bonus != Bonus::None)
-		{
-			if(bonus == Bonus::Food || (bonus >= Bonus::TetrisBlock0 && bonus <= Bonus::TetrisBlock6))
-			{
-				score_ += g_score_for_food;
-				sound_player_.PlaySound(SoundId::TetrisFigureStep);
-			}
-			if(bonus == Bonus::Deadly)
-			{
-				score_ += g_score_for_deadly_bonus;
-				EnterFrightenedMode();
-				sound_player_.PlaySound(SoundId::SnakeBonusEat);
-			}
-			if(bonus == Bonus::SnakeFoodSmall)
-			{
-				for(Ghost& ghost : ghosts_)
-				{
-					ReverseGhostMovement(ghost);
-				}
-				score_ += g_score_for_snake_bonus;
-				sound_player_.PlaySound(SoundId::SnakeBonusEat);
-			}
-			if(bonus == Bonus::SnakeFoodMedium)
-			{
-				// TODO - process this bonus specially.
-				score_ += g_score_for_snake_bonus;
-				sound_player_.PlaySound(SoundId::TetrisFigureStep);
-			}
-			if(bonus == Bonus::SnakeFoodLarge)
-			{
-				// TODO - process this bonus specially.
-				score_ += g_score_for_snake_bonus;
-				sound_player_.PlaySound(SoundId::TetrisFigureStep);
-			}
-			if(bonus == Bonus::SnakeExtraLife)
-			{
-				lifes_ = std::min(lifes_ + 1, g_max_lifes);
-				sound_player_.PlaySound(SoundId::TetrisFigureStep);
-			}
-			bonus = Bonus::None;
-			--bonuses_left_;
-			++bonuses_eaten_;
-
-			TryPlaceRandomTetrisPiece();
-			TrySpawnSnakeBonus();
-		}
+		PickUpBonus(bonuses_[block_x + block_y * c_field_width]);
 
 		pacman_.position = pacman_.target_position;
 
@@ -1162,10 +1210,11 @@ void GamePacman::ProcessPacmanGhostsTouch()
 		const fixed16_t square_dist = Fixed16VecSquareLen(vec_from_ghost_to_pacman);
 		if(square_dist < touch_square_dist)
 		{
-			if(ghost.mode == GhostMode::Frightened)
+			if(ghost.mode == GhostMode::Frightened || pacman_.arkanoid_ball != std::nullopt)
 			{
 				ghost.mode = GhostMode::Eaten;
 				score_ += g_score_for_ghost;
+				sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 			}
 			else
 			{
@@ -1222,6 +1271,67 @@ void GamePacman::TryTeleportCharacters()
 			ghost.target_position[1] -= teleport_distance;
 		}
 	}
+}
+
+void GamePacman::PickUpBonus(Bonus& bonus)
+{
+	if(bonus == Bonus::None)
+	{
+		return;
+	}
+
+	if(bonus == Bonus::Food || (bonus >= Bonus::TetrisBlock0 && bonus <= Bonus::TetrisBlock6))
+	{
+		score_ += g_score_for_food;
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+	if(bonus == Bonus::Deadly)
+	{
+		score_ += g_score_for_deadly_bonus;
+		EnterFrightenedMode();
+		sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	}
+	if(bonus == Bonus::SnakeFoodSmall)
+	{
+		for(Ghost& ghost : ghosts_)
+		{
+			ReverseGhostMovement(ghost);
+		}
+		score_ += g_score_for_snake_bonus;
+		sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	}
+	if(bonus == Bonus::SnakeFoodMedium)
+	{
+		// TODO - process this bonus specially.
+		score_ += g_score_for_snake_bonus;
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+	if(bonus == Bonus::SnakeFoodLarge)
+	{
+		ArkanoidBallModifier arkanod_ball;
+		arkanod_ball.end_tick = tick_ + g_arkanoid_ball_mode_duration;
+
+		const float random_angle = rand_.RandomAngle();
+		const fixed16_t speed = g_fixed16_one / 10;
+		arkanod_ball.velocity[0] = fixed16_t(std::cos(random_angle) * float(speed));
+		arkanod_ball.velocity[1] = fixed16_t(std::sin(random_angle) * float(speed));
+
+		pacman_.arkanoid_ball = arkanod_ball;
+		score_ += g_score_for_snake_bonus;
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+	if(bonus == Bonus::SnakeExtraLife)
+	{
+		lifes_ = std::min(lifes_ + 1, g_max_lifes);
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+
+	bonus = Bonus::None;
+	--bonuses_left_;
+	++bonuses_eaten_;
+
+	TryPlaceRandomTetrisPiece();
+	TrySpawnSnakeBonus();
 }
 
 void GamePacman::UpdateGhostsMode()

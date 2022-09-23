@@ -28,6 +28,12 @@ private:
 		YMinus,
 	};
 
+	struct ArkanoidBallModifier
+	{
+		fixed16vec2_t velocity{};
+		uint32_t end_tick = 0;
+	};
+
 	struct Pacman
 	{
 		fixed16vec2_t position{};
@@ -38,6 +44,9 @@ private:
 
 		// Non-empty if killed and dead animation is played.
 		std::optional<uint32_t> dead_animation_end_tick;
+
+		// Non-empty if is an arkanoid ball mode.
+		std::optional<ArkanoidBallModifier> arkanoid_ball;
 
 		uint32_t turret_shots_left = 0;
 	};
@@ -106,6 +115,8 @@ private:
 		const std::array<int32_t, 2>& ghost_position);
 	void ProcessPacmanGhostsTouch();
 	void TryTeleportCharacters();
+
+	void PickUpBonus(Bonus& bonus);
 
 	void UpdateGhostsMode();
 	void EnterFrightenedMode();
