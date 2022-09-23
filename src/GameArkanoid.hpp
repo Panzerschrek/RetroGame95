@@ -128,6 +128,7 @@ private:
 
 private:
 	void ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state);
+	void ProcessShootRequest();
 	void NextLevel();
 	void SpawnShip();
 

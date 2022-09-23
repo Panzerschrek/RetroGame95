@@ -373,39 +373,16 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 				CorrectShipPosition();
 			}
 		}
-		if(event.type == SDL_MOUSEBUTTONDOWN)
+		if(event.type == SDL_KEYDOWN &&
+			(event.key.keysym.scancode == SDL_SCANCODE_RCTRL ||
+			 event.key.keysym.scancode == SDL_SCANCODE_LCTRL ||
+			 event.key.keysym.scancode == SDL_SCANCODE_SPACE))
 		{
-			if(event.button.button == 1)
-			{
-				ReleaseStickyBalls();
-				if(ship_ != std::nullopt && ship_->state == ShipState::Sticky)
-				{
-					// Reset sticky state after first shot.
-					ship_->state = ShipState::Normal;
-				}
-
-				if(ship_ != std::nullopt && ship_->state == ShipState::Turret)
-				{
-					if(tick_ >= ship_->next_shoot_tick)
-					{
-						const fixed16_t x_delta =
-								IntToFixed16(int32_t(GetShipHalfWidthForState(ship_->state) - 5)) - g_fixed16_one / 2;
-
-						LaserBeam beam0;
-						beam0.position = ship_->position;
-						beam0.position[0] += x_delta;
-
-						LaserBeam beam1;
-						beam1.position = ship_->position;
-						beam1.position[0] -= x_delta;
-
-						laser_beams_.push_back(beam0);
-						laser_beams_.push_back(beam1);
-
-						ship_->next_shoot_tick = tick_ + g_min_shoot_interval;
-					}
-				}
-			}
+			ProcessShootRequest();
+		}
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1)
+		{
+			ProcessShootRequest();
 		}
 	}
 
@@ -532,6 +509,43 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		else
 		{
 			next_game_ = std::make_unique<GameTetris>(sound_player_);
+		}
+	}
+}
+
+void GameArkanoid::ProcessShootRequest()
+{
+	if(ship_ == std::nullopt)
+	{
+		return;
+	}
+
+	ReleaseStickyBalls();
+	if(ship_->state == ShipState::Sticky)
+	{
+		// Reset sticky state after first shot.
+		ship_->state = ShipState::Normal;
+	}
+
+	if(ship_->state == ShipState::Turret)
+	{
+		if(tick_ >= ship_->next_shoot_tick)
+		{
+			const fixed16_t x_delta =
+					IntToFixed16(int32_t(GetShipHalfWidthForState(ship_->state) - 5)) - g_fixed16_one / 2;
+
+			LaserBeam beam0;
+			beam0.position = ship_->position;
+			beam0.position[0] += x_delta;
+
+			LaserBeam beam1;
+			beam1.position = ship_->position;
+			beam1.position[0] -= x_delta;
+
+			laser_beams_.push_back(beam0);
+			laser_beams_.push_back(beam1);
+
+			ship_->next_shoot_tick = tick_ + g_min_shoot_interval;
 		}
 	}
 }

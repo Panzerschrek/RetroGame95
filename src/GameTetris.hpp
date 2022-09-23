@@ -59,6 +59,7 @@ private:
 private:
 	void OnNextLeveltriggered();
 	void NextLevel();
+	void ProcessShootRequest();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
 	void MovePieceDown();
 	void UpdateScore(uint32_t lines_removed);

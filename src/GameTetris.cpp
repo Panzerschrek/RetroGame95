@@ -85,37 +85,16 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
-		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1 &&
-			tick_ <= laser_ship_end_tick_ &&
-			active_piece_ != std::nullopt && tick_ >= next_shoot_tick_)
+		if(event.type == SDL_KEYDOWN &&
+			(event.key.keysym.scancode == SDL_SCANCODE_RCTRL ||
+			 event.key.keysym.scancode == SDL_SCANCODE_LCTRL ||
+			 event.key.keysym.scancode == SDL_SCANCODE_SPACE))
 		{
-			// TODO - use also CTRL/Space as shoot buttons.
-
-			const fixed16_t x_delta = g_fixed16_one;
-
-			int32_t x_center = 0;
-			for(const auto& piece_block : active_piece_->blocks)
-			{
-				x_center += (IntToFixed16(piece_block[0]) + g_fixed16_one / 2) / 4;
-			}
-
-			LaserBeam beam0;
-			beam0.position[0] = x_center + x_delta;
-			beam0.position[1] = g_fixed16_one;
-			if(beam0.position[0] >= 0 && beam0.position[0] <= IntToFixed16(int32_t(c_field_width)))
-			{
-				laser_beams_.push_back(beam0);
-			}
-
-			LaserBeam beam1;
-			beam1.position[0] = x_center - x_delta;
-			beam1.position[1] = g_fixed16_one;
-			if(beam1.position[0] >= 0 && beam1.position[0] <= IntToFixed16(int32_t(c_field_width)))
-			{
-				laser_beams_.push_back(beam1);
-			}
-
-			next_shoot_tick_ = tick_ + g_min_shoot_interval;
+			ProcessShootRequest();
+		}
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1)
+		{
+			ProcessShootRequest();
 		}
 	}
 
@@ -431,6 +410,41 @@ void GameTetris::NextLevel()
 
 	GenerateNextPieceType();
 	active_piece_ = SpawnActivePiece();
+}
+
+void GameTetris::ProcessShootRequest()
+{
+	if(!
+		(active_piece_ != std::nullopt && tick_ <= laser_ship_end_tick_ && tick_ >= next_shoot_tick_))
+	{
+		return;
+	}
+
+	const fixed16_t x_delta = g_fixed16_one;
+
+	int32_t x_center = 0;
+	for(const auto& piece_block : active_piece_->blocks)
+	{
+		x_center += (IntToFixed16(piece_block[0]) + g_fixed16_one / 2) / 4;
+	}
+
+	LaserBeam beam0;
+	beam0.position[0] = x_center + x_delta;
+	beam0.position[1] = g_fixed16_one;
+	if(beam0.position[0] >= 0 && beam0.position[0] <= IntToFixed16(int32_t(c_field_width)))
+	{
+		laser_beams_.push_back(beam0);
+	}
+
+	LaserBeam beam1;
+	beam1.position[0] = x_center - x_delta;
+	beam1.position[1] = g_fixed16_one;
+	if(beam1.position[0] >= 0 && beam1.position[0] <= IntToFixed16(int32_t(c_field_width)))
+	{
+		laser_beams_.push_back(beam1);
+	}
+
+	next_shoot_tick_ = tick_ + g_min_shoot_interval;
 }
 
 void GameTetris::ManipulatePiece(const std::vector<SDL_Event>& events)
