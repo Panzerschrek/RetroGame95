@@ -28,6 +28,12 @@ private:
 		YMinus,
 	};
 
+	struct ArkanoidBallModifier
+	{
+		fixed16vec2_t velocity{};
+		uint32_t end_tick = 0;
+	};
+
 	struct Pacman
 	{
 		fixed16vec2_t position{};
@@ -38,6 +44,12 @@ private:
 
 		// Non-empty if killed and dead animation is played.
 		std::optional<uint32_t> dead_animation_end_tick;
+
+		// Non-empty if is an arkanoid ball mode.
+		std::optional<ArkanoidBallModifier> arkanoid_ball;
+
+		uint32_t turret_shots_left = 0;
+		uint32_t next_shoot_tick = 0;
 	};
 
 	enum class GhostType
@@ -66,11 +78,29 @@ private:
 		uint32_t frightened_mode_end_tick = 0;
 	};
 
+	struct LaserBeam
+	{
+		// Center position.
+		fixed16vec2_t position{};
+		GridDirection direction = GridDirection::XPlus;
+	};
+
 	enum class Bonus
 	{
 		None,
 		Food,
 		Deadly,
+		TetrisBlock0,
+		TetrisBlock1,
+		TetrisBlock2,
+		TetrisBlock3,
+		TetrisBlock4,
+		TetrisBlock5,
+		TetrisBlock6,
+		SnakeFoodSmall,
+		SnakeFoodMedium,
+		SnakeFoodLarge,
+		SnakeExtraLife,
 	};
 
 	static const constexpr uint32_t c_field_width = 33;
@@ -85,6 +115,7 @@ private:
 
 	void NextLevel();
 	void SpawnPacmanAndGhosts();
+	void ProcessShootRequest();
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(
@@ -94,8 +125,16 @@ private:
 	void ProcessPacmanGhostsTouch();
 	void TryTeleportCharacters();
 
+	// Returns true if need to kill it.
+	bool UpdateLaserBeam(LaserBeam& laser_beam);
+
+	void PickUpBonus(Bonus& bonus);
+
 	void UpdateGhostsMode();
 	void EnterFrightenedMode();
+
+	void TryPlaceRandomTetrisPiece();
+	void TrySpawnSnakeBonus();
 
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
@@ -112,6 +151,7 @@ private:
 	uint32_t spawn_animation_end_tick_ = 0;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
+	std::vector<LaserBeam> laser_beams_;
 	uint32_t bonuses_left_ = 0;
 	uint32_t bonuses_eaten_ = 0;
 	uint32_t level_ = 0;

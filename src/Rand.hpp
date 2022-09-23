@@ -12,6 +12,8 @@ public:
 
 	RandResultType Next();
 
+	float RandomAngle();
+
 private:
 	// Simple and fast generator.
 	// Produces good result for bits 0-31.

@@ -1076,7 +1076,7 @@ void GameSnake::TrySpawnArkanoidBall()
 
 	ball.bounces_left = 7;
 
-	const float random_angle = float(rand_.Next()) * (2.0f * 3.1415926535f / float(Rand::c_max_rand_plus_one_));
+	const float random_angle = rand_.RandomAngle();
 	ball.velocity[0] = fixed16_t(std::cos(random_angle) * float(speed));
 	ball.velocity[1] = fixed16_t(std::sin(random_angle) * float(speed));
 

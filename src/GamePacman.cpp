@@ -1,6 +1,7 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "GamesCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
 #include <cassert>
@@ -51,14 +52,20 @@ const fixed16_t g_pacman_move_speed = g_base_move_speed * 80 / 100;
 const fixed16_t g_ghost_move_speed = g_base_move_speed * 75 / 100;
 const fixed16_t g_ghost_frightened_move_speed = g_base_move_speed * 50 / 100;
 const fixed16_t g_ghost_eaten_move_speed = g_base_move_speed * 2;
+const fixed16_t g_laser_beam_speed = g_base_move_speed * 400 / 100;
+
+const fixed16_t g_character_half_size = g_fixed16_one + 1;
 
 const uint32_t g_frightened_mode_duration = GameInterface::c_update_frequency * 10;
 const uint32_t g_death_animation_duration = GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_spawn_animation_duration = GameInterface::c_update_frequency * 3;
+const uint32_t g_min_shoot_interval = 45;
 
 const uint32_t g_scatter_duration_first = 7 * GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_scatter_duration_second = 5 * GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_chase_duration = 20 * GameInterface::c_update_frequency * 3 / 2;
+
+const uint32_t g_arkanoid_ball_mode_duration = 15 * GameInterface::c_update_frequency;
 
 const uint32_t g_bonuses_eaten_for_pinky_release = 0;
 const uint32_t g_bonuses_eaten_for_inky_release = g_bonuses_eaten_for_pinky_release + 30;
@@ -68,6 +75,7 @@ const uint32_t g_max_lifes = 8;
 
 const uint32_t g_score_for_food = 10;
 const uint32_t g_score_for_deadly_bonus = 30;
+const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
 } // namespace
@@ -109,6 +117,16 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 			{
 				pacman_.next_direction = GridDirection::YMinus;
 			}
+			if(event.key.keysym.scancode == SDL_SCANCODE_RCTRL ||
+				event.key.keysym.scancode == SDL_SCANCODE_LCTRL ||
+				event.key.keysym.scancode == SDL_SCANCODE_SPACE)
+			{
+				ProcessShootRequest();
+			}
+		}
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1)
+		{
+			ProcessShootRequest();
 		}
 	}
 
@@ -122,6 +140,23 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	{
 		MoveGhost(ghost);
 	}
+
+	for(size_t b = 0; b < laser_beams_.size();)
+	{
+		if(UpdateLaserBeam(laser_beams_[b]))
+		{
+			// This laser beam is dead.
+			if(b + 1 < laser_beams_.size())
+			{
+				laser_beams_[b] = laser_beams_.back();
+			}
+			laser_beams_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for laser beams.
 
 	ProcessPacmanGhostsTouch();
 	TryTeleportCharacters();
@@ -317,24 +352,39 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		} // for x
 	} // for y
 
+	const SpriteBMP bonus_sprites[]
+	{
+		Sprites::pacman_food,
+		Sprites::pacman_food,
+		Sprites::pacman_bonus_deadly,
+		Sprites::tetris_block_small_4,
+		Sprites::tetris_block_small_7,
+		Sprites::tetris_block_small_5,
+		Sprites::tetris_block_small_1,
+		Sprites::tetris_block_small_2,
+		Sprites::tetris_block_small_6,
+		Sprites::tetris_block_small_3,
+		Sprites::snake_food_small,
+		Sprites::snake_food_medium,
+		Sprites::snake_food_large,
+		Sprites::snake_extra_life,
+	};
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
 		const Bonus bonus = bonuses_[x + y * c_field_width];
-		const uint32_t block_x = x * c_block_size;
-		const uint32_t block_y = y * c_block_size;
-
-		switch(bonus)
+		if(bonus == Bonus::None)
 		{
-		case Bonus::None:
-			break;
-		case Bonus::Food:
-			DrawSprite(frame_buffer, Sprites::pacman_food, block_x + 3, block_y + 3);
-			break;
-		case Bonus::Deadly:
-			DrawSprite(frame_buffer, Sprites::pacman_bonus_deadly, block_x, block_y);
-			break;
+			continue;
 		}
+
+		const SpriteBMP sprite = bonus_sprites[uint32_t(bonus)];
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			x * c_block_size + c_block_size / 2 - sprite.GetWidth () / 2,
+			y * c_block_size + c_block_size / 2 - sprite.GetHeight() / 2);
 	}
 
 	for(const Ghost& ghost : ghosts_)
@@ -352,6 +402,33 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
 		{
 			DrawGhost(frame_buffer, ghost);
+		}
+	}
+
+	for(const LaserBeam& laser_beam : laser_beams_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_laser_beam);
+		const uint32_t x = uint32_t(Fixed16FloorToInt(laser_beam.position[0] * int32_t(c_block_size)));
+		const uint32_t y = uint32_t(Fixed16FloorToInt(laser_beam.position[1] * int32_t(c_block_size)));
+		const uint32_t half_height = sprite.GetHeight() / 2;
+		switch(laser_beam.direction)
+		{
+		case GridDirection::XMinus:
+			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y - 2);
+			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y + 1);
+			break;
+		case GridDirection::XPlus:
+			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y - 2);
+			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y + 1);
+			break;
+		case GridDirection::YMinus:
+			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x - 2, y - half_height);
+			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x + 1, y - half_height);
+			break;
+		case GridDirection::YPlus:
+			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x - 2, y - half_height);
+			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x + 1, y - half_height);
+			break;
 		}
 	}
 
@@ -393,7 +470,17 @@ GameInterfacePtr GamePacman::AskForNextGameTransition()
 
 void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 {
-	if(pacman_.dead_animation_end_tick != std::nullopt)
+	if(pacman_.arkanoid_ball != std::nullopt)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_ball);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+	else if(pacman_.dead_animation_end_tick != std::nullopt)
 	{
 		const SpriteBMP sprites[]
 		{
@@ -464,21 +551,29 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 			uint32_t(Fixed16FloorToInt(pacman_.position[0] * int32_t(c_block_size))) - current_sprite.GetWidth() / 2;
 		const uint32_t pacman_y =
 			uint32_t(Fixed16FloorToInt(pacman_.position[1] * int32_t(c_block_size))) - current_sprite.GetHeight() / 2;
+
+		auto func = DrawSpriteWithAlpha;
 		switch(pacman_.direction)
 		{
 		case GridDirection::XMinus:
-			DrawSpriteWithAlphaRotate180(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlphaRotate180;
 			break;
 		case GridDirection::XPlus:
-			DrawSpriteWithAlpha         (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlpha;
 			break;
 		case GridDirection::YMinus:
-			DrawSpriteWithAlphaRotate270(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlphaRotate270;
 			break;
 		case GridDirection::YPlus:
-			DrawSpriteWithAlphaRotate90 (frame_buffer, current_sprite, 0, pacman_x, pacman_y);
+			func = DrawSpriteWithAlphaRotate90;
 			break;
 		}
+
+		if(pacman_.turret_shots_left > 0)
+		{
+			func(frame_buffer, Sprites::pacman_turret, 0, pacman_x, pacman_y);
+		}
+		func(frame_buffer, current_sprite, 0, pacman_x, pacman_y);
 	}
 }
 
@@ -588,8 +683,13 @@ void GamePacman::SpawnPacmanAndGhosts()
 	pacman_.direction = GridDirection::YPlus;
 	pacman_.next_direction = pacman_.direction;
 	pacman_.dead_animation_end_tick = std::nullopt;
+	pacman_.turret_shots_left = 0;
+	pacman_.next_shoot_tick = 0;
+	pacman_.arkanoid_ball = std::nullopt;
 
 	bonuses_eaten_ = 0;
+
+	laser_beams_.clear();
 
 	current_ghosts_mode_ = GhostMode::Scatter;
 	ghosts_mode_switches_left_ = 4;
@@ -618,10 +718,112 @@ void GamePacman::SpawnPacmanAndGhosts()
 	spawn_animation_end_tick_ = tick_ + g_spawn_animation_duration;
 }
 
+void GamePacman::ProcessShootRequest()
+{
+	if(pacman_.turret_shots_left == 0)
+	{
+		return;
+	}
+	if(tick_ < pacman_.next_shoot_tick)
+	{
+		return;
+	}
+
+	--pacman_.turret_shots_left;
+	pacman_.next_shoot_tick = tick_ + g_min_shoot_interval;
+
+	LaserBeam beam;
+	beam.position = pacman_.position;
+	beam.direction = pacman_.direction;
+
+	laser_beams_.push_back(beam);
+}
+
 void GamePacman::MovePacman()
 {
 	if(pacman_.dead_animation_end_tick != std::nullopt || tick_ < spawn_animation_end_tick_)
 	{
+		return;
+	}
+
+	if(pacman_.arkanoid_ball != std::nullopt)
+	{
+		pacman_.position[0] += pacman_.arkanoid_ball->velocity[0];
+		pacman_.position[1] += pacman_.arkanoid_ball->velocity[1];
+
+		const int32_t x_center = Fixed16RoundToInt(pacman_.position[0]);
+		const int32_t y_center = Fixed16RoundToInt(pacman_.position[1]);
+
+		// Make ball very small in order to compensate wrong walls size.
+		const fixed16_t ball_half_size = g_fixed16_one / 32;
+
+		for(int32_t dy = -3; dy <= 3; ++dy)
+		{
+			const int32_t y = y_center + dy;
+			if(y < 0 || y >= int32_t(c_field_height))
+			{
+				continue;
+			}
+			const fixed16_t dist_dy = pacman_.position[1] - (IntToFixed16(y) + g_fixed16_one / 2);
+
+			for(int32_t dx = -3; dx <= 3; ++dx)
+			{
+				const int32_t x = x_center + dx;
+				if(x < 0 || x >= int32_t(c_field_width))
+				{
+					continue;
+				}
+
+				const uint32_t address = uint32_t(x) + uint32_t(y) * c_field_width;
+
+				const fixed16_t dist_dx = pacman_.position[0] - (IntToFixed16(x) + g_fixed16_one / 2);
+				if(Fixed16VecSquareLen({dist_dx, dist_dy}) <= g_fixed16_one / 4)
+				{
+					PickUpBonus(bonuses_[address]);
+				}
+
+				if(!(g_game_field[address] == g_wall_symbol || IsBlockInsideGhostsRoom({x, y})))
+				{
+					continue;
+				}
+
+				if(MakeCollisionBetweenObjectAndBox(
+					{
+						IntToFixed16(x),
+						IntToFixed16(y),
+					},
+					{
+						IntToFixed16(x + 1),
+						IntToFixed16(y + 1),
+					},
+					{ball_half_size, ball_half_size},
+					pacman_.position,
+					pacman_.arkanoid_ball->velocity))
+				{
+					// Rotate slightly velocity vector.
+					const float random_angle = (float(rand_.Next()) / float(Rand::c_max_rand_plus_one_) - 0.5f) * 0.5f;
+					const fixed16_t s = fixed16_t(std::sin(random_angle) * float(g_fixed16_one));
+					const fixed16_t c = fixed16_t(std::cos(random_angle) * float(g_fixed16_one));
+
+					pacman_.arkanoid_ball->velocity =
+					{
+						Fixed16Mul(pacman_.arkanoid_ball->velocity[0], c) - Fixed16Mul(pacman_.arkanoid_ball->velocity[1], s),
+						Fixed16Mul(pacman_.arkanoid_ball->velocity[0], s) + Fixed16Mul(pacman_.arkanoid_ball->velocity[1], c),
+					};
+
+					sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+				}
+			}
+		}
+
+		if(tick_ >= pacman_.arkanoid_ball->end_tick)
+		{
+			pacman_.arkanoid_ball = std::nullopt;
+			pacman_.position[0] = IntToFixed16(Fixed16FloorToInt(pacman_.position[0])) + g_fixed16_one / 2;
+			pacman_.position[1] = IntToFixed16(Fixed16FloorToInt(pacman_.position[1])) + g_fixed16_one / 2;
+			pacman_.target_position = pacman_.position;
+		}
+
 		return;
 	}
 
@@ -653,25 +855,7 @@ void GamePacman::MovePacman()
 
 		const auto block_x = uint32_t(Fixed16FloorToInt(pacman_.target_position[0]));
 		const auto block_y = uint32_t(Fixed16FloorToInt(pacman_.target_position[1]));
-		Bonus& bonus = bonuses_[block_x + block_y * c_field_width];
-		if(bonus != Bonus::None)
-		{
-			if(bonus == Bonus::Food)
-			{
-				score_ += g_score_for_food;
-				sound_player_.PlaySound(SoundId::TetrisFigureStep);
-			}
-			if(bonus == Bonus::Deadly)
-			{
-				score_ += g_score_for_deadly_bonus;
-				EnterFrightenedMode();
-				sound_player_.PlaySound(SoundId::SnakeBonusEat);
-			}
-			bonus = Bonus::None;
-			--bonuses_left_;
-			++bonuses_eaten_;
-
-		}
+		PickUpBonus(bonuses_[block_x + block_y * c_field_width]);
 
 		pacman_.position = pacman_.target_position;
 
@@ -845,13 +1029,16 @@ void GamePacman::MoveGhost(Ghost& ghost)
 					// Do not allow to move into start room from outside.
 					return;
 				}
-				if(
-					next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
-					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
-					g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+				if( next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
+					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height))
 				{
-					possible_targets[num_possible_targets] = std::make_pair(next_block, direction);
-					++num_possible_targets;
+					const uint32_t address = uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width;
+					if(g_game_field[address] != g_wall_symbol &&
+						!(bonuses_[address] >= Bonus::TetrisBlock0 && bonuses_[address] <= Bonus::TetrisBlock6))
+					{
+						possible_targets[num_possible_targets] = std::make_pair(next_block, direction);
+						++num_possible_targets;
+					}
 				}
 			};
 
@@ -881,6 +1068,11 @@ void GamePacman::MoveGhost(Ghost& ghost)
 					IntToFixed16(selected_target.first[1]) + g_fixed16_one / 2};
 				ghost.direction = selected_target.second;
 			}
+			else
+			{
+				// Dead end.
+				ReverseGhostMovement(ghost);
+			}
 		}
 		else
 		{
@@ -905,12 +1097,16 @@ void GamePacman::MoveGhost(Ghost& ghost)
 				const int32_t square_distance = vec_to[0] * vec_to[0] + vec_to[1] * vec_to[1];
 				if(square_distance < best_square_distance &&
 					next_block[0] >= 0 && next_block[0] < int32_t(c_field_width ) &&
-					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height) &&
-					g_game_field[uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width] != g_wall_symbol)
+					next_block[1] >= 0 && next_block[1] < int32_t(c_field_height))
 				{
-					best_square_distance = square_distance;
-					best_next_block = next_block;
-					best_direction = direction;
+					const uint32_t address = uint32_t(next_block[0]) + uint32_t(next_block[1]) * c_field_width;
+					if(g_game_field[address] != g_wall_symbol &&
+						!(bonuses_[address] >= Bonus::TetrisBlock0 && bonuses_[address] <= Bonus::TetrisBlock6))
+					{
+						best_square_distance = square_distance;
+						best_next_block = next_block;
+						best_direction = direction;
+					}
 				}
 			};
 
@@ -933,10 +1129,18 @@ void GamePacman::MoveGhost(Ghost& ghost)
 				add_next_block_candidate({block[0] + 1, block[1]}, GridDirection::XPlus );
 			}
 
-			ghost.target_position = {
-				IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
-				IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
-			ghost.direction = best_direction;
+			if(best_square_distance == 0x7FFFFFFF)
+			{
+				// Dead end.
+				ReverseGhostMovement(ghost);
+			}
+			else
+			{
+				ghost.target_position = {
+					IntToFixed16(best_next_block[0]) + g_fixed16_one / 2,
+					IntToFixed16(best_next_block[1]) + g_fixed16_one / 2};
+				ghost.direction = best_direction;
+			}
 		}
 	}
 	else
@@ -1089,10 +1293,11 @@ void GamePacman::ProcessPacmanGhostsTouch()
 		const fixed16_t square_dist = Fixed16VecSquareLen(vec_from_ghost_to_pacman);
 		if(square_dist < touch_square_dist)
 		{
-			if(ghost.mode == GhostMode::Frightened)
+			if(ghost.mode == GhostMode::Frightened || pacman_.arkanoid_ball != std::nullopt)
 			{
 				ghost.mode = GhostMode::Eaten;
 				score_ += g_score_for_ghost;
+				sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 			}
 			else
 			{
@@ -1104,7 +1309,6 @@ void GamePacman::ProcessPacmanGhostsTouch()
 			}
 		}
 	}
-
 }
 
 void GamePacman::TryTeleportCharacters()
@@ -1149,6 +1353,168 @@ void GamePacman::TryTeleportCharacters()
 			ghost.target_position[1] -= teleport_distance;
 		}
 	}
+}
+
+bool GamePacman::UpdateLaserBeam(LaserBeam& laser_beam)
+{
+	switch(laser_beam.direction)
+	{
+	case GridDirection::XMinus:
+		laser_beam.position[0] -= g_laser_beam_speed;
+		break;
+	case GridDirection::XPlus:
+		laser_beam.position[0] += g_laser_beam_speed;
+		break;
+	case GridDirection::YMinus:
+		laser_beam.position[1] -= g_laser_beam_speed;
+		break;
+	case GridDirection::YPlus:
+		laser_beam.position[1] += g_laser_beam_speed;
+		break;
+	}
+
+	const fixed16_t beam_half_size = g_fixed16_one / 32;
+
+	for(Ghost& ghost : ghosts_)
+	{
+		if(ghost.mode == GhostMode::Eaten)
+		{
+			continue;
+		}
+
+		const fixed16vec2_t borders_min =
+		{
+			ghost.position[0] - (beam_half_size + g_character_half_size),
+			ghost.position[1] - (beam_half_size + g_character_half_size),
+		};
+		const fixed16vec2_t borders_max =
+		{
+			ghost.position[0] + (beam_half_size + g_character_half_size),
+			ghost.position[1] + (beam_half_size + g_character_half_size),
+		};
+
+		if( laser_beam.position[0] >= borders_min[0] && laser_beam.position[0] <= borders_max[0] &&
+			laser_beam.position[1] >= borders_min[1] && laser_beam.position[1] <= borders_max[1])
+		{
+			ghost.mode = GhostMode::Eaten;
+			score_ += g_score_for_ghost;
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+			// Destroy laser beam at first hit.
+			return true;
+		}
+	}
+
+	const int32_t x_center = Fixed16RoundToInt(laser_beam.position[0]);
+	const int32_t y_center = Fixed16RoundToInt(laser_beam.position[1]);
+
+	for(int32_t dy = -3; dy <= 3; ++dy)
+	{
+		const int32_t y = y_center + dy;
+		if(y < 0 || y >= int32_t(c_field_height))
+		{
+			continue;
+		}
+
+		for(int32_t dx = -3; dx <= 3; ++dx)
+		{
+			const int32_t x = x_center + dx;
+			if(x < 0 || x >= int32_t(c_field_width))
+			{
+				continue;
+			}
+
+			const uint32_t address = uint32_t(x) + uint32_t(y) * c_field_width;
+
+			if(!(g_game_field[address] == g_wall_symbol || IsBlockInsideGhostsRoom({x, y})))
+			{
+				continue;
+			}
+
+			const fixed16vec2_t borders_min =
+			{
+				IntToFixed16(x) - beam_half_size,
+				IntToFixed16(y) - beam_half_size,
+			};
+			const fixed16vec2_t borders_max =
+			{
+				IntToFixed16(x + 1) + beam_half_size,
+				IntToFixed16(y + 1) + beam_half_size,
+			};
+
+			if( laser_beam.position[0] >= borders_min[0] && laser_beam.position[0] <= borders_max[0] &&
+				laser_beam.position[1] >= borders_min[1] && laser_beam.position[1] <= borders_max[1])
+			{
+				sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+				// Destroy laser beam at first hit.
+				return true;
+			}
+		}
+	}
+
+	return
+		laser_beam.position[0] <= g_fixed16_one || laser_beam.position[0] >= IntToFixed16(int32_t(c_field_width  - 1)) ||
+		laser_beam.position[1] <= g_fixed16_one || laser_beam.position[1] >= IntToFixed16(int32_t(c_field_height - 1));
+}
+
+void GamePacman::PickUpBonus(Bonus& bonus)
+{
+	if(bonus == Bonus::None)
+	{
+		return;
+	}
+
+	if(bonus == Bonus::Food || (bonus >= Bonus::TetrisBlock0 && bonus <= Bonus::TetrisBlock6))
+	{
+		score_ += g_score_for_food;
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+	if(bonus == Bonus::Deadly)
+	{
+		score_ += g_score_for_deadly_bonus;
+		EnterFrightenedMode();
+		sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	}
+	if(bonus == Bonus::SnakeFoodSmall)
+	{
+		for(Ghost& ghost : ghosts_)
+		{
+			ReverseGhostMovement(ghost);
+		}
+		score_ += g_score_for_snake_bonus;
+		sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	}
+	if(bonus == Bonus::SnakeFoodMedium)
+	{
+		pacman_.turret_shots_left = 3;
+		score_ += g_score_for_snake_bonus;
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+	if(bonus == Bonus::SnakeFoodLarge)
+	{
+		ArkanoidBallModifier arkanod_ball;
+		arkanod_ball.end_tick = tick_ + g_arkanoid_ball_mode_duration;
+
+		const float random_angle = rand_.RandomAngle();
+		const fixed16_t speed = g_fixed16_one / 10;
+		arkanod_ball.velocity[0] = fixed16_t(std::cos(random_angle) * float(speed));
+		arkanod_ball.velocity[1] = fixed16_t(std::sin(random_angle) * float(speed));
+
+		pacman_.arkanoid_ball = arkanod_ball;
+		score_ += g_score_for_snake_bonus;
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+	if(bonus == Bonus::SnakeExtraLife)
+	{
+		lifes_ = std::min(lifes_ + 1, g_max_lifes);
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+
+	bonus = Bonus::None;
+	--bonuses_left_;
+	++bonuses_eaten_;
+
+	TryPlaceRandomTetrisPiece();
+	TrySpawnSnakeBonus();
 }
 
 void GamePacman::UpdateGhostsMode()
@@ -1210,6 +1576,181 @@ void GamePacman::EnterFrightenedMode()
 		ghost.frightened_mode_end_tick = tick_ + g_frightened_mode_duration;
 
 		ReverseGhostMovement(ghost);
+	}
+}
+
+void GamePacman::TryPlaceRandomTetrisPiece()
+{
+	if(rand_.Next() % 48 != 17)
+	{
+		return;
+	}
+
+	// Perform spawn possibility check for multiple random positions across game field.
+	for(size_t i = 0; i < 256; ++i)
+	{
+		uint32_t type_index = rand_.Next() % g_tetris_num_piece_types;
+		if(type_index == 0)
+		{
+			// Reduce probability of "I" piece, because it is too boring.
+			type_index = rand_.Next() % g_tetris_num_piece_types;
+		}
+		const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + type_index);
+		TetrisPieceBlocks blocks = g_tetris_pieces_blocks[type_index];
+
+		// Choose random rotation.
+		const uint32_t num_rotations = rand_.Next() / 47u % 4u;
+		for(uint32_t i = 0; i < num_rotations; ++i)
+		{
+			TetrisPiece piece;
+			piece.type = type;
+			piece.blocks = blocks;
+			blocks = RotateTetrisPieceBlocks(piece);
+		}
+
+		int32_t min_x = 99999, max_x = -9999;
+		int32_t min_y = 99999, max_y = -9999;
+		for(const TetrisPieceBlock& block : blocks)
+		{
+			min_x = std::min(min_x, block[0]);
+			max_x = std::max(max_x, block[0]);
+			min_y = std::min(min_y, block[1]);
+			max_y = std::max(max_y, block[1]);
+		}
+
+		const int32_t min_dx = 1 - min_x;
+		const int32_t max_dx = int32_t(c_field_width ) - max_x - 2;
+
+		const int32_t min_dy = 1 - min_y;
+		const int32_t max_dy = int32_t(c_field_height) - max_y - 2;
+
+		const int32_t dx = min_dx + int32_t(rand_.Next() % uint32_t(max_dx - min_dx));
+		const int32_t dy = min_dy + int32_t(rand_.Next() % uint32_t(max_dy - min_dy));
+
+		TetrisPieceBlocks bocks_shifted = blocks;
+		for(TetrisPieceBlock& block : bocks_shifted)
+		{
+			const int32_t x = block[0] + dx;
+			const int32_t y = block[1] + dy;
+			assert(x >= 1 && x < int32_t(c_field_width ) - 1);
+			assert(y >= 1 && y < int32_t(c_field_height) - 1);
+
+			block[0] = x;
+			block[1] = y;
+		}
+
+		bool can_place = true;
+		for(const TetrisPieceBlock& block : bocks_shifted)
+		{
+			const uint32_t address = uint32_t(block[0]) + uint32_t(block[1]) * c_field_width;
+			can_place &= g_game_field[address] != g_wall_symbol;
+			can_place &= bonuses_[address] == Bonus::None;
+			can_place &= !IsBlockInsideGhostsRoom(block);
+
+			// Ghost room entrance.
+			can_place &=
+				!(block[0] == 20 && block[1] >= 11 && block[1] <= 19);
+
+			// Unreachable areas.
+			if(block[0] >= 13 && block[0] <= 15)
+			{
+				can_place &= !(block[1] >= 0 && block[1] <= 5);
+				can_place &= !(block[1] >= 24 && block[1] <= 29);
+			}
+			if(block[0] >= 19 && block[0] <= 21)
+			{
+				can_place &= !(block[1] >= 0 && block[1] <= 5);
+				can_place &= !(block[1] >= 24 && block[1] <= 29);
+			}
+
+			// Do not place block atop of characters.
+			if(pacman_.position[0] >= IntToFixed16(block[0]) - g_character_half_size &&
+			   pacman_.position[0] <= IntToFixed16(block[0] + 1) + g_character_half_size &&
+			   pacman_.position[1] >= IntToFixed16(block[1]) - g_character_half_size &&
+			   pacman_.position[1] <= IntToFixed16(block[1] + 1) + g_character_half_size)
+			{
+				can_place = false;
+			}
+			for(const Ghost& ghost : ghosts_)
+			{
+				if(ghost.position[0] >= IntToFixed16(block[0]) - g_character_half_size &&
+				   ghost.position[0] <= IntToFixed16(block[0] + 1) + g_character_half_size &&
+				   ghost.position[1] >= IntToFixed16(block[1]) - g_character_half_size &&
+				   ghost.position[1] <= IntToFixed16(block[1] + 1) + g_character_half_size)
+				{
+					can_place = false;
+				}
+			}
+		}
+
+		if(can_place)
+		{
+			for(const TetrisPieceBlock& block : bocks_shifted)
+			{
+				bonuses_[uint32_t(block[0]) + uint32_t(block[1]) * c_field_width] =
+					Bonus(uint32_t(Bonus::TetrisBlock0) + type_index);
+				++bonuses_left_;
+			}
+			break;
+		}
+	}
+}
+
+void GamePacman::TrySpawnSnakeBonus()
+{
+	if(rand_.Next() % 24 != 3)
+	{
+		return;
+	}
+
+	// Perform spawn possibility check for multiple random positions across game field.
+	for(size_t i = 0; i < 256; ++i)
+	{
+		const uint32_t x = 1 + rand_.Next() % (c_field_width  - 2);
+		const uint32_t y = 1 + rand_.Next() % (c_field_height - 2);
+
+		bool can_place = true;
+
+		const uint32_t address = x + y * c_field_width;
+		can_place &= g_game_field[address] != g_wall_symbol;
+		can_place &= bonuses_[address] == Bonus::None;
+		can_place &= !IsBlockInsideGhostsRoom({int32_t(x), int32_t(y)});
+
+		// Unreachable areas.
+		if(x >= 13 && x <= 15)
+		{
+			can_place &= !(y >= 0 && y <= 5);
+			can_place &= !(y >= 24 && y <= 29);
+		}
+		if(x >= 19 && x <= 21)
+		{
+			can_place &= !(y >= 0 && y <= 5);
+			can_place &= !(y >= 24 && y <= 29);
+		}
+
+		if(can_place)
+		{
+			const uint32_t r = rand_.Next() % 11;
+			if(r < 4)
+			{
+				bonuses_[address] = Bonus::SnakeFoodSmall;
+			}
+			else if(r < 7)
+			{
+				bonuses_[address] = Bonus::SnakeFoodMedium;
+			}
+			else if(r < 9)
+			{
+				bonuses_[address] = Bonus::SnakeFoodLarge;
+			}
+			else
+			{
+				bonuses_[address] = Bonus::SnakeExtraLife;
+			}
+
+			++bonuses_left_;
+			break;
+		}
 	}
 }
 

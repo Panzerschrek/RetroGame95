@@ -89,6 +89,8 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 			tick_ <= laser_ship_end_tick_ &&
 			active_piece_ != std::nullopt && tick_ >= next_shoot_tick_)
 		{
+			// TODO - use also CTRL/Space as shoot buttons.
+
 			const fixed16_t x_delta = g_fixed16_one;
 
 			int32_t x_center = 0;
