@@ -348,9 +348,10 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 
 		const SpriteBMP sprite = bonus_sprites[uint32_t(bonus)];
-		DrawSprite(
+		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
+			0,
 			x * c_block_size + c_block_size / 2 - sprite.GetWidth () / 2,
 			y * c_block_size + c_block_size / 2 - sprite.GetHeight() / 2);
 	}
