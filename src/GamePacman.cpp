@@ -439,27 +439,44 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			frame_buffer,
 			life_spirte,
 			0,
-			c_field_width * c_block_size + i % 4 * (life_spirte.GetWidth() + 1),
-			c_block_size + i / 4 * (life_spirte.GetHeight() + 2));
+			c_field_width * c_block_size - c_block_size / 2 + i % 4 * (life_spirte.GetWidth() + 2),
+			c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
 	}
+
+	const uint32_t glyph_height = 8;
+	const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
+	const uint32_t texts_offset_y = 8 * glyph_height;
+
+	char text[64];
+
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * glyph_height, "level");
+	std::snprintf(text, sizeof(text), "%7d", level_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * glyph_height, text);
+
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * glyph_height, "score");
+	std::snprintf(text, sizeof(text), "%7d", score_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * glyph_height, text);
 
 	if(tick_ < spawn_animation_end_tick_)
 	{
 		DrawTextCentered(
 			frame_buffer,
-			g_color_white,
+			g_cga_palette[9 + tick_ / 16 % 7],
 			c_field_width  * c_block_size / 2,
 			c_field_height * c_block_size / 2,
-			"Ready!");
+			"ready!");
 	}
 	if(game_over_)
 	{
-		DrawTextCentered(
-			frame_buffer,
-			g_color_white,
-			c_field_width  * c_block_size / 2,
-			c_field_height * c_block_size / 2,
-			"game over");
+		if(tick_ / 16 % 2 != 0)
+		{
+			DrawTextCentered(
+				frame_buffer,
+				g_cga_palette[14],
+				c_field_width  * c_block_size / 2,
+				c_field_height * c_block_size / 2,
+				"game over");
+		}
 	}
 }
 
@@ -639,10 +656,6 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) c
 		0,
 		uint32_t(Fixed16FloorToInt(ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
 		uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
-
-	char text[64];
-	std::snprintf(text, sizeof(text), "level\n%7d\n\nscore\n\n%7d", level_, score_);
-	DrawText(frame_buffer, g_color_white, 260, 40, text);
 }
 
 void GamePacman::NextLevel()
