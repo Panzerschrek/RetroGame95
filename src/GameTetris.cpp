@@ -199,38 +199,30 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t texts_offset_y = field_offset_y + block_height * c_field_height - 8 * 3;
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
-	if(!laser_ship_is_active)
+
+	const SpriteBMP border_sprite(Sprites::tetris_block_7); // TODO - use special sprite instead.
+
+	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		DrawHorisontalLine(
+		DrawSprite(
 			frame_buffer,
-			g_color_white,
-			field_offset_x - 1,
-			field_offset_y - 1,
-			block_width * c_field_width + 2);
+			border_sprite,
+			field_offset_x + x * block_width,
+			field_offset_y + c_field_height * block_height);
 	}
-	DrawHorisontalLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x - 1,
-		field_offset_y + block_height * c_field_height,
-		block_width * c_field_width + 2);
-
-	const uint32_t vertical_line_start = laser_ship_is_active ? (field_offset_y + 10) : (field_offset_y - 1);
-	const uint32_t vertical_line_end = field_offset_y - 1 + block_height * c_field_height + 2;
-	const uint32_t vertical_line_length = vertical_line_end - vertical_line_start;
-
-	DrawVerticaLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x - 1,
-		vertical_line_start,
-		vertical_line_length);
-	DrawVerticaLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x + block_width * c_field_width,
-		vertical_line_start,
-		vertical_line_length);
+	for(uint32_t y = laser_ship_is_active ? 2 : 0; y < c_field_height + 2; ++y)
+	{
+		DrawSprite(
+			frame_buffer,
+			border_sprite,
+			field_offset_x - 1 * block_width,
+			field_offset_y + y * block_height - block_height);
+		DrawSprite(
+			frame_buffer,
+			border_sprite,
+			field_offset_x + c_field_width * block_width,
+			field_offset_y + y * block_height - block_height);
+	}
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
@@ -272,7 +264,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 					Sprites::tetris_block_shadow,
 					0,
 					field_offset_x + uint32_t(piece_block[0]) * block_width,
-					field_offset_y + (c_field_height + 1) * block_height);
+					field_offset_y + (c_field_height + 2) * block_height);
 			}
 		}
 
@@ -342,7 +334,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	DrawText(
 		frame_buffer,
 		g_cga_palette[pieces_colors[uint32_t(next_piece_index)]],
-		next_piece_offset_x + block_width * 3,
+		next_piece_offset_x + block_width * 4,
 		next_piece_offset_y - block_height * 6,
 		"Next");
 
@@ -799,9 +791,8 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 	bonus.position[1] += g_bonus_drop_speed;
 
 	// Kill the bonus if it reaches lower field border.
-	if(bonus.position[1] > IntToFixed16(c_field_height + 1))
+	if(bonus.position[1] > IntToFixed16(c_field_height + 2))
 	{
-
 		if(active_piece_ != std::nullopt)
 		{
 			// Pick-up bonus only if it fails below current piece.
