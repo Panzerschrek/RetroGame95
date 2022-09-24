@@ -141,6 +141,9 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
+	const SpriteBMP game_name_sprite(Sprites::game_name);
+	DrawSpriteWithAlpha(frame_buffer, Sprites::game_name, 0, (frame_buffer.width - game_name_sprite.GetWidth()) / 2, 16);
+
 	const uint32_t title_offset_x = 104;
 	const uint32_t title_offset_y = 32;
 	const uint32_t offset_x = 112;
