@@ -4,6 +4,7 @@
 #include "GamesCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
+#include "Strings.hpp"
 #include <cassert>
 
 namespace
@@ -448,11 +449,11 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 	char text[64];
 
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, "level");
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
 	std::snprintf(text, sizeof(text), "%7d", level_);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
 
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, "score");
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
 	std::snprintf(text, sizeof(text), "%7d", score_);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
 
@@ -463,7 +464,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			g_cga_palette[9 + tick_ / 16 % 7],
 			c_field_width  * c_block_size / 2,
 			c_field_height * c_block_size / 2,
-			"ready!");
+			Strings::pacman_ready);
 	}
 	if(game_over_)
 	{
@@ -474,7 +475,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 				g_cga_palette[14],
 				c_field_width  * c_block_size / 2,
 				c_field_height * c_block_size / 2,
-				"game over");
+				Strings::pacman_game_over);
 		}
 	}
 }

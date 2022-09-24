@@ -5,6 +5,7 @@
 #include "Progress.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
+#include "Strings.hpp"
 #include <cassert>
 
 namespace
@@ -426,7 +427,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 
 	if(field_start_animation_end_tick_ != std::nullopt)
 	{
-		std::snprintf(text, sizeof(text), "level %d", level_);
+		std::snprintf(text, sizeof(text), "%s %d", Strings::snake_level, level_);
 
 		DrawTextCentered(
 			frame_buffer,
@@ -442,10 +443,10 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			g_color_white,
 			field_offset_x + c_block_size  * c_field_width  / 2,
 			field_offset_y + c_block_size * c_field_height / 2,
-			"game over");
+			Strings::snake_game_over);
 	}
 
-	const char* const stats_names[]{"length", "lifes", "level", "score"};
+	const char* const stats_names[]{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
 	const uint32_t stats[]{uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()), lifes_, level_, score_};
 	const uint8_t stats_colors[]{6, 4, 1, 2};
 	for(uint32_t i = 0; i < 4; ++i)

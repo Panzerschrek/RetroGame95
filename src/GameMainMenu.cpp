@@ -6,6 +6,7 @@
 #include "GameTetris.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
+#include "Strings.hpp"
 #include <SDL_keyboard.h>
 #include <cassert>
 
@@ -153,11 +154,19 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		g_color_white,
 		title_offset_x,
 		title_offset_y,
-		"RetroGame95");
+		Strings::main_menu_game_title);
+
+	const char* const selet_symbol = ">";
 
 	if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
 	{
-		const char* const texts[] = {"New game", "Continue game", "Select game", "Quit"};
+		const char* const texts[]
+		{
+			Strings::main_menu_new_game,
+			Strings::main_menu_continue_game,
+			Strings::main_menu_select_game,
+			Strings::main_menu_quit
+		};
 		for(size_t i = 0; i < std::size(texts); ++i)
 		{
 			DrawText(
@@ -173,16 +182,16 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 			g_color_white,
 			offset_x - cursor_offset,
 			offset_y + row_step * uint32_t(*main_menu_row),
-			">");
+			selet_symbol);
 	}
 	if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
 	{
 		const char* const game_names[]
 		{
-			"Arkanoid",
-			"Tetris",
-			"Snake",
-			"Pacman",
+			Strings::game_name_arkanoid,
+			Strings::game_name_tetris,
+			Strings::game_name_snake,
+			Strings::game_name_pacman,
 		};
 		for(uint32_t i = 0; i < uint32_t(SelectGameMenuRow::NumGames); ++i)
 		{
@@ -201,7 +210,7 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 			g_color_white,
 			offset_x - cursor_offset,
 			offset_y + row_step * uint32_t(*select_game_row),
-			">");
+			selet_symbol);
 	}
 }
 

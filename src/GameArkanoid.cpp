@@ -6,6 +6,7 @@
 #include "GameTetris.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
+#include "Strings.hpp"
 #include <cassert>
 #include <cmath>
 
@@ -325,7 +326,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 
 	char text[64];
 
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, "Round");
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
 
 	std::snprintf(text, sizeof(text), "%5d", level_);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
@@ -337,7 +338,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			g_cga_palette[9],
 			field_offset_x + c_block_width  * c_field_width  / 2,
 			field_offset_y + c_block_height * (c_field_height - 6),
-			"Round");
+			Strings::arkanoid_round);
 
 		std::snprintf(text, sizeof(text), "%d", level_);
 		DrawTextCentered(
@@ -348,7 +349,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			text);
 	}
 
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, "Score");
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
 
 	std::snprintf(text, sizeof(text), "%5d", score_);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
@@ -360,7 +361,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			g_cga_palette[9],
 			field_offset_x + c_block_width  * c_field_width  / 2,
 			field_offset_y + c_block_height * (c_field_height - 5),
-			"Game Over");
+			Strings::arkanoid_game_over);
 	}
 }
 
