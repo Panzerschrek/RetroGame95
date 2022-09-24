@@ -445,16 +445,26 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			"game over");
 	}
 
-	std::snprintf(
-		text,
-		sizeof(text),
-		"length %3d  lifes %1d  level %1d  score %4d",
-		uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()),
-		lifes_,
-		level_,
-		score_);
-	DrawText(frame_buffer, g_color_white, 0, frame_buffer.height - 10, text);
+	const char* const stats_names[]{"length", "lifes", "level", "score"};
+	const uint32_t stats[]{uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()), lifes_, level_, score_};
+	const uint8_t stats_colors[]{6, 4, 1, 2};
+	const uint32_t glyph_width = 8;
+	const uint32_t glyph_height = 8;
+	for(uint32_t i = 0; i < 4; ++i)
+	{
+		const uint32_t x = (i + 1) * glyph_width * 9;
+		const uint32_t len = uint32_t(std::strlen(stats_names[i]));
 
+		DrawText(
+			frame_buffer,
+			g_cga_palette[stats_colors[i]],
+			x - glyph_width * len,
+			frame_buffer.height - glyph_height * 2 - 3,
+			stats_names[i]);
+
+		std::snprintf(text, sizeof(text), "%5d", stats[i]);
+		DrawText(frame_buffer, g_color_white, x - glyph_width * 5, frame_buffer.height - glyph_height - 1, text);
+	}
 }
 
 GameInterfacePtr GameSnake::AskForNextGameTransition()
