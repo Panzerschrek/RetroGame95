@@ -52,6 +52,14 @@ bool Host::Loop()
 				{
 					return true;
 				}
+				if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_LEFTBRACKET)
+				{
+					sound_out_.DecreaseVolume();
+				}
+				if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_RIGHTBRACKET)
+				{
+					sound_out_.IncreaseVolume();
+				}
 			}
 
 			game_->Tick(events, keyboard_state);

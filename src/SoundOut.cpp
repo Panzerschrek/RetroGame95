@@ -14,6 +14,8 @@ int32_t NearestPowerOfTwoFloor(const int32_t x)
 	return r;
 }
 
+const fixed16_t g_volume_step = g_fixed16_one / 16;
+
 } // namespace
 
 SoundOut::SoundOut()
@@ -103,6 +105,21 @@ void SoundOut::StopPlaying()
 	UnlockChannel();
 }
 
+void SoundOut::SetVolume(const fixed16_t volume)
+{
+	volume_.store(std::max(0, std::min(volume, g_fixed16_one)));
+}
+
+void SoundOut::IncreaseVolume()
+{
+	SetVolume(volume_.load() + g_volume_step);
+}
+
+void SoundOut::DecreaseVolume()
+{
+	SetVolume(volume_.load() - g_volume_step);
+}
+
 void SDLCALL SoundOut::AudioCallback(void* const userdata, Uint8* const stream, int len_bytes)
 {
 	const auto self = reinterpret_cast<SoundOut*>(userdata);
@@ -117,6 +134,8 @@ void SoundOut::FillAudioBuffer(SampleType* const buffer, const uint32_t sample_c
 		buffer[i]= 0;
 	}
 
+	const fixed16_t volume = volume_.load();
+
 	if(channel_.is_active && channel_.src_sound_data != nullptr)
 	{
 		const uint32_t samples_to_fill=
@@ -124,7 +143,7 @@ void SoundOut::FillAudioBuffer(SampleType* const buffer, const uint32_t sample_c
 		const SampleType* const src = channel_.src_sound_data->samples.data() + channel_.position_samples;
 		for(uint32_t i= 0; i < samples_to_fill; ++i)
 		{
-			buffer[i] = src[i];
+			buffer[i] = SampleType(Fixed16FloorToInt(src[i] * volume));
 		}
 
 		channel_.position_samples += samples_to_fill;
