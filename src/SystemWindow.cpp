@@ -1,4 +1,5 @@
 #include "SystemWindow.hpp"
+#include "Strings.hpp"
 #include <SDL.h>
 #include <algorithm>
 #include <cstring>
@@ -75,7 +76,7 @@ SystemWindow::SystemWindow()
 
 	window_=
 		SDL_CreateWindow(
-			"RetroGame95",
+			Strings::window_title,
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			int(g_framebuffer_width * scale_), int(g_framebuffer_height * scale_),
 			window_flags);

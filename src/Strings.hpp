@@ -5,7 +5,8 @@ namespace Strings
 
 #define DECLARE_STRING(x) extern const char x[];
 
-DECLARE_STRING(main_menu_game_title)
+DECLARE_STRING(window_title)
+
 DECLARE_STRING(main_menu_new_game)
 DECLARE_STRING(main_menu_continue_game)
 DECLARE_STRING(main_menu_select_game)

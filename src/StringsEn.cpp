@@ -5,7 +5,8 @@ namespace Strings
 
 #define DEFINE_STRING(x, y) const char x[] = y;
 
-DEFINE_STRING(main_menu_game_title, "RetroGame95")
+DEFINE_STRING(window_title, "RetroGame95")
+
 DEFINE_STRING(main_menu_new_game, "New game")
 DEFINE_STRING(main_menu_continue_game, "Continue game")
 DEFINE_STRING(main_menu_select_game, "Select game")
