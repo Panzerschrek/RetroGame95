@@ -185,18 +185,18 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_3,
 	};
 
-	const uint32_t block_width = sprites[0].GetWidth();
+	const uint32_t block_width  = sprites[0].GetWidth ();
 	const uint32_t block_height = sprites[1].GetHeight();
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = 96;
-	const uint32_t field_offset_y = 8;
+	const uint32_t field_offset_x = (320 - c_field_width * block_width) / 2;
+	const uint32_t field_offset_y = block_height;
 	const uint32_t next_piece_offset_x = field_offset_x + block_width * (c_field_width - 2);
 	const uint32_t next_piece_offset_y = field_offset_y + 7 * block_height;
 
-	const uint32_t texts_offset_x = 8;
-	const uint32_t texts_offset_y = 180;
+	const uint32_t texts_offset_x = field_offset_x - 8 * 13;
+	const uint32_t texts_offset_y = field_offset_y + block_height * c_field_height - 8 * 3;
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 	if(!laser_ship_is_active)
@@ -336,14 +336,16 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
 	}
 
+	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(TetrisBlock::I);
+
+	const uint8_t pieces_colors[g_tetris_num_piece_types]{ 4, 7, 5, 1, 2, 6, 3, };
 	DrawText(
 		frame_buffer,
-		g_color_white,
+		g_cga_palette[pieces_colors[uint32_t(next_piece_index)]],
 		next_piece_offset_x + block_width * 3,
 		next_piece_offset_y - block_height * 6,
 		"Next");
 
-	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(TetrisBlock::I);
 	for(const auto& piece_block : g_tetris_pieces_blocks[next_piece_index])
 	{
 		DrawSpriteWithAlpha(
@@ -355,19 +357,21 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	}
 
 	char text[64];
-	std::snprintf(text, sizeof(text), "Level: %3d", level_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y, text);
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, "Level: ");
+	std::snprintf(text, sizeof(text), "%3d", level_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + 8 * 7, texts_offset_y, text);
 
-	std::snprintf(text, sizeof(text), "Score: %3d", score_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 16, text);
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + 16, "Score: ");
+	std::snprintf(text, sizeof(text), "%3d", score_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + 8 * 7, texts_offset_y + 16, text);
 
 	if(game_over_)
 	{
-		DrawText(
+		DrawTextCentered(
 			frame_buffer,
-			g_color_white,
-			field_offset_x + block_width  * c_field_width  / 2 - 36,
-			field_offset_y + block_height * c_field_height / 2 - 4,
+			g_cga_palette[14],
+			field_offset_x + block_width  * c_field_width  / 2,
+			field_offset_y + block_height * c_field_height / 2,
 			"Game Over");
 	}
 }
