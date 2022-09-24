@@ -201,7 +201,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
-	const SpriteBMP border_sprite(Sprites::tetris_block_7); // TODO - use special sprite instead.
+	const SpriteBMP border_sprite(Sprites::tetris_block_8);
 
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
