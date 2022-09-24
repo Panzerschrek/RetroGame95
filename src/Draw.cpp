@@ -369,6 +369,14 @@ void DrawText(
 		{
 			glyph = &font8x8_ext_latin[code_point - 0xA0];
 		}
+		else if(code_point >= 0x2500 && code_point <= 0x257F)
+		{
+			glyph = &font8x8_box[code_point - 0x2500];
+		}
+		else if(code_point >= 0x2580 && code_point <= 0x259F)
+		{
+			glyph = &font8x8_block[code_point - 0x259F];
+		}
 
 		for(uint32_t dy = 0; dy < g_glyph_height; ++dy)
 		{

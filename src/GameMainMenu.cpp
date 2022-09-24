@@ -157,7 +157,7 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 	const Color32 shadow_color = g_cga_palette[0];
 	const bool draw_cursor = tick_ / 32 % 2 != 0;
 
-	const char* const selet_symbol = "=>";
+	const char* const selet_symbol = ">>";
 
 	if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
 	{
