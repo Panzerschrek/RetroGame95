@@ -61,8 +61,8 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = 10;
 	const uint32_t field_offset_y = 10;
 
-	const uint32_t texts_offset_x = 256;
-	const uint32_t texts_offset_y = 40;
+	const uint32_t texts_offset_x = 264;
+	const uint32_t texts_offset_y = 32;
 
 	const SpriteBMP block_sprites[]
 	{
@@ -324,31 +324,42 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	}
 
 	char text[64];
-	std::snprintf(text, sizeof(text), "Round\n\n%3d", level_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y, text);
+
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, "Round");
+
+	std::snprintf(text, sizeof(text), "%5d", level_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 16, text);
 
 	if(tick_ < level_start_animation_end_tick_)
 	{
-		std::snprintf(text, sizeof(text), "Round %d", level_);
+		DrawTextCentered(
+			frame_buffer,
+			g_cga_palette[9],
+			field_offset_x + c_block_width  * c_field_width  / 2,
+			field_offset_y + c_block_height * (c_field_height - 6),
+			"Round");
 
-		DrawText(
+		std::snprintf(text, sizeof(text), "%d", level_);
+		DrawTextCentered(
 			frame_buffer,
 			g_color_white,
-			field_offset_x + c_block_width  * c_field_width  / 2 - 24,
-			field_offset_y + c_block_height * c_field_height / 2 - 4,
+			field_offset_x + c_block_width  * c_field_width  / 2,
+			field_offset_y + c_block_height * (c_field_height - 6) + 16,
 			text);
 	}
 
-	std::snprintf(text, sizeof(text), "Score\n\n%5d", score_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64, text);
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, "Score");
+
+	std::snprintf(text, sizeof(text), "%5d", score_);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + 16, text);
 
 	if(game_over_)
 	{
-		DrawText(
+		DrawTextCentered(
 			frame_buffer,
-			g_color_white,
-			field_offset_x + c_block_width  * c_field_width  / 2 - 36,
-			field_offset_y + c_block_height * c_field_height / 2 - 4,
+			g_cga_palette[9],
+			field_offset_x + c_block_width  * c_field_width  / 2,
+			field_offset_y + c_block_height * (c_field_height - 5),
 			"Game Over");
 	}
 }
