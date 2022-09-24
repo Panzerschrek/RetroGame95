@@ -157,34 +157,37 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = 10;
-	const uint32_t field_offset_y = 10;
+	const uint32_t field_offset_x = c_block_size;
+	const uint32_t field_offset_y = c_block_size;
 
-	DrawHorisontalLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x - 1,
-		field_offset_y - 1,
-		c_block_size * c_field_width + 2);
-	DrawHorisontalLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x - 1,
-		field_offset_y + c_block_size * c_field_height,
-		c_block_size * c_field_width + 2);
+	const SpriteBMP border_sprite(Sprites::tetris_block_7); // TODO - use special sprite instead.
 
-	DrawVerticaLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x - 1,
-		field_offset_y - 1,
-		c_block_size * c_field_height + 2);
-	DrawVerticaLine(
-		frame_buffer,
-		g_color_white,
-		field_offset_x + c_block_size * c_field_width,
-		field_offset_y - 1,
-		c_block_size * c_field_height + 2);
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		DrawSprite(
+			frame_buffer,
+			border_sprite,
+			field_offset_x + x * c_block_size,
+			field_offset_y - c_block_size);
+		DrawSprite(
+			frame_buffer,
+			border_sprite,
+			field_offset_x + x * c_block_size,
+			field_offset_y + c_field_height * c_block_size);
+	}
+	for(uint32_t y = 0; y < c_field_height + 2; ++y)
+	{
+		DrawSprite(
+			frame_buffer,
+			border_sprite,
+			field_offset_x - 1 * c_block_size,
+			field_offset_y + y * c_block_size - c_block_size);
+		DrawSprite(
+			frame_buffer,
+			border_sprite,
+			field_offset_x + c_field_width * c_block_size,
+			field_offset_y + y * c_block_size - c_block_size);
+	}
 
 	const SpriteBMP tetris_blocks_sprites[g_tetris_num_piece_types]
 	{
@@ -219,14 +222,14 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		for(const auto& piece_block : tetris_active_piece_->blocks)
 		{
 			if(piece_block[0] >= 0 && piece_block[0] < int32_t(c_field_width) &&
-				piece_block[1] >= 0 && piece_block[1] < int32_t(c_field_height))
+				piece_block[1] >= -1 && piece_block[1] < int32_t(c_field_height))
 			{
 				DrawSpriteWithAlpha(
 					frame_buffer,
 					tetris_blocks_sprites[uint32_t(tetris_active_piece_->type) - 1],
 					0,
 					field_offset_x + uint32_t(piece_block[0]) * c_block_size,
-					field_offset_y + uint32_t(piece_block[1]) * c_block_size);
+					uint32_t(int32_t(field_offset_y) + piece_block[1] * int32_t(c_block_size)));
 			}
 		}
 	}
