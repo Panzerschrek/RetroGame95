@@ -5,6 +5,7 @@
 #include "Progress.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
+#include "Strings.hpp"
 #include <cassert>
 
 namespace
@@ -336,7 +337,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		g_cga_palette[pieces_colors[uint32_t(next_piece_index)]],
 		next_piece_offset_x + block_width * 4,
 		next_piece_offset_y - block_height * 6,
-		"Next");
+		Strings::tetris_next);
 
 	for(const auto& piece_block : g_tetris_pieces_blocks[next_piece_index])
 	{
@@ -349,11 +350,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	}
 
 	char text[64];
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, "Level: ");
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, Strings::tetris_level);
 	std::snprintf(text, sizeof(text), "%3d", level_);
 	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y, text);
 
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, "Score: ");
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
 	std::snprintf(text, sizeof(text), "%3d", score_);
 	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y + g_glyph_height * 2, text);
 
@@ -364,7 +365,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			g_cga_palette[14],
 			field_offset_x + block_width  * c_field_width  / 2,
 			field_offset_y + block_height * c_field_height / 2,
-			"Game Over");
+			Strings::tetris_game_over);
 	}
 }
 
