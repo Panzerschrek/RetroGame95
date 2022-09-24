@@ -136,27 +136,27 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 			}
 		}
 	}
+
+	++tick_;
 }
 
 void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 {
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
+	DrawSprite(frame_buffer, Sprites::kloster_unser_lieben_frauen_magdeburg, 0, 0);
 
-	const uint32_t title_offset_x = 104;
-	const uint32_t title_offset_y = 32;
+	const SpriteBMP game_name_sprite(Sprites::game_name);
+	DrawSpriteWithAlpha(frame_buffer, game_name_sprite, 0, (frame_buffer.width - game_name_sprite.GetWidth()) / 2, 4);
+
 	const uint32_t offset_x = 112;
 	const uint32_t offset_y = 96;
-	const uint32_t row_step = 16;
-	const uint32_t cursor_offset = 16;
+	const uint32_t row_step = 2 * g_glyph_height;
+	const uint32_t cursor_offset = 3 * g_glyph_width;
 
-	DrawText(
-		frame_buffer,
-		g_color_white,
-		title_offset_x,
-		title_offset_y,
-		Strings::main_menu_game_title);
+	const Color32 texts_color = g_cga_palette[11];
+	const Color32 cursor_color = g_cga_palette[10];
+	const bool draw_cursor = tick_ / 32 % 2 != 0;
 
-	const char* const selet_symbol = ">";
+	const char* const selet_symbol = "=>";
 
 	if(const auto main_menu_row = std::get_if<MenuRow>(&current_row_))
 	{
@@ -167,22 +167,26 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 			Strings::main_menu_select_game,
 			Strings::main_menu_quit
 		};
-		for(size_t i = 0; i < std::size(texts); ++i)
+
+		for(uint32_t i = 0; i < uint32_t(std::size(texts)); ++i)
 		{
 			DrawText(
 				frame_buffer,
-				g_color_white,
+				texts_color,
 				offset_x,
-				offset_y + row_step * uint32_t(i),
+				offset_y + row_step * i,
 				texts[i]);
 		}
 
-		DrawText(
-			frame_buffer,
-			g_color_white,
-			offset_x - cursor_offset,
-			offset_y + row_step * uint32_t(*main_menu_row),
-			selet_symbol);
+		if(draw_cursor)
+		{
+			DrawText(
+				frame_buffer,
+				cursor_color,
+				offset_x - cursor_offset,
+				offset_y + row_step * uint32_t(*main_menu_row),
+				selet_symbol);
+		}
 	}
 	if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
 	{
@@ -197,7 +201,7 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawText(
 				frame_buffer,
-				g_color_white,
+				texts_color,
 				offset_x,
 				offset_y + row_step * uint32_t(i),
 				(i == 0 || ((1 << i) & progress_.opened_games_mask) != 0)
@@ -205,12 +209,15 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 					: "????????????????");
 		}
 
-		DrawText(
-			frame_buffer,
-			g_color_white,
-			offset_x - cursor_offset,
-			offset_y + row_step * uint32_t(*select_game_row),
-			selet_symbol);
+		if(draw_cursor)
+		{
+			DrawText(
+				frame_buffer,
+				cursor_color,
+				offset_x - cursor_offset,
+				offset_y + row_step * uint32_t(*select_game_row),
+				selet_symbol);
+		}
 	}
 }
 

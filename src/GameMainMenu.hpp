@@ -34,6 +34,8 @@ private:
 private:
 	SoundPlayer& sound_player_;
 
+	uint32_t tick_ = 0;
+
 	const Progress progress_;
 
 	std::variant<MenuRow, SelectGameMenuRow> current_row_ = MenuRow::NewGame;
