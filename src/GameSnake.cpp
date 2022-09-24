@@ -7,6 +7,7 @@
 #include "Sprites.hpp"
 #include "Strings.hpp"
 #include <cassert>
+#include <cstring>
 
 namespace
 {

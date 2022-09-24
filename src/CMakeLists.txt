@@ -2,6 +2,8 @@ set(PROJECT_NAME RetroGame95)
 
 cmake_minimum_required(VERSION 3.10)
 
+set(GAME_LANGUAGE "De" CACHE STRING "Language of the game. For example, En, De or nay other (with existing localization file).")
+
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.15")
 	cmake_policy(SET CMP0091 NEW)
 endif()
@@ -92,6 +94,10 @@ file(GENERATE OUTPUT ${SPRITES_HEADER} CONTENT "${SPRITES_HEADER_CONTENT}")
 # Add executable.
 
 file(GLOB_RECURSE SOURCES "*.cpp" "*.hpp")
+file(GLOB_RECURSE LOCALIZATION_SOURCES "Strings*.cpp")
+list(REMOVE_ITEM SOURCES ${LOCALIZATION_SOURCES})
+list(APPEND SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Strings${GAME_LANGUAGE}.cpp)
+
 add_executable(${PROJECT_NAME} ${GUI_APP_FLAG} ${SOURCES} ${SPRITES_HEADERS} ${SPRITES_HEADER})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS} ${SPRITES_HEADERS_PATH})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
