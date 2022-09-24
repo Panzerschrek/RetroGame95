@@ -162,7 +162,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = c_block_size;
 	const uint32_t field_offset_y = c_block_size;
 
-	const SpriteBMP border_sprite(Sprites::tetris_block_7); // TODO - use special sprite instead.
+	const SpriteBMP border_sprite(Sprites::snake_field_border);
 
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
