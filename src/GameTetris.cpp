@@ -195,8 +195,8 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t next_piece_offset_x = field_offset_x + block_width * (c_field_width - 2);
 	const uint32_t next_piece_offset_y = field_offset_y + 7 * block_height;
 
-	const uint32_t texts_offset_x = field_offset_x - 8 * 13;
-	const uint32_t texts_offset_y = field_offset_y + block_height * c_field_height - 8 * 3;
+	const uint32_t texts_offset_x = field_offset_x - g_glyph_width * 13;
+	const uint32_t texts_offset_y = field_offset_y + block_height * c_field_height - g_glyph_height * 3;
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
@@ -351,11 +351,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	char text[64];
 	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, "Level: ");
 	std::snprintf(text, sizeof(text), "%3d", level_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + 8 * 7, texts_offset_y, text);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y, text);
 
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + 16, "Score: ");
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, "Score: ");
 	std::snprintf(text, sizeof(text), "%3d", score_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + 8 * 7, texts_offset_y + 16, text);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y + g_glyph_height * 2, text);
 
 	if(game_over_)
 	{

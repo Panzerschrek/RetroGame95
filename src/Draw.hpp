@@ -80,6 +80,9 @@ void DrawSpriteWithAlphaRotate270(
 	uint32_t start_x,
 	uint32_t start_y);
 
+constexpr const uint32_t g_glyph_width  = 8;
+constexpr const uint32_t g_glyph_height = 8;
+
 void DrawText(
 	FrameBuffer frame_buffer,
 	Color32 color,

@@ -328,7 +328,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, "Round");
 
 	std::snprintf(text, sizeof(text), "%5d", level_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 16, text);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
 
 	if(tick_ < level_start_animation_end_tick_)
 	{
@@ -344,14 +344,14 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			frame_buffer,
 			g_color_white,
 			field_offset_x + c_block_width  * c_field_width  / 2,
-			field_offset_y + c_block_height * (c_field_height - 6) + 16,
+			field_offset_y + c_block_height * (c_field_height - 6) + g_glyph_height * 2,
 			text);
 	}
 
 	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, "Score");
 
 	std::snprintf(text, sizeof(text), "%5d", score_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + 16, text);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
 
 	if(game_over_)
 	{

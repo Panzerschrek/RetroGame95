@@ -86,9 +86,6 @@ uint32_t ExtractUTF8CodePoint(const char*& ptr)
 	return code;
 }
 
-const uint32_t g_glyph_width = 8;
-const uint32_t g_glyph_height = 8;
-
 } // namespace
 
 void FillWholeFrameBuffer(const FrameBuffer frame_buffer, const Color32 color)

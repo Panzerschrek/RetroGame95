@@ -443,19 +443,18 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
 	}
 
-	const uint32_t glyph_height = 8;
 	const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
-	const uint32_t texts_offset_y = 8 * glyph_height;
+	const uint32_t texts_offset_y = 8 * g_glyph_height;
 
 	char text[64];
 
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * glyph_height, "level");
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, "level");
 	std::snprintf(text, sizeof(text), "%7d", level_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * glyph_height, text);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
 
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * glyph_height, "score");
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, "score");
 	std::snprintf(text, sizeof(text), "%7d", score_);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * glyph_height, text);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
 
 	if(tick_ < spawn_animation_end_tick_)
 	{
