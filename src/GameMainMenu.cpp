@@ -147,13 +147,14 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 	const SpriteBMP game_name_sprite(Sprites::game_name);
 	DrawSpriteWithAlpha(frame_buffer, game_name_sprite, 0, (frame_buffer.width - game_name_sprite.GetWidth()) / 2, 4);
 
-	const uint32_t offset_x = 112;
+	const uint32_t offset_x = 80;
 	const uint32_t offset_y = 96;
-	const uint32_t row_step = 2 * g_glyph_height;
+	const uint32_t row_step = 3 * g_glyph_height;
 	const uint32_t cursor_offset = 3 * g_glyph_width;
 
 	const Color32 texts_color = g_cga_palette[11];
 	const Color32 cursor_color = g_cga_palette[10];
+	const Color32 shadow_color = g_cga_palette[0];
 	const bool draw_cursor = tick_ / 32 % 2 != 0;
 
 	const char* const selet_symbol = "=>";
@@ -170,9 +171,10 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 
 		for(uint32_t i = 0; i < uint32_t(std::size(texts)); ++i)
 		{
-			DrawText(
+			DrawTextWithFullShadow(
 				frame_buffer,
 				texts_color,
+				shadow_color,
 				offset_x,
 				offset_y + row_step * i,
 				texts[i]);
@@ -180,9 +182,10 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 
 		if(draw_cursor)
 		{
-			DrawText(
+			DrawTextWithFullShadow(
 				frame_buffer,
 				cursor_color,
+				shadow_color,
 				offset_x - cursor_offset,
 				offset_y + row_step * uint32_t(*main_menu_row),
 				selet_symbol);
@@ -199,9 +202,10 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		};
 		for(uint32_t i = 0; i < uint32_t(SelectGameMenuRow::NumGames); ++i)
 		{
-			DrawText(
+			DrawTextWithFullShadow(
 				frame_buffer,
 				texts_color,
+				shadow_color,
 				offset_x,
 				offset_y + row_step * uint32_t(i),
 				(i == 0 || ((1 << i) & progress_.opened_games_mask) != 0)
@@ -211,9 +215,10 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 
 		if(draw_cursor)
 		{
-			DrawText(
+			DrawTextWithFullShadow(
 				frame_buffer,
 				cursor_color,
+				shadow_color,
 				offset_x - cursor_offset,
 				offset_y + row_step * uint32_t(*select_game_row),
 				selet_symbol);

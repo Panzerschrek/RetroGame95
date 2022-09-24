@@ -90,6 +90,30 @@ void DrawText(
 	uint32_t start_y,
 	const char* text);
 
+void DrawTextWithLightShadow(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	Color32 shadow_color,
+	uint32_t start_x,
+	uint32_t start_y,
+	const char* text);
+
+void DrawTextWithFullShadow(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	Color32 shadow_color,
+	uint32_t start_x,
+	uint32_t start_y,
+	const char* text);
+
+void DrawTextWithOutline(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	Color32 shadow_color,
+	uint32_t start_x,
+	uint32_t start_y,
+	const char* text);
+
 void DrawTextCentered(
 	FrameBuffer frame_buffer,
 	Color32 color,

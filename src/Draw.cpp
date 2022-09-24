@@ -389,6 +389,51 @@ void DrawText(
 	}
 }
 
+void DrawTextWithLightShadow(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const Color32 shadow_color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const char* const text)
+{
+	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, color, start_x, start_y, text);
+}
+
+void DrawTextWithFullShadow(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const Color32 shadow_color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const char* const text)
+{
+	DrawText(frame_buffer, shadow_color, start_x + 1, start_y, text);
+	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
+	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, color, start_x, start_y, text);
+}
+
+void DrawTextWithOutline(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const Color32 shadow_color,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const char* const text)
+{
+	DrawText(frame_buffer, shadow_color, start_x + 1, start_y, text);
+	DrawText(frame_buffer, shadow_color, start_x - 1, start_y, text);
+	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
+	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
+	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, shadow_color, start_x + 1, start_y - 1, text);
+	DrawText(frame_buffer, shadow_color, start_x - 1, start_y + 1, text);
+	DrawText(frame_buffer, shadow_color, start_x - 1, start_y - 1, text);
+	DrawText(frame_buffer, color, start_x, start_y, text);
+}
+
 void DrawTextCentered(
 	const FrameBuffer frame_buffer,
 	const Color32 color,
