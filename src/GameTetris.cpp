@@ -585,7 +585,7 @@ void GameTetris::MovePieceDown()
 		else
 		{
 			game_over_ = true;
-			sound_player_.PlaySound(SoundId::SnakeDeath);
+			sound_player_.PlaySound(SoundId::CharacterDeath);
 		}
 	}
 	else
@@ -625,7 +625,7 @@ void GameTetris::MovePieceDown()
 				{
 					// HACK! prevent overflow.
 					game_over_ = true;
-					sound_player_.PlaySound(SoundId::SnakeDeath);
+					sound_player_.PlaySound(SoundId::CharacterDeath);
 					break;
 				}
 				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] = active_piece_->type;

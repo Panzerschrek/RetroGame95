@@ -82,7 +82,7 @@ SoundData GenSnakeBonusEat(const uint32_t sample_rate)
 }
 
 
-SoundData GenSnakeDeath(const uint32_t sample_rate)
+SoundData GenCharacterDeath(const uint32_t sample_rate)
 {
 	return Concat(
 		GenSquareWaveSound(sample_rate, 180 * g_fixed16_one, 16),

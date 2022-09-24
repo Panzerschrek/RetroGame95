@@ -647,7 +647,7 @@ void GameSnake::MoveSnake()
 void GameSnake::OnSnakeDeath()
 {
 	death_animation_end_tick_ = tick_ + g_death_animation_duration;
-	sound_player_.PlaySound(SoundId::SnakeDeath);
+	sound_player_.PlaySound(SoundId::CharacterDeath);
 }
 
 void GameSnake::MoveTetrisPieceDown()

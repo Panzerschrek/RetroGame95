@@ -13,4 +13,4 @@ SoundData GenTetrisFigureStep(uint32_t sample_rate);
 
 SoundData GenSnakeBonusEat(uint32_t sample_rate);
 
-SoundData GenSnakeDeath(uint32_t sample_rate);
+SoundData GenCharacterDeath(uint32_t sample_rate);

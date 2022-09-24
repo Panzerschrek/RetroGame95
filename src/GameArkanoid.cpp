@@ -474,6 +474,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 	{
 		// Lost all balls - kill the ship.
 
+		sound_player_.PlaySound(SoundId::CharacterDeath);
 		DeathAnimation death_animation;
 		death_animation.ship_position = ship_->position;
 		death_animation.end_tick = tick_ + g_death_animation_duration;

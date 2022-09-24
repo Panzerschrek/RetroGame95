@@ -1304,7 +1304,7 @@ void GamePacman::ProcessPacmanGhostsTouch()
 				if(pacman_.dead_animation_end_tick == std::nullopt)
 				{
 					pacman_.dead_animation_end_tick = tick_ + g_death_animation_duration;
-					sound_player_.PlaySound(SoundId::SnakeDeath);
+					sound_player_.PlaySound(SoundId::CharacterDeath);
 				}
 			}
 		}
