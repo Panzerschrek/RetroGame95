@@ -11,6 +11,7 @@ Host::Host()
 	, prev_tick_time_(GetCurrentTime())
 	, game_(std::make_unique<GameMainMenu>(sound_player_))
 {
+	sound_player_.PlayMusic(MusicId::Test);
 }
 
 bool Host::Loop()
@@ -26,6 +27,7 @@ bool Host::Loop()
 		if(auto next_game = game_->AskForNextGameTransition())
 		{
 			game_ = std::move(next_game);
+			sound_out_.StopPlaying();
 		}
 
 		SDL_SetRelativeMouseMode(game_->NeedToCaptureMouse() ? SDL_TRUE : SDL_FALSE);

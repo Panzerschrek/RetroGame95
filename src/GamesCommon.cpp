@@ -190,7 +190,7 @@ void NumToString(char* const str, const size_t str_len, uint32_t num, const uint
 	{
 		const uint32_t digit = num % 10;
 		num /= 10;
-		*dst = '0' + digit;
+		*dst = char('0' + digit);
 		++dst;
 		++num_digits;
 	} while(num != 0 && dst < dst_end);
