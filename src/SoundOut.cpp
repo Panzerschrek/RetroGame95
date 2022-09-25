@@ -14,7 +14,7 @@ int32_t NearestPowerOfTwoFloor(const int32_t x)
 	return r;
 }
 
-const fixed16_t g_volume_step = g_fixed16_one / 16;
+const fixed16_t g_volume_step = g_fixed16_one + g_fixed16_one / 4;
 
 } // namespace
 
@@ -112,12 +112,12 @@ void SoundOut::SetVolume(const fixed16_t volume)
 
 void SoundOut::IncreaseVolume()
 {
-	SetVolume(volume_.load() + g_volume_step);
+	SetVolume(std::max(g_fixed16_one / 256, Fixed16Mul(volume_.load(), g_volume_step)));
 }
 
 void SoundOut::DecreaseVolume()
 {
-	SetVolume(volume_.load() - g_volume_step);
+	SetVolume(Fixed16Div(volume_.load(), g_volume_step));
 }
 
 void SDLCALL SoundOut::AudioCallback(void* const userdata, Uint8* const stream, int len_bytes)
