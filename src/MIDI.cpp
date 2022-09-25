@@ -119,6 +119,7 @@ SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t 
 	Channels channels;
 
 	size_t offset = sizeof(TrackHeader);
+	bool first_event = true;
 	while(offset < data_size)
 	{
 		const uint32_t delta_time = ReadVarLen(data, offset);
@@ -127,8 +128,11 @@ SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t 
 
 		const uint32_t delta_samples = uint32_t(float(delta_time) * time_scaler * float(sample_rate));
 		std::cout << "Delta samples " << delta_samples << std::endl;
-
-		FillSoundData(channels, sample_rate, std::min(delta_samples, 65536u), result);
+		if(!first_event)
+		{
+			FillSoundData(channels, sample_rate, delta_samples, result);
+		}
+		first_event = false;
 
 		const uint8_t event_type = (event >> 4);
 		ChannelState& channel = channels[event & 15];
@@ -200,7 +204,6 @@ SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t 
 			{
 				const uint32_t meta_length = ReadVarLen(data, offset);
 				offset += meta_length;
-				++offset;
 				std::cout << "Event " << uint32_t(event) << " With length " << meta_length << std::endl;
 			}
 			break;
@@ -212,7 +215,7 @@ SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t 
 		if(event < 0x80)
 		{
 			std::cout << "Strange event" << std::endl;
-			//++offset;
+			offset += 1;
 		}
 	}
 
