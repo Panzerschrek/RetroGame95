@@ -25,4 +25,5 @@ public:
 private:
 	SoundOut& sound_out_;
 	std::array<SoundData, size_t(SoundId::NumSounds)> sounds_;
+	SoundData test_music_;
 };

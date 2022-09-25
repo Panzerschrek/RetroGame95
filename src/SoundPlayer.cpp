@@ -1,5 +1,6 @@
 #include "SoundPlayer.hpp"
 #include "SoundsGeneration.hpp"
+#include "MIDI.hpp"
 
 SoundPlayer::SoundPlayer(SoundOut& sound_out)
 	: sound_out_(sound_out)
@@ -17,6 +18,10 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 	{
 		sounds_[i] = c_gen_funcs[i](sound_out_.GetSampleRate());
 	}
+
+	test_music_ = MakeMIDISound(LoadMIDIFile("aviators_march.midi"));
+
+	sound_out_.PlaySound(test_music_);
 }
 
 void SoundPlayer::PlaySound(const SoundId sound_id)
