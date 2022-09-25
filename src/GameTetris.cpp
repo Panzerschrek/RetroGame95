@@ -351,11 +351,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	char text[64];
 	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, Strings::tetris_level);
-	std::snprintf(text, sizeof(text), "%3d", level_);
+	NumToString(text, sizeof(text), level_, 3);
 	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y, text);
 
 	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
-	std::snprintf(text, sizeof(text), "%3d", score_);
+	NumToString(text, sizeof(text), score_, 3);
 	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y + g_glyph_height * 2, text);
 
 	if(game_over_)

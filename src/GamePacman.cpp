@@ -450,11 +450,13 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	char text[64];
 
 	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
-	std::snprintf(text, sizeof(text), "%7d", level_);
+
+	NumToString(text, sizeof(text), level_, 7);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
 
 	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
-	std::snprintf(text, sizeof(text), "%7d", score_);
+
+	NumToString(text, sizeof(text), score_, 7);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
 
 	if(tick_ < spawn_animation_end_tick_)

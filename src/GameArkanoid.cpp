@@ -328,7 +328,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 
 	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
 
-	std::snprintf(text, sizeof(text), "%5d", level_);
+	NumToString(text, sizeof(text), level_, 5);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
 
 	if(tick_ < level_start_animation_end_tick_)
@@ -340,7 +340,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + c_block_height * (c_field_height - 6),
 			Strings::arkanoid_round);
 
-		std::snprintf(text, sizeof(text), "%d", level_);
+		NumToString(text, sizeof(text), level_, 0);
 		DrawTextCentered(
 			frame_buffer,
 			g_color_white,
@@ -351,7 +351,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 
 	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
 
-	std::snprintf(text, sizeof(text), "%5d", score_);
+	NumToString(text, sizeof(text), score_, 5);
 	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
 
 	if(game_over_)

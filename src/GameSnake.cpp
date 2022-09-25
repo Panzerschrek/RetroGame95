@@ -428,7 +428,10 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 
 	if(field_start_animation_end_tick_ != std::nullopt)
 	{
-		std::snprintf(text, sizeof(text), "%s %d", Strings::snake_level, level_);
+		std::strcpy(text, Strings::snake_level);
+		std::strcpy(text + std::strlen(text), " ");
+		const size_t len = std::strlen(text);
+		NumToString(text + len, sizeof(text) - len, level_, 1);
 
 		DrawTextCentered(
 			frame_buffer,
@@ -463,7 +466,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			frame_buffer.height - g_glyph_height * 2 - 3,
 			stats_names[i]);
 
-		std::snprintf(text, sizeof(text), "%5d", stats[i]);
+		NumToString(text, sizeof(text), stats[i], 5);
 		DrawText(frame_buffer, g_color_white, x - g_glyph_width * 5, frame_buffer.height - g_glyph_height - 1, text);
 	}
 }
