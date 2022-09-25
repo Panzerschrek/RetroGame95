@@ -1,6 +1,7 @@
 #include "SoundPlayer.hpp"
 #include "SoundsGeneration.hpp"
 #include "MIDI.hpp"
+#include "Music.hpp"
 
 SoundPlayer::SoundPlayer(SoundOut& sound_out)
 	: sound_out_(sound_out)
@@ -19,14 +20,25 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		sounds_[i] = c_gen_funcs[i](sound_out_.GetSampleRate());
 	}
 
-	test_music_ = MakeMIDISound(LoadMIDIFile("test.mid"), sound_out_.GetSampleRate());
+	const std::pair<const uint8_t*, size_t> c_music_data[]
+	{
+		{Music::test, std::size(Music::test)},
+	};
 
-	sound_out_.PlaySound(test_music_);
+	for(size_t i= 0; i < size_t(MusicId::NumMelidies); ++i)
+	{
+		music_[i] = MakeMIDISound(c_music_data[i].first, c_music_data[i].second, sound_out_.GetSampleRate());
+	}
 }
 
 void SoundPlayer::PlaySound(const SoundId sound_id)
 {
 	sound_out_.PlaySound(sounds_[size_t(sound_id)]);
+}
+
+void SoundPlayer::PlayMusic(const MusicId music_id)
+{
+	sound_out_.PlaySound(music_[size_t(music_id)]);
 }
 
 void SoundPlayer::StopPlaying()

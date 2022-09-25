@@ -11,6 +11,7 @@ Host::Host()
 	, prev_tick_time_(GetCurrentTime())
 	, game_(std::make_unique<GameMainMenu>(sound_player_))
 {
+	sound_player_.PlayMusic(MusicId::Test);
 }
 
 bool Host::Loop()

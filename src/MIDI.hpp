@@ -1,6 +1,4 @@
 #pragma once
 #include "SoundOut.hpp"
 
-const std::vector<uint8_t> LoadMIDIFile(const char* file_name);
-
-SoundData MakeMIDISound(const std::vector<uint8_t>& data, uint32_t sample_rate);
+SoundData MakeMIDISound(const uint8_t* data, size_t data_size, uint32_t sample_rate);

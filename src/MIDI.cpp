@@ -1,6 +1,7 @@
 #include "MIDI.hpp"
 #include <iostream>
 #include <optional>
+#include <cassert>
 #include <cstring>
 
 namespace
@@ -16,16 +17,15 @@ struct MIDIHeader
 	int16_t division;
 };
 
-static_assert(sizeof(MIDIHeader) == 14, "Invalid size");
-
 struct TrackHeader
 {
 	char type[4];
 	uint32_t length;
 };
-
 #pragma pack(pop)
 
+static_assert(sizeof(MIDIHeader) == 14, "Invalid size");
+static_assert(sizeof(TrackHeader) == 8, "Invalid size");
 
 struct ChannelState
 {
@@ -110,16 +110,12 @@ SoundData LoadTrack(
 {
 	const auto header = reinterpret_cast<const TrackHeader*>(data);
 
-	SoundData result;
-	if(std::strncmp(header->type, "MTrk", 4) != 0)
-	{
-		return result;
-	}
 	const uint32_t length = ByteSwap(header->length);
-	if(length > data_size)
-	{
-		return result;
-	}
+
+	assert(std::strncmp(header->type, "MTrk", 4) == 0);
+	assert(length <= data_size);
+
+	SoundData result;
 
 	Channels channels;
 
@@ -240,46 +236,16 @@ SoundData LoadTrack(
 
 } // namespace
 
-const std::vector<uint8_t> LoadMIDIFile(const char* file_name)
+SoundData MakeMIDISound(const uint8_t* const data, size_t const data_size, const uint32_t sample_rate)
 {
-	FILE* const f = std::fopen(file_name, "rb");
-
-	std::fseek(f, 0, SEEK_END);
-	const uint64_t file_size = uint64_t(std::ftell(f));
-	std::fseek( f, 0, SEEK_SET);
-
-	std::vector<uint8_t> out_file_content;
-	out_file_content.resize(file_size);
-	std::fread(out_file_content.data(), 1, file_size, f);
-
-	std::fclose( f );
-	return out_file_content;
-}
-
-SoundData MakeMIDISound(const std::vector<uint8_t>& data, const uint32_t sample_rate)
-{
-	SoundData result;
-
-	const auto header = reinterpret_cast<const MIDIHeader*>(data.data());
-	if(std::strncmp(header->type, "MThd", 4) != 0)
-	{
-		return result;
-	}
-	const uint32_t length = ByteSwap(header->length);
-	if(length != 6)
-	{
-		return result;
-	}
-
-	const auto format = ByteSwap(header->format);
-	if(format > 1)
-	{
-		return result;
-	}
+	const auto header = reinterpret_cast<const MIDIHeader*>(data);
+	assert(std::strncmp(header->type, "MThd", 4) == 0);
+	assert(ByteSwap(header->length) == 6);
+	assert(ByteSwap(header->format) <= 1);
 
 	const auto division = int16_t(ByteSwap(uint16_t(header->division)));
 
 	const float time_scaler = 1.0f / float(division);
 
-	return LoadTrack(data.data() + sizeof(MIDIHeader), data.size() - sizeof(MIDIHeader), sample_rate, time_scaler);
+	return LoadTrack(data + sizeof(MIDIHeader), data_size - sizeof(MIDIHeader), sample_rate, time_scaler);
 }

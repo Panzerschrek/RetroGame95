@@ -11,6 +11,12 @@ enum class SoundId
 	NumSounds,
 };
 
+enum class MusicId
+{
+	Test,
+	NumMelidies,
+};
+
 class SoundPlayer
 {
 public:
@@ -20,10 +26,11 @@ public:
 	SoundPlayer& operator=(const SoundPlayer&) = delete;
 
 	void PlaySound(SoundId sound_id);
+	void PlayMusic(MusicId music_id);
 	void StopPlaying();
 
 private:
 	SoundOut& sound_out_;
 	std::array<SoundData, size_t(SoundId::NumSounds)> sounds_;
-	SoundData test_music_;
+	std::array<SoundData, size_t(MusicId::NumMelidies)> music_;
 };
