@@ -19,7 +19,7 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		sounds_[i] = c_gen_funcs[i](sound_out_.GetSampleRate());
 	}
 
-	test_music_ = MakeMIDISound(LoadMIDIFile("valkyries_flight.midi"), sound_out_.GetSampleRate());
+	test_music_ = MakeMIDISound(LoadMIDIFile("test.mid"), sound_out_.GetSampleRate());
 
 	sound_out_.PlaySound(test_music_);
 }

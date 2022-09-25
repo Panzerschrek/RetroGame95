@@ -92,16 +92,20 @@ void FillSoundData(const Channels& channels, const uint32_t sample_rate, const u
 
 	const float mul = std::pow(2.0f, 1.0f / 12.0f);
 
-	const float freq = base_freq * std::pow( mul, float(*note - base_freq_note) );
-	const float freq_scaled = freq * (2.0f * 3.1415926535f) / float(sample_rate);
+	const float freq = base_freq * std::pow(mul, float(*note - base_freq_note));
 
+	const uint32_t shift = 16;
+	const uint32_t freq_scaled = uint32_t(float(1 << shift) * freq / float(sample_rate));
 	for(size_t i = sound_data.samples.size() - duration; i < sound_data.samples.size(); ++i)
 	{
-		sound_data.samples[i] = SampleType(127.0f * std::sin(freq_scaled * float(i)));
+		sound_data.samples[i] = (((i * freq_scaled) >> shift) & 1) == 0 ? (-127) : (127);
 	}
 }
 
-SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t sample_rate, const float time_scaler)
+SoundData LoadTrack(
+	const uint8_t* data, const size_t data_size,
+	const uint32_t sample_rate,
+	const float time_scaler)
 {
 	const auto header = reinterpret_cast<const TrackHeader*>(data);
 
@@ -118,15 +122,17 @@ SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t 
 
 	Channels channels;
 
+	float tempo = 0.5f;
+
 	size_t offset = sizeof(TrackHeader);
 	bool first_event = true;
-	while(offset < data_size)
+	while(offset < length)
 	{
 		const uint32_t delta_time = ReadVarLen(data, offset);
 		const uint8_t event = data[offset];
 		++offset;
 
-		const uint32_t delta_samples = uint32_t(float(delta_time) * time_scaler * float(sample_rate));
+		const uint32_t delta_samples = uint32_t(float(delta_time * sample_rate) * tempo * time_scaler);
 		std::cout << "Delta samples " << delta_samples << std::endl;
 		if(!first_event)
 		{
@@ -197,8 +203,16 @@ SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t 
 				++offset;
 
 				const uint32_t meta_length = ReadVarLen(data, offset);
-				offset += meta_length;
+
 				std::cout << "Meta event " << uint32_t(meta_event) << " with length " << meta_length << std::endl;
+
+				if(meta_event == 0x51)
+				{
+					tempo = float((data[offset] << 16) | (data[offset + 1] << 8) | (data[offset + 2] << 0)) / 1000000.0f;
+					std::cout << "Tempo event " << tempo << std::endl;
+				}
+
+				offset += meta_length;
 			}
 			else
 			{
@@ -257,14 +271,14 @@ SoundData MakeMIDISound(const std::vector<uint8_t>& data, const uint32_t sample_
 	}
 
 	const auto format = ByteSwap(header->format);
-	if(format != 0)
+	if(format > 1)
 	{
 		return result;
 	}
 
 	const int16_t division = ByteSwap(uint16_t(header->division));
 
-	const float time_scaler = 0.5f / float(division);
+	const float time_scaler = 1.0f / float(division);
 
 	return LoadTrack(data.data() + sizeof(MIDIHeader), data.size() - sizeof(MIDIHeader), sample_rate, time_scaler);
 }
