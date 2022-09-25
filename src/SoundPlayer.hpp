@@ -14,7 +14,7 @@ enum class SoundId
 enum class MusicId
 {
 	Test,
-	NumMelidies,
+	NumMelodies,
 };
 
 class SoundPlayer
@@ -32,5 +32,5 @@ public:
 private:
 	SoundOut& sound_out_;
 	std::array<SoundData, size_t(SoundId::NumSounds)> sounds_;
-	std::array<SoundData, size_t(MusicId::NumMelidies)> music_;
+	std::array<SoundData, size_t(MusicId::NumMelodies)> music_;
 };

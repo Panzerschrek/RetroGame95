@@ -45,9 +45,7 @@ uint32_t ByteSwap(const uint32_t x)
 
 uint16_t ByteSwap(const uint16_t x)
 {
-	return uint16_t(
-		((x & 0x00FF) << 8) |
-		((x & 0xFF00) >> 8));
+	return uint16_t(((x & 0x00FF) << 8) | ((x & 0xFF00) >> 8));
 }
 
 uint32_t ReadVarLen(const uint8_t* const data, size_t& offset)
@@ -68,9 +66,9 @@ uint32_t ReadVarLen(const uint8_t* const data, size_t& offset)
 	return value;
 }
 
-void FillSoundData(const Channels& channels, const uint32_t sample_rate, const uint32_t duration, SoundData& sound_data)
+void FillSoundData(const Channels& channels, const uint32_t sample_rate, const uint32_t duration, std::vector<SampleType>& samples)
 {
-	sound_data.samples.resize(sound_data.samples.size() + duration, 0);
+	samples.resize(samples.size() + duration, 0);
 
 	std::optional<uint32_t> note;
 	for(const ChannelState& channel : channels)
@@ -87,18 +85,16 @@ void FillSoundData(const Channels& channels, const uint32_t sample_rate, const u
 	}
 
 	// note A4
-	const float base_freq = 440.0f;
-	const uint32_t base_freq_note = 12 * 4 + 9;
+	constexpr float base_freq = 440.0f;
+	constexpr uint32_t base_freq_note = 12 * 4 + 9;
 
-	const float mul = std::pow(2.0f, 1.0f / 12.0f);
-
-	const float freq = base_freq * std::pow(mul, float(*note - base_freq_note));
+	const float freq = base_freq * std::exp2(float(*note - base_freq_note) / 12.0f);
 
 	const uint32_t shift = 16;
 	const uint32_t freq_scaled = uint32_t(float(1 << shift) * freq / float(sample_rate));
-	for(size_t i = sound_data.samples.size() - duration; i < sound_data.samples.size(); ++i)
+	for(size_t i = samples.size() - duration; i < samples.size(); ++i)
 	{
-		sound_data.samples[i] = (((i * freq_scaled) >> shift) & 1) == 0 ? (-127) : (127);
+		samples[i] = (((i * freq_scaled) >> shift) & 1) == 0 ? (-127) : (127);
 	}
 }
 
@@ -121,7 +117,6 @@ SoundData LoadTrack(
 	float tempo = 0.5f;
 
 	size_t offset = sizeof(TrackHeader);
-	bool first_event = true;
 	while(offset < std::min(size_t(length), data_size))
 	{
 		const uint32_t delta_time = ReadVarLen(data, offset);
@@ -129,13 +124,9 @@ SoundData LoadTrack(
 		++offset;
 
 		const uint32_t delta_samples = uint32_t(float(delta_time * sample_rate) * tempo * time_scaler);
-		if(!first_event)
-		{
-			FillSoundData(channels, sample_rate, delta_samples, result);
-		}
-		first_event = false;
+		FillSoundData(channels, sample_rate, delta_samples, result.samples);
 
-		const uint8_t event_type = (event >> 4);
+		const uint8_t event_type = event >> 4;
 		ChannelState& channel = channels[event & 15];
 
 		switch (event_type)
@@ -236,7 +227,5 @@ SoundData MakeMIDISound(const uint8_t* const data, size_t const data_size, const
 
 	const auto division = int16_t(ByteSwap(uint16_t(header->division)));
 
-	const float time_scaler = 1.0f / float(division);
-
-	return LoadTrack(data + sizeof(MIDIHeader), data_size - sizeof(MIDIHeader), sample_rate, time_scaler);
+	return LoadTrack(data + sizeof(MIDIHeader), data_size - sizeof(MIDIHeader), sample_rate, 1.0f / float(division));
 }

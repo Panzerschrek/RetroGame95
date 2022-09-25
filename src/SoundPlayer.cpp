@@ -25,7 +25,7 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		{Music::test, std::size(Music::test)},
 	};
 
-	for(size_t i= 0; i < size_t(MusicId::NumMelidies); ++i)
+	for(size_t i= 0; i < size_t(MusicId::NumMelodies); ++i)
 	{
 		music_[i] = MakeMIDISound(c_music_data[i].first, c_music_data[i].second, sound_out_.GetSampleRate());
 	}
