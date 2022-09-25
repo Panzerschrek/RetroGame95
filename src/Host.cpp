@@ -27,6 +27,7 @@ bool Host::Loop()
 		if(auto next_game = game_->AskForNextGameTransition())
 		{
 			game_ = std::move(next_game);
+			sound_out_.StopPlaying();
 		}
 
 		SDL_SetRelativeMouseMode(game_->NeedToCaptureMouse() ? SDL_TRUE : SDL_FALSE);
