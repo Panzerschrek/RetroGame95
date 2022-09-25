@@ -1,5 +1,4 @@
 #include "MIDI.hpp"
-#include <iostream>
 #include <optional>
 #include <cassert>
 #include <cstring>
@@ -123,14 +122,13 @@ SoundData LoadTrack(
 
 	size_t offset = sizeof(TrackHeader);
 	bool first_event = true;
-	while(offset < length)
+	while(offset < std::min(size_t(length), data_size))
 	{
 		const uint32_t delta_time = ReadVarLen(data, offset);
 		const uint8_t event = data[offset];
 		++offset;
 
 		const uint32_t delta_samples = uint32_t(float(delta_time * sample_rate) * tempo * time_scaler);
-		std::cout << "Delta samples " << delta_samples << std::endl;
 		if(!first_event)
 		{
 			FillSoundData(channels, sample_rate, delta_samples, result);
@@ -145,8 +143,8 @@ SoundData LoadTrack(
 		case 0x8:
 			{
 				const uint8_t note_number = data[offset];
+				(void) note_number;
 				offset += 2;
-				std::cout << "Channel " << uint32_t(event & 15) << " Note release " << uint32_t(note_number) << std::endl;
 				if(channel.num_presses > 0)
 				{
 					channel.num_presses -= 1;
@@ -161,7 +159,6 @@ SoundData LoadTrack(
 		case 0x9:
 			{
 				const uint8_t note_number = data[offset];
-				std::cout << "Channel " << uint32_t(event & 15) << " Note press " << uint32_t(note_number) << std::endl;
 				channel.num_presses += 1;
 				channel.note_number = std::max(channel.note_number, uint32_t(note_number));
 				offset += 2;
@@ -169,27 +166,27 @@ SoundData LoadTrack(
 			break;
 
 		case 0xA:
-			std::cout << "Polyphonic Key Pressure" << std::endl;
+			// Polyphonic Key Pressure.
 			offset += 2;
 			break;
 
 		case 0xB:
-			std::cout << "Control change" << std::endl;
+			// Control change.
 			offset += 2;
 			break;
 
 		case 0xC:
-			std::cout << "Program Change" << std::endl;
+			// Program change.
 			++offset;
 			break;
 
 		case 0xD:
-			std::cout << "Channel Pressure (After-touch)." << std::endl;
+			// Channel pressure.
 			++offset;
 			break;
 
 		case 0xE:
-			std::cout << "Pitch Wheel Change." << std::endl;
+			// Pitch wheel change.
 			offset += 2;
 			break;
 
@@ -201,36 +198,30 @@ SoundData LoadTrack(
 
 				const uint32_t meta_length = ReadVarLen(data, offset);
 
-				std::cout << "Meta event " << uint32_t(meta_event) << " with length " << meta_length << std::endl;
-
 				if(meta_event == 0x51)
 				{
 					tempo = float((data[offset] << 16) | (data[offset + 1] << 8) | (data[offset + 2] << 0)) / 1000000.0f;
-					std::cout << "Tempo event " << tempo << std::endl;
 				}
 
 				offset += meta_length;
 			}
 			else
 			{
-				const uint32_t meta_length = ReadVarLen(data, offset);
-				offset += meta_length;
-				std::cout << "Event " << uint32_t(event) << " With length " << meta_length << std::endl;
+				offset += ReadVarLen(data, offset);
 			}
 			break;
 
 		default:
-			std::cout << "Unrecognized event." << std::endl;
+			// Unrecognized event.
 			break;
 		}
 		if(event < 0x80)
 		{
-			std::cout << "Strange event" << std::endl;
+			// Some spezialized event.
 			offset += 1;
 		}
 	}
 
-	std::cout << "Result size: " << result.samples.size() << std::endl;
 	return result;
 }
 
