@@ -1,5 +1,6 @@
 #include "MIDI.hpp"
 #include <iostream>
+#include <optional>
 
 namespace
 {
@@ -23,6 +24,15 @@ struct TrackHeader
 };
 
 #pragma pack(pop)
+
+
+struct ChannelState
+{
+	uint32_t num_presses = 0;
+	uint32_t note_number = 0;
+};
+
+using Channels = std::array<ChannelState, 16>;
 
 uint32_t ByteSwap(const uint32_t x)
 {
@@ -58,7 +68,40 @@ uint32_t ReadVarLen(const uint8_t* const data, size_t& offset)
 	return value;
 }
 
-SoundData LoadTrack(const uint8_t* data, size_t data_size)
+void FillSoundData(const Channels& channels, const uint32_t sample_rate, const uint32_t duration, SoundData& sound_data)
+{
+	sound_data.samples.resize(sound_data.samples.size() + duration, 0);
+
+	std::optional<uint32_t> note;
+	for(const ChannelState& channel : channels)
+	{
+		if(channel.num_presses > 0)
+		{
+			note = channel.note_number;
+			break;
+		}
+	}
+	if(note == std::nullopt)
+	{
+		return;
+	}
+
+	// note A4
+	const float base_freq = 440.0f;
+	const uint32_t base_freq_note = 12 * 4 + 9;
+
+	const float mul = std::pow(2.0f, 1.0f / 12.0f);
+
+	const float freq = base_freq * std::pow( mul, float(*note - base_freq_note) );
+	const float freq_scaled = freq * (2.0f * 3.1415926535f) / float(sample_rate);
+
+	for(size_t i = sound_data.samples.size() - duration; i < sound_data.samples.size(); ++i)
+	{
+		sound_data.samples[i] = SampleType(127.0f * std::sin(freq_scaled * float(i)));
+	}
+}
+
+SoundData LoadTrack(const uint8_t* data, const size_t data_size, const uint32_t sample_rate, const float time_scaler)
 {
 	const auto header = reinterpret_cast<const TrackHeader*>(data);
 
@@ -73,6 +116,8 @@ SoundData LoadTrack(const uint8_t* data, size_t data_size)
 		return result;
 	}
 
+	Channels channels;
+
 	size_t offset = sizeof(TrackHeader);
 	while(offset < data_size)
 	{
@@ -80,8 +125,13 @@ SoundData LoadTrack(const uint8_t* data, size_t data_size)
 		const uint8_t event = data[offset];
 		++offset;
 
+		const uint32_t delta_samples = uint32_t(float(delta_time) * time_scaler * float(sample_rate));
+		std::cout << "Delta samples " << delta_samples << std::endl;
+
+		FillSoundData(channels, sample_rate, std::min(delta_samples, 65536u), result);
+
 		const uint8_t event_type = (event >> 4);
-		const uint8_t channel = event & 15;
+		ChannelState& channel = channels[event & 15];
 
 		switch (event_type)
 		{
@@ -89,14 +139,24 @@ SoundData LoadTrack(const uint8_t* data, size_t data_size)
 			{
 				const uint8_t note_number = data[offset];
 				offset += 2;
-				std::cout << "Channel " << uint32_t(channel) << " Note release " << uint32_t(note_number) << std::endl;
+				std::cout << "Channel " << uint32_t(event & 15) << " Note release " << uint32_t(note_number) << std::endl;
+				if(channel.num_presses > 0)
+				{
+					channel.num_presses -= 1;
+					if(channel.num_presses == 0)
+					{
+						channel.note_number = 0;
+					}
+				}
 			}
 			break;
 
 		case 0x9:
 			{
 				const uint8_t note_number = data[offset];
-				std::cout << "Channel " << uint32_t(channel) << " Note press " << uint32_t(note_number) << std::endl;
+				std::cout << "Channel " << uint32_t(event & 15) << " Note press " << uint32_t(note_number) << std::endl;
+				channel.num_presses += 1;
+				channel.note_number = std::max(channel.note_number, uint32_t(note_number));
 				offset += 2;
 			}
 			break;
@@ -156,6 +216,7 @@ SoundData LoadTrack(const uint8_t* data, size_t data_size)
 		}
 	}
 
+	std::cout << "Result size: " << result.samples.size() << std::endl;
 	return result;
 }
 
@@ -177,7 +238,7 @@ const std::vector<uint8_t> LoadMIDIFile(const char* file_name)
 	return out_file_content;
 }
 
-SoundData MakeMIDISound(const std::vector<uint8_t>& data)
+SoundData MakeMIDISound(const std::vector<uint8_t>& data, const uint32_t sample_rate)
 {
 	SoundData result;
 
@@ -198,5 +259,9 @@ SoundData MakeMIDISound(const std::vector<uint8_t>& data)
 		return result;
 	}
 
-	return LoadTrack(data.data() + sizeof(MIDIHeader), data.size() - sizeof(MIDIHeader));
+	const int16_t division = ByteSwap(uint16_t(header->division));
+
+	const float time_scaler = 0.5f / float(division);
+
+	return LoadTrack(data.data() + sizeof(MIDIHeader), data.size() - sizeof(MIDIHeader), sample_rate, time_scaler);
 }
