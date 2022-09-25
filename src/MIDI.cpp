@@ -1,6 +1,7 @@
 #include "MIDI.hpp"
 #include <iostream>
 #include <optional>
+#include <cstring>
 
 namespace
 {
@@ -45,9 +46,9 @@ uint32_t ByteSwap(const uint32_t x)
 
 uint16_t ByteSwap(const uint16_t x)
 {
-	return
+	return uint16_t(
 		((x & 0x00FF) << 8) |
-		((x & 0xFF00) >> 8);
+		((x & 0xFF00) >> 8));
 }
 
 uint32_t ReadVarLen(const uint8_t* const data, size_t& offset)
@@ -243,12 +244,12 @@ const std::vector<uint8_t> LoadMIDIFile(const char* file_name)
 {
 	FILE* const f = std::fopen(file_name, "rb");
 
-	std::fseek( f, 0, SEEK_END );
-	const unsigned int file_size = std::ftell( f );
-	std::fseek( f, 0, SEEK_SET );
+	std::fseek(f, 0, SEEK_END);
+	const uint64_t file_size = uint64_t(std::ftell(f));
+	std::fseek( f, 0, SEEK_SET);
 
 	std::vector<uint8_t> out_file_content;
-	out_file_content.resize( file_size );
+	out_file_content.resize(file_size);
 	std::fread(out_file_content.data(), 1, file_size, f);
 
 	std::fclose( f );
@@ -276,7 +277,7 @@ SoundData MakeMIDISound(const std::vector<uint8_t>& data, const uint32_t sample_
 		return result;
 	}
 
-	const int16_t division = ByteSwap(uint16_t(header->division));
+	const auto division = int16_t(ByteSwap(uint16_t(header->division)));
 
 	const float time_scaler = 1.0f / float(division);
 
