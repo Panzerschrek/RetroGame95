@@ -1,6 +1,7 @@
 #include "MIDI.hpp"
 #include <optional>
 #include <cassert>
+#include <cmath>
 #include <cstring>
 
 namespace
