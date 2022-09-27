@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GameSnake.hpp"
+#include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
@@ -191,8 +192,8 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = (320 - c_field_width * block_width) / 2;
-	const uint32_t field_offset_y = block_height;
+	const uint32_t field_offset_x = GetTetrisFieldOffsetX(frame_buffer);
+	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
 	const uint32_t next_piece_offset_x = field_offset_x + block_width * (c_field_width - 2);
 	const uint32_t next_piece_offset_y = field_offset_y + 7 * block_height;
 
@@ -201,48 +202,9 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
-	const SpriteBMP border_sprite(Sprites::tetris_block_8);
+	DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
 
-	for(uint32_t x = 0; x < c_field_width; ++x)
-	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + x * block_width,
-			field_offset_y + c_field_height * block_height);
-	}
-	for(uint32_t y = laser_ship_is_active ? 2 : 0; y < c_field_height + 2; ++y)
-	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x - 1 * block_width,
-			field_offset_y + y * block_height - block_height);
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + c_field_width * block_width,
-			field_offset_y + y * block_height - block_height);
-	}
-
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x)
-		{
-			const TetrisBlock block = field_[x + y * c_field_width];
-			if(block == TetrisBlock::Empty)
-			{
-				continue;
-			}
-
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				sprites[uint32_t(block) - 1],
-				0,
-				field_offset_x + x * block_width,
-				field_offset_y + y * block_height);
-		}
-	}
+	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
 
 	if(active_piece_ != std::nullopt)
 	{

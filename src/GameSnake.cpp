@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GamePacman.hpp"
+#include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
@@ -27,7 +28,8 @@ const uint32_t g_field_start_animation_duration = 240;
 const uint32_t g_death_animation_duration = 180;
 const uint32_t g_death_animation_flicker_duration = 12;
 
-const uint32_t g_transition_time_field_border_tile_change = g_field_start_animation_duration + GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_field_change = g_field_start_animation_duration + GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_field_border_tile_change = g_transition_time_field_change + GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_transition_time_bonuses_show = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_transition_time_stats_show = g_transition_time_bonuses_show + GameInterface::c_update_frequency * 1;
 const uint32_t g_transition_time_snake_visual_change = g_transition_time_stats_show + GameInterface::c_update_frequency * 1;
@@ -169,36 +171,43 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = c_block_size;
 	const uint32_t field_offset_y = c_block_size;
 
-	const SpriteBMP border_sprite(
-			tick_ >= g_transition_time_field_border_tile_change
-				? Sprites::snake_field_border
-				: Sprites::tetris_block_8);
-
-	for(uint32_t x = 0; x < c_field_width; ++x)
+	if(tick_ < g_transition_time_field_change)
 	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + x * c_block_size,
-			field_offset_y - c_block_size);
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + x * c_block_size,
-			field_offset_y + c_field_height * c_block_size);
+		DrawTetrisFieldBorder(frame_buffer, false);
 	}
-	for(uint32_t y = 0; y < c_field_height + 2; ++y)
+	else
 	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x - 1 * c_block_size,
-			field_offset_y + y * c_block_size - c_block_size);
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + c_field_width * c_block_size,
-			field_offset_y + y * c_block_size - c_block_size);
+		const SpriteBMP border_sprite(
+				tick_ >= g_transition_time_field_border_tile_change
+					? Sprites::snake_field_border
+					: Sprites::tetris_block_8);
+
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x + x * c_block_size,
+				field_offset_y - c_block_size);
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x + x * c_block_size,
+				field_offset_y + c_field_height * c_block_size);
+		}
+		for(uint32_t y = 0; y < c_field_height + 2; ++y)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x - 1 * c_block_size,
+				field_offset_y + y * c_block_size - c_block_size);
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x + c_field_width * c_block_size,
+				field_offset_y + y * c_block_size - c_block_size);
+		}
 	}
 
 	const SpriteBMP tetris_blocks_sprites[g_tetris_num_piece_types]
@@ -212,22 +221,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_3,
 	};
 
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
-	{
-		const TetrisBlock block = tetris_field_[x + y * c_field_width];
-		if(block == TetrisBlock::Empty)
-		{
-			continue;
-		}
-
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			tetris_blocks_sprites[uint32_t(block) - 1],
-			0,
-			field_offset_x + x * c_block_size,
-			field_offset_y + y * c_block_size);
-	}
+	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, tetris_field_, c_field_width, c_field_height);
 
 	if(tetris_active_piece_ != std::nullopt)
 	{

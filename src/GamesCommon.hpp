@@ -42,6 +42,9 @@ struct TetrisPiece
 	TetrisPieceBlocks blocks;
 };
 
+constexpr const uint32_t g_tetris_field_width  = 10;
+constexpr const uint32_t g_tetris_field_height = 20;
+
 TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece);
 
 // Returns true if detected collision.
