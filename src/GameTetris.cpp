@@ -22,7 +22,8 @@ const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
 
 const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency;
-const uint32_t g_transition_time_field_border_change = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency;
 
 //const uint32_t g_transition_time_change_end = g_transition_time_field_border_change;
@@ -202,6 +203,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
+
+	if(tick_ < g_transition_time_field_remove_arkanoid_stats)
+	{
+		DrawArakoindStats(frame_buffer, level_, score_);
+	}
 
 	if(tick_ < g_transition_time_field_border_tile_change)
 	{

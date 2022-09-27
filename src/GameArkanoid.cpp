@@ -62,9 +62,6 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = g_arkanoid_field_offset_x;
 	const uint32_t field_offset_y = g_arkanoid_field_offset_y;
 
-	const uint32_t texts_offset_x = 264;
-	const uint32_t texts_offset_y = 32;
-
 	const SpriteBMP block_sprites[]
 	{
 		Sprites::arkanoid_block_1,
@@ -213,12 +210,9 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 
 	DrawArkanoidFieldBorder(frame_buffer, next_level_exit_is_open_);
 
+	DrawArakoindStats(frame_buffer, level_, score_);
+
 	char text[64];
-
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
-
-	NumToString(text, sizeof(text), level_, 5);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
 
 	if(tick_ < level_start_animation_end_tick_)
 	{
@@ -237,11 +231,6 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + c_block_height * (c_field_height - 6) + g_glyph_height * 2,
 			text);
 	}
-
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
-
-	NumToString(text, sizeof(text), score_, 5);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
 
 	if(game_over_)
 	{

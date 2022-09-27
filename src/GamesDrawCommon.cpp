@@ -136,6 +136,24 @@ void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exi
 	}
 }
 
+void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, const uint32_t score)
+{
+	const uint32_t texts_offset_x = 264;
+	const uint32_t texts_offset_y = 32;
+
+	char text[64];
+
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
+
+	NumToString(text, sizeof(text), level, 5);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
+
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
+
+	NumToString(text, sizeof(text), score, 5);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
+}
+
 uint32_t GetTetrisFieldOffsetX(const FrameBuffer frame_buffer)
 {
 	return (frame_buffer.width - g_tetris_field_width * g_tetris_blocks[0].GetWidth()) / 2;
