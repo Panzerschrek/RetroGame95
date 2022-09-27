@@ -21,6 +21,9 @@ const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
 
+const uint32_t g_transition_time_field_border_change = GameInterface::c_update_frequency;
+//const uint32_t g_transition_time_change_end = g_transition_time_field_border_change;
+
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 {
 	switch(lines_removed)
@@ -197,7 +200,14 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
-	DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
+	if(tick_ < g_transition_time_field_border_change)
+	{
+		DrawArkanoidFieldBorder(frame_buffer, false);
+	}
+	else
+	{
+		DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
+	}
 
 	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
 

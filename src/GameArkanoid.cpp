@@ -2,7 +2,7 @@
 #include "ArkanoidLevels.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
-#include  "GamesCommon.hpp"
+#include "GamesDrawCommon.hpp"
 #include "GameTetris.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
@@ -59,8 +59,8 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = 10;
-	const uint32_t field_offset_y = 10;
+	const uint32_t field_offset_x = g_arkanoid_field_offset_x;
+	const uint32_t field_offset_y = g_arkanoid_field_offset_y;
 
 	const uint32_t texts_offset_x = 264;
 	const uint32_t texts_offset_y = 32;
@@ -211,118 +211,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(bonus.position[1])) - c_bonus_half_height);
 	}
 
-	const SpriteBMP sprites_trim_top[]
-	{
-		Sprites::arkanoid_trim_corner_top_left,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_corner_top_right,
-	};
-
-	uint32_t trim_top_x = field_offset_x - 10;
-	for(const SpriteBMP& sprite : sprites_trim_top)
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			trim_top_x,
-			field_offset_y - 10);
-
-		trim_top_x += sprite.GetWidth();
-	}
-
-	const SpriteBMP sprites_trim_left[]
-	{
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-	};
-
-	uint32_t trim_side_y = field_offset_y;
-	const uint32_t side_trim_offset_x = field_offset_x - 10;
-	for(const SpriteBMP& sprite : sprites_trim_left)
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x,
-			trim_side_y);
-
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
-			trim_side_y);
-
-		trim_side_y += sprite.GetHeight();
-	}
-
-	if(next_level_exit_is_open_)
-	{
-		const SpriteBMP sprite(Sprites::arkanoid_level_exit_gate);
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
-			trim_side_y);
-	}
-
-	// Draw two lover sprites of side trimming, including level exit.
-	for(size_t i = 0; i < 2; ++i)
-	{
-		const SpriteBMP sprite(Sprites::arkanoid_trim_segment_side_0);
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x,
-			trim_side_y);
-
-		if(!next_level_exit_is_open_)
-		{
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				sprite,
-				0,
-				side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
-				trim_side_y);
-		}
-
-		trim_side_y += sprite.GetHeight();
-	}
+	DrawArkanoidFieldBorder(frame_buffer, next_level_exit_is_open_);
 
 	char text[64];
 

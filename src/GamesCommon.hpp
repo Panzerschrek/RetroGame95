@@ -47,6 +47,12 @@ constexpr const uint32_t g_tetris_field_height = 20;
 
 TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece);
 
+const constexpr uint32_t g_arkanoid_block_width  = 20;
+const constexpr uint32_t g_arkanoid_block_height = 10;
+
+constexpr const uint32_t g_arkanoid_field_width  = 11;
+constexpr const uint32_t g_arkanoid_field_height = 21;
+
 // Returns true if detected collision.
 bool MakeCollisionBetweenObjectAndBox(
 	const fixed16vec2_t& box_min,

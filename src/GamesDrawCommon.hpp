@@ -2,6 +2,11 @@
 #include "FrameBuffer.hpp"
 #include "GamesCommon.hpp"
 
+const constexpr uint32_t g_arkanoid_field_offset_x = 10;
+const constexpr uint32_t g_arkanoid_field_offset_y = 10;
+
+void DrawArkanoidFieldBorder(FrameBuffer frame_buffer, bool draw_exit);
+
 uint32_t GetTetrisFieldOffsetX(FrameBuffer frame_buffer);
 uint32_t GetTetrisFieldOffsetY(FrameBuffer frame_buffer);
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "Fixed.hpp"
 #include "GameInterface.hpp"
+#include "GamesCommon.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
 #include <optional>
@@ -110,13 +111,13 @@ private:
 		fixed16vec2_t position{};
 	};
 
-	static const constexpr uint32_t c_field_width = 11;
-	static const constexpr uint32_t c_field_height = 21;
+	static const constexpr uint32_t c_field_width = g_arkanoid_field_width;
+	static const constexpr uint32_t c_field_height = g_arkanoid_field_height;
 
 	// Size on pixels.
 	static const constexpr uint32_t c_ball_half_size = 3;
-	static const constexpr uint32_t c_block_width = 20;
-	static const constexpr uint32_t c_block_height = 10;
+	static const constexpr uint32_t c_block_width = g_arkanoid_block_width;
+	static const constexpr uint32_t c_block_height = g_arkanoid_block_height;
 	static const constexpr uint32_t c_bonus_half_width = 10;
 	static const constexpr uint32_t c_bonus_half_height = 5;
 	static const constexpr uint32_t c_laser_beam_width = 1;

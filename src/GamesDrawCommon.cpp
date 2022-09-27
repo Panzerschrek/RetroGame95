@@ -20,6 +20,122 @@ const SpriteBMP g_tetris_blocks[g_tetris_num_piece_types]
 
 } // namespace
 
+void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exit)
+{
+	const SpriteBMP sprites_trim_top[]
+	{
+		Sprites::arkanoid_trim_corner_top_left,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_corner_top_right,
+	};
+
+	uint32_t trim_top_x = g_arkanoid_field_offset_x - 10;
+	for(const SpriteBMP& sprite : sprites_trim_top)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			trim_top_x,
+			g_arkanoid_field_offset_y - 10);
+
+		trim_top_x += sprite.GetWidth();
+	}
+
+	const SpriteBMP sprites_trim_left[]
+	{
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+	};
+
+	uint32_t trim_side_y = g_arkanoid_field_offset_y;
+	const uint32_t side_trim_offset_x = g_arkanoid_field_offset_x - 10;
+	for(const SpriteBMP& sprite : sprites_trim_left)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x,
+			trim_side_y);
+
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x + g_arkanoid_block_width * g_arkanoid_field_width + sprite.GetWidth(),
+			trim_side_y);
+
+		trim_side_y += sprite.GetHeight();
+	}
+
+	if(draw_exit)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_level_exit_gate);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x + g_arkanoid_block_width * g_arkanoid_field_width + sprite.GetWidth(),
+			trim_side_y);
+	}
+
+	// Draw two lover sprites of side trimming, including level exit.
+	for(size_t i = 0; i < 2; ++i)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_trim_segment_side_0);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x,
+			trim_side_y);
+
+		if(!draw_exit)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				side_trim_offset_x + g_arkanoid_block_width * g_arkanoid_field_width + sprite.GetWidth(),
+				trim_side_y);
+		}
+
+		trim_side_y += sprite.GetHeight();
+	}
+}
+
 uint32_t GetTetrisFieldOffsetX(const FrameBuffer frame_buffer)
 {
 	return (frame_buffer.width - g_tetris_field_width * g_tetris_blocks[0].GetWidth()) / 2;
