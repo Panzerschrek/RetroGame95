@@ -7,6 +7,10 @@ uint32_t GetTetrisFieldOffsetY(FrameBuffer frame_buffer);
 
 void DrawTetrisFieldBorder(FrameBuffer frame_buffer, bool curt_upper_segments);
 
+void DrawTetrisNextPiece(FrameBuffer frame_buffer, TetrisBlock  next_piece);
+
+void DrawTetrisStats(FrameBuffer frame_buffer, uint32_t level, uint32_t score);
+
 void DrawTetrisField(
 	FrameBuffer frame_buffer,
 	uint32_t offset_x,

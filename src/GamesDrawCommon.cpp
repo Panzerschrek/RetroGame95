@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
+#include "Strings.hpp"
 
 namespace
 {
@@ -63,6 +64,61 @@ void DrawTetrisFieldBorder(const FrameBuffer frame_buffer, const bool curt_upper
 	}
 }
 
+void DrawTetrisNextPiece(const FrameBuffer frame_buffer, const TetrisBlock next_piece)
+{
+	if(next_piece == TetrisBlock::Empty)
+	{
+		return;
+	}
+
+	const uint32_t block_width  = g_tetris_blocks[0].GetWidth ();
+	const uint32_t block_height = g_tetris_blocks[0].GetHeight();
+
+	const uint32_t field_offset_x = GetTetrisFieldOffsetX(frame_buffer);
+	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
+	const uint32_t next_piece_offset_x = field_offset_x + block_width * (g_tetris_field_width - 2);
+	const uint32_t next_piece_offset_y = field_offset_y + 7 * block_height;
+
+	const auto next_piece_index = uint32_t(next_piece) - uint32_t(TetrisBlock::I);
+
+	const uint8_t pieces_colors[g_tetris_num_piece_types]{ 4, 7, 5, 1, 2, 6, 3, };
+	DrawText(
+		frame_buffer,
+		g_cga_palette[pieces_colors[uint32_t(next_piece_index)]],
+		next_piece_offset_x + block_width * 4,
+		next_piece_offset_y - block_height * 6,
+		Strings::tetris_next);
+
+	for(const auto& piece_block : g_tetris_pieces_blocks[next_piece_index])
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			g_tetris_blocks[next_piece_index],
+			0,
+			next_piece_offset_x + uint32_t(piece_block[0]) * block_width,
+			next_piece_offset_y + uint32_t(piece_block[1]) * block_height);
+	}
+}
+
+void DrawTetrisStats(const FrameBuffer frame_buffer, const uint32_t level, const uint32_t score)
+{
+	const uint32_t block_height = g_tetris_blocks[0].GetHeight();
+
+	const uint32_t field_offset_x = GetTetrisFieldOffsetX(frame_buffer);
+	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
+
+	const uint32_t texts_offset_x = field_offset_x - g_glyph_width * 13;
+	const uint32_t texts_offset_y = field_offset_y + block_height * g_tetris_field_height - g_glyph_height * 3;
+
+	char text[64];
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, Strings::tetris_level);
+	NumToString(text, sizeof(text), level, 3);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y, text);
+
+	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
+	NumToString(text, sizeof(text), score, 3);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y + g_glyph_height * 2, text);
+}
 
 void DrawTetrisField(
 	const FrameBuffer frame_buffer,

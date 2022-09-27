@@ -28,7 +28,8 @@ const uint32_t g_field_start_animation_duration = 240;
 const uint32_t g_death_animation_duration = 180;
 const uint32_t g_death_animation_flicker_duration = 12;
 
-const uint32_t g_transition_time_field_change = g_field_start_animation_duration + GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_out_of_borders_elements_disappear = g_field_start_animation_duration + GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_field_change = g_transition_time_out_of_borders_elements_disappear + GameInterface::c_update_frequency * 1;
 const uint32_t g_transition_time_field_border_tile_change = g_transition_time_field_change + GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_transition_time_bonuses_show = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_transition_time_stats_show = g_transition_time_bonuses_show + GameInterface::c_update_frequency * 1;
@@ -170,6 +171,12 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 
 	const uint32_t field_offset_x = c_block_size;
 	const uint32_t field_offset_y = c_block_size;
+
+	if(tick_ < g_transition_time_out_of_borders_elements_disappear)
+	{
+		DrawTetrisNextPiece(frame_buffer, TetrisBlock::I);
+		DrawTetrisStats(frame_buffer, level_, score_);
+	}
 
 	if(tick_ < g_transition_time_field_change)
 	{
