@@ -26,7 +26,7 @@ const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time
 const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency;
 
-//const uint32_t g_transition_time_change_end = g_transition_time_field_border_change;
+const uint32_t g_transition_time_change_end = g_transition_time_show_stats;
 
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 {
@@ -111,16 +111,19 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	TrySpawnRandomArkanoidBall();
 
-	ManipulatePiece(events);
+	if(tick_ >= g_transition_time_change_end)
+	{
+		ManipulatePiece(events);
 
-	uint32_t speed = GetSpeedForLevel(level_);
-	if(tick_ <= slow_down_end_tick_)
-	{
-		speed = speed * 3 / 2;
-	}
-	if(tick_ % speed == 0)
-	{
-		MovePieceDown();
+		uint32_t speed = GetSpeedForLevel(level_);
+		if(tick_ <= slow_down_end_tick_)
+		{
+			speed = speed * 3 / 2;
+		}
+		if(tick_ % speed == 0)
+		{
+			MovePieceDown();
+		}
 	}
 
 	for(size_t b = 0; b < arkanoid_balls_.size();)
@@ -925,6 +928,11 @@ bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
 
 void GameTetris::TrySpawnRandomArkanoidBall()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
+
 	if(rand_.Next() % (60 * GameInterface::c_update_frequency) == 73)
 	{
 		SpawnArkanoidBall();
