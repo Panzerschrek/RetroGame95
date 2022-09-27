@@ -21,7 +21,10 @@ const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
 
-const uint32_t g_transition_time_field_border_change = GameInterface::c_update_frequency;
+const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency;
+const uint32_t g_transition_time_field_border_change = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency;
+
 //const uint32_t g_transition_time_change_end = g_transition_time_field_border_change;
 
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
@@ -200,9 +203,36 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
-	if(tick_ < g_transition_time_field_border_change)
+	if(tick_ < g_transition_time_field_border_tile_change)
 	{
 		DrawArkanoidFieldBorder(frame_buffer, false);
+	}
+	else if(tick_ < g_transition_time_field_border_change)
+	{
+		const SpriteBMP border_sprite(Sprites::tetris_block_8);
+		for(uint32_t x = 0; x < g_arkanoid_field_width * 2 + 2; ++x)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				g_arkanoid_field_offset_x - 10 + x * block_width,
+				g_arkanoid_field_offset_y - 10);
+		}
+
+		for(uint32_t y = 0; y < g_arkanoid_field_height + 1; ++y)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				g_arkanoid_field_offset_x - 10,
+				g_arkanoid_field_offset_y + y * block_height);
+
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				g_arkanoid_field_offset_x - 10 + (g_arkanoid_field_width * 2 + 1) * block_width,
+				g_arkanoid_field_offset_y + y * block_height);
+		}
 	}
 	else
 	{
@@ -296,8 +326,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
 	}
 
-	DrawTetrisNextPiece(frame_buffer, next_piece_type_);
-	DrawTetrisStats(frame_buffer, level_, score_);
+	if(tick_ >= g_transition_time_show_stats)
+	{
+		DrawTetrisNextPiece(frame_buffer, next_piece_type_);
+		DrawTetrisStats(frame_buffer, level_, score_);
+	}
 
 	if(game_over_)
 	{
