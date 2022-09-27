@@ -136,6 +136,48 @@ void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exi
 	}
 }
 
+void DrawAranoidField(const FrameBuffer frame_buffer, const ArkanoidBlock* const field)
+{
+	const SpriteBMP block_sprites[]
+	{
+		Sprites::arkanoid_block_1,
+		Sprites::arkanoid_block_2,
+		Sprites::arkanoid_block_3,
+		Sprites::arkanoid_block_4,
+		Sprites::arkanoid_block_5,
+		Sprites::arkanoid_block_6,
+		Sprites::arkanoid_block_7,
+		Sprites::arkanoid_block_8,
+		Sprites::arkanoid_block_9,
+		Sprites::arkanoid_block_10,
+		Sprites::arkanoid_block_11,
+		Sprites::arkanoid_block_12,
+		Sprites::arkanoid_block_13,
+		Sprites::arkanoid_block_14,
+		Sprites::arkanoid_block_15,
+		Sprites::arkanoid_block_concrete,
+		Sprites::arkanoid_block_14_15,
+	};
+
+	for(uint32_t y = 0; y < g_arkanoid_field_height; ++y)
+	{
+		for(uint32_t x = 0; x < g_arkanoid_field_width; ++x)
+		{
+			const ArkanoidBlock& block = field[x + y * g_arkanoid_field_width];
+			if(block.type == ArkanoidBlockType::Empty)
+			{
+				continue;
+			}
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				block_sprites[uint32_t(block.type) - 1],
+				0,
+				g_arkanoid_field_offset_x + x * g_arkanoid_block_width,
+				g_arkanoid_field_offset_y + y * g_arkanoid_block_height);
+		}
+	}
+}
+
 void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, const uint32_t score)
 {
 	const uint32_t texts_offset_x = 264;

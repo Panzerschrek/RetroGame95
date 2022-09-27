@@ -1,4 +1,54 @@
 #include "GamesCommon.hpp"
+#include <cassert>
+
+namespace
+{
+
+ArkanoidBlockType GetBlockTypeForLevelDataByte(const char level_data_byte)
+{
+	if(
+		level_data_byte >= 'A' &&
+		uint32_t(level_data_byte) < 'A' + (1 + uint32_t(ArkanoidBlockType::Color15) - uint32_t(ArkanoidBlockType::Color1)))
+	{
+		return ArkanoidBlockType(uint32_t(ArkanoidBlockType::Color1) + uint32_t(level_data_byte) - 'A');
+	}
+	if(level_data_byte == '#')
+	{
+		return ArkanoidBlockType::Concrete;
+	}
+	if(level_data_byte == '@')
+	{
+		return ArkanoidBlockType::Color14_15;
+	}
+
+	return ArkanoidBlockType::Empty;
+}
+
+} // namespace
+
+void FillArkanoidField(ArkanoidBlock* const field, const char* field_data)
+{
+	for(uint32_t y = 0; y < g_arkanoid_field_height; ++y)
+	{
+		for(uint32_t x = 0; x < g_arkanoid_field_width; ++x, ++field_data)
+		{
+			ArkanoidBlock& block = field[x + y * g_arkanoid_field_width];
+			block.type = GetBlockTypeForLevelDataByte(*field_data);
+
+			block.health = 1;
+			if(block.type == ArkanoidBlockType::Concrete)
+			{
+				block.health = 2;
+			}
+			else if(block.type == ArkanoidBlockType::Color14_15)
+			{
+				block.health = 4;
+			}
+		}
+		assert(*field_data == '\n');
+		++field_data;
+	}
+}
 
 TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece)
 {

@@ -2,6 +2,47 @@
 #include "Fixed.hpp"
 
 //
+// Arkanoid stuff
+//
+
+enum class ArkanoidBlockType : uint8_t
+{
+	Empty,
+	Color1,
+	Color2,
+	Color3,
+	Color4,
+	Color5,
+	Color6,
+	Color7,
+	Color8,
+	Color9,
+	Color10,
+	Color11,
+	Color12,
+	Color13,
+	Color14,
+	Color15,
+	Concrete,
+	Color14_15,
+	NumTypes,
+};
+
+struct ArkanoidBlock
+{
+	ArkanoidBlockType type = ArkanoidBlockType::Empty;
+	uint8_t health = 0;
+};
+
+const constexpr uint32_t g_arkanoid_block_width  = 20;
+const constexpr uint32_t g_arkanoid_block_height = 10;
+
+constexpr const uint32_t g_arkanoid_field_width  = 11;
+constexpr const uint32_t g_arkanoid_field_height = 21;
+
+void FillArkanoidField(ArkanoidBlock* field, const char* field_data);
+
+//
 // Tetris stuff
 //
 
@@ -46,12 +87,6 @@ constexpr const uint32_t g_tetris_field_width  = 10;
 constexpr const uint32_t g_tetris_field_height = 20;
 
 TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece);
-
-const constexpr uint32_t g_arkanoid_block_width  = 20;
-const constexpr uint32_t g_arkanoid_block_height = 10;
-
-constexpr const uint32_t g_arkanoid_field_width  = 11;
-constexpr const uint32_t g_arkanoid_field_height = 21;
 
 // Returns true if detected collision.
 bool MakeCollisionBetweenObjectAndBox(

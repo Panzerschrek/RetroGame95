@@ -24,35 +24,6 @@ private:
 	// Integer coordinates are in pixels.
 	// fixed16 coordinates are in pixels too, but in fixed16 format.
 
-	enum class BlockType : uint8_t
-	{
-		Empty,
-		Color1,
-		Color2,
-		Color3,
-		Color4,
-		Color5,
-		Color6,
-		Color7,
-		Color8,
-		Color9,
-		Color10,
-		Color11,
-		Color12,
-		Color13,
-		Color14,
-		Color15,
-		Concrete,
-		Color14_15,
-		NumTypes,
-	};
-
-	struct Block
-	{
-		BlockType type = BlockType::Empty;
-		uint8_t health = 0;
-	};
-
 	struct Ball
 	{
 		// Center position.
@@ -150,7 +121,6 @@ private:
 	void CorrectShipPosition();
 
 	static uint32_t GetShipHalfWidthForState(ShipState ship_state);
-	static BlockType GetBlockTypeForLevelDataByte(const char level_data_byte);
 
 private:
 	SoundPlayer& sound_player_;
@@ -160,7 +130,7 @@ private:
 
 	GameInterfacePtr next_game_;
 
-	Block field_[c_field_width * c_field_height];
+	ArkanoidBlock field_[c_field_width * c_field_height];
 	std::optional<Ship> ship_;
 	std::optional<DeathAnimation> death_animation_;
 	bool game_over_ = false;

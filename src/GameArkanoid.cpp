@@ -62,44 +62,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = g_arkanoid_field_offset_x;
 	const uint32_t field_offset_y = g_arkanoid_field_offset_y;
 
-	const SpriteBMP block_sprites[]
-	{
-		Sprites::arkanoid_block_1,
-		Sprites::arkanoid_block_2,
-		Sprites::arkanoid_block_3,
-		Sprites::arkanoid_block_4,
-		Sprites::arkanoid_block_5,
-		Sprites::arkanoid_block_6,
-		Sprites::arkanoid_block_7,
-		Sprites::arkanoid_block_8,
-		Sprites::arkanoid_block_9,
-		Sprites::arkanoid_block_10,
-		Sprites::arkanoid_block_11,
-		Sprites::arkanoid_block_12,
-		Sprites::arkanoid_block_13,
-		Sprites::arkanoid_block_14,
-		Sprites::arkanoid_block_15,
-		Sprites::arkanoid_block_concrete,
-		Sprites::arkanoid_block_14_15,
-	};
-
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x)
-		{
-			const Block& block = field_[x + y * c_field_width];
-			if(block.type == BlockType::Empty)
-			{
-				continue;
-			}
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				block_sprites[uint32_t(block.type) - 1],
-				0,
-				field_offset_x + x * c_block_width,
-				field_offset_y + y * c_block_height);
-		}
-	}
+	DrawAranoidField(frame_buffer, field_);
 
 	const bool playing_level_start_animation = tick_ < level_start_animation_end_tick_;
 
@@ -386,8 +349,8 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 	{
 		for(uint32_t x = 0; x < c_field_width; ++x)
 		{
-			const Block& block = field_[x + y * c_field_width];
-			if(block.type != BlockType::Empty)
+			const ArkanoidBlock& block = field_[x + y * c_field_width];
+			if(block.type != ArkanoidBlockType::Empty)
 			{
 				++num_non_empty_blocks;
 			}
@@ -467,27 +430,7 @@ void GameArkanoid::NextLevel()
 	next_level_exit_is_open_ = false;
 	slow_down_end_tick_ = 0;
 
-	const char* level_data = arkanoid_levels[(level_ - 1) % std::size(arkanoid_levels)];
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x, ++level_data)
-		{
-			Block& block = field_[x + y * c_field_width];
-			block.type = GetBlockTypeForLevelDataByte(*level_data);
-
-			block.health = 1;
-			if(block.type == BlockType::Concrete)
-			{
-				block.health = 2;
-			}
-			else if(block.type == BlockType::Color14_15)
-			{
-				block.health = 4;
-			}
-		}
-		assert(*level_data == '\n');
-		++level_data;
-	}
+	FillArkanoidField(field_, arkanoid_levels[(level_ - 1) % std::size(arkanoid_levels)]);
 
 	SpawnShip();
 
@@ -546,8 +489,8 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty)
+		ArkanoidBlock& block = field_[x + y * c_field_width];
+		if(block.type == ArkanoidBlockType::Empty)
 		{
 			continue;
 		}
@@ -730,8 +673,8 @@ bool GameArkanoid::UpdateLaserBeam(LaserBeam& laser_beam)
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty)
+		ArkanoidBlock& block = field_[x + y * c_field_width];
+		if(block.type == ArkanoidBlockType::Empty)
 		{
 			continue;
 		}
@@ -765,8 +708,8 @@ bool GameArkanoid::UpdateLaserBeam(LaserBeam& laser_beam)
 
 void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
 {
-	Block& block = field_[ block_x + block_y * c_field_width ];
-	if(block.type == BlockType::Empty)
+	ArkanoidBlock& block = field_[ block_x + block_y * c_field_width ];
+	if(block.type == ArkanoidBlockType::Empty)
 	{
 		return;
 	}
@@ -779,7 +722,7 @@ void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
 
 	if(block.health == 0)
 	{
-		block.type = BlockType::Empty;
+		block.type = ArkanoidBlockType::Empty;
 		TrySpawnNewBonus(block_x, block_y);
 	}
 }
@@ -934,24 +877,4 @@ uint32_t GameArkanoid::GetShipHalfWidthForState(const ShipState ship_state)
 
 	assert(false);
 	return c_ship_half_width_normal;
-}
-
-GameArkanoid::BlockType GameArkanoid::GetBlockTypeForLevelDataByte(const char level_data_byte)
-{
-	if(
-		level_data_byte >= 'A' &&
-		uint32_t(level_data_byte) < 'A' + (1 + uint32_t(BlockType::Color15) - uint32_t(BlockType::Color1)))
-	{
-		return BlockType(uint32_t(BlockType::Color1) + uint32_t(level_data_byte) - 'A');
-	}
-	if(level_data_byte == '#')
-	{
-		return BlockType::Concrete;
-	}
-	if(level_data_byte == '@')
-	{
-		return BlockType::Color14_15;
-	}
-
-	return BlockType::Empty;
 }

@@ -7,6 +7,8 @@ const constexpr uint32_t g_arkanoid_field_offset_y = 10;
 
 void DrawArkanoidFieldBorder(FrameBuffer frame_buffer, bool draw_exit);
 
+void DrawAranoidField(FrameBuffer frame_buffer, const ArkanoidBlock* field);
+
 void DrawArakoindStats(FrameBuffer frame_buffer, uint32_t level, uint32_t score);
 
 uint32_t GetTetrisFieldOffsetX(FrameBuffer frame_buffer);
