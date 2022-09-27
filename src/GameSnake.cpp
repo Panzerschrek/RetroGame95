@@ -550,11 +550,13 @@ void GameSnake::SpawnSnake()
 	Snake snake;
 	snake.direction = SnakeDirection::YPlus;
 
-	for(uint32_t i = 0; i < 5; ++i)
+	const uint32_t c_initial_length = 4;
+	const uint32_t offset = level_ <= 1 ? (c_initial_length - 1) : ((c_field_height + c_initial_length) / 2);
+	for(uint32_t i = 0; i < c_initial_length; ++i)
 	{
 		SnakeSegment segment;
 		segment.position[0] = c_field_width / 2;
-		segment.position[1] = c_field_height / 2 - i;
+		segment.position[1] = offset - i;
 		snake.segments.push_back(segment);
 	}
 
