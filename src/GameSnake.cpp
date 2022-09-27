@@ -32,9 +32,8 @@ const uint32_t g_transition_time_out_of_borders_elements_disappear = 30 + g_fiel
 const uint32_t g_transition_time_field_change = g_transition_time_out_of_borders_elements_disappear + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_field_border_tile_change = g_transition_time_field_change + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_bonuses_show = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_stats_show = g_transition_time_bonuses_show + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_snake_visual_change = g_transition_time_stats_show + GameInterface::c_update_frequency;
-
+const uint32_t g_transition_time_snake_visual_change = g_transition_time_bonuses_show + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_stats_show = g_transition_time_snake_visual_change + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_change_end = g_transition_time_snake_visual_change;
 
 uint32_t GetLengthForNextLevelTransition(const uint32_t level)
@@ -117,7 +116,7 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	{
 		if(death_animation_end_tick_ == std::nullopt && field_start_animation_end_tick_ == std::nullopt)
 		{
-			if(tick_ < g_transition_time_change_end)
+			if(tick_ < g_transition_time_snake_visual_change)
 			{
 				MoveSnakeAsTetrisPiece();
 			}
