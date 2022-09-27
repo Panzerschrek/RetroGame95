@@ -27,6 +27,13 @@ const uint32_t g_field_start_animation_duration = 240;
 const uint32_t g_death_animation_duration = 180;
 const uint32_t g_death_animation_flicker_duration = 12;
 
+const uint32_t g_transition_time_field_border_tile_change = g_field_start_animation_duration + GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_bonuses_show = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_stats_show = g_transition_time_bonuses_show + GameInterface::c_update_frequency * 1;
+const uint32_t g_transition_time_snake_visual_change = g_transition_time_stats_show + GameInterface::c_update_frequency * 1;
+
+const uint32_t g_transition_time_change_end = g_transition_time_snake_visual_change;
+
 uint32_t GetLengthForNextLevelTransition(const uint32_t level)
 {
 	return 100 + 10 * level;
@@ -162,7 +169,10 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = c_block_size;
 	const uint32_t field_offset_y = c_block_size;
 
-	const SpriteBMP border_sprite(Sprites::snake_field_border);
+	const SpriteBMP border_sprite(
+			tick_ >= g_transition_time_field_border_tile_change
+				? Sprites::snake_field_border
+				: Sprites::tetris_block_8);
 
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
@@ -236,27 +246,43 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP bonus_sprites[]
+	if(tick_ >= g_transition_time_bonuses_show)
 	{
-		Sprites::snake_food_small,
-		Sprites::snake_food_medium,
-		Sprites::snake_food_large,
-		Sprites::snake_extra_life,
-	};
+		const SpriteBMP bonus_sprites[]
+		{
+			Sprites::snake_food_small,
+			Sprites::snake_food_medium,
+			Sprites::snake_food_large,
+			Sprites::snake_extra_life,
+		};
 
-	for(const Bonus& bonus : bonuses_)
+		for(const Bonus& bonus : bonuses_)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				bonus_sprites[size_t(bonus.type)],
+				0,
+				field_offset_x + bonus.position[0] * c_block_size,
+				field_offset_y + bonus.position[1] * c_block_size);
+		}
+	}
+
+	if(snake_ != std::nullopt && tick_ < g_transition_time_snake_visual_change)
 	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			bonus_sprites[size_t(bonus.type)],
-			0,
-			field_offset_x + bonus.position[0] * c_block_size,
-			field_offset_y + bonus.position[1] * c_block_size);
+		for(const SnakeSegment& segment : snake_->segments)
+		{
+			DrawSprite(
+				frame_buffer,
+				Sprites::tetris_block_4,
+				field_offset_x + segment.position[0] * c_block_size,
+				field_offset_y + segment.position[1] * c_block_size);
+		}
 	}
 
 	if(snake_ != std::nullopt &&
 		field_start_animation_end_tick_ == std::nullopt &&
-		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0))
+		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0) &&
+		tick_ >= g_transition_time_snake_visual_change)
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
 		const SpriteBMP body_segment_sprite(Sprites::snake_body_segment);
@@ -450,24 +476,33 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			Strings::snake_game_over);
 	}
 
-	const char* const stats_names[]{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
-	const uint32_t stats[]{uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()), lifes_, level_, score_};
-	const uint8_t stats_colors[]{6, 4, 1, 2};
-	for(uint32_t i = 0; i < 4; ++i)
+	if(tick_ >= g_transition_time_stats_show)
 	{
-		const uint32_t x = (i + 1) * g_glyph_width * 9;
-		// TODO - fix this. strlen works wrongly for UTF-8.
-		const uint32_t len = uint32_t(std::strlen(stats_names[i]));
+		const char* const stats_names[]
+			{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
+		const uint32_t stats[]{uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()), lifes_, level_, score_};
+		const uint8_t stats_colors[]{6, 4, 1, 2};
+		for(uint32_t i = 0; i < 4; ++i)
+		{
+			const uint32_t x = (i + 1) * g_glyph_width * 9;
+			// TODO - fix this. strlen works wrongly for UTF-8.
+			const uint32_t len = uint32_t(std::strlen(stats_names[i]));
 
-		DrawText(
-			frame_buffer,
-			g_cga_palette[stats_colors[i]],
-			x - g_glyph_width * len,
-			frame_buffer.height - g_glyph_height * 2 - 3,
-			stats_names[i]);
+			DrawText(
+				frame_buffer,
+				g_cga_palette[stats_colors[i]],
+				x - g_glyph_width * len,
+				frame_buffer.height - g_glyph_height * 2 - 3,
+				stats_names[i]);
 
-		NumToString(text, sizeof(text), stats[i], 5);
-		DrawText(frame_buffer, g_color_white, x - g_glyph_width * 5, frame_buffer.height - g_glyph_height - 1, text);
+			NumToString(text, sizeof(text), stats[i], 5);
+			DrawText(
+				frame_buffer,
+				g_color_white,
+				x - g_glyph_width * 5,
+				frame_buffer.height - g_glyph_height - 1,
+				text);
+		}
 	}
 }
 
@@ -973,6 +1008,10 @@ GameSnake::Bonus GameSnake::SpawnBonus()
 
 void GameSnake::TrySpawnTetrisPiece()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
 	if(tetris_active_piece_ != std::nullopt)
 	{
 		return;
@@ -1082,6 +1121,10 @@ void GameSnake::TrySpawnTetrisPiece()
 
 void GameSnake::TrySpawnArkanoidBall()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
 	if(rand_.Next() % 7 != 0)
 	{
 		return;
