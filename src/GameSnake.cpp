@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GamePacman.hpp"
+#include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
@@ -26,6 +27,14 @@ const uint32_t g_extra_life_spawn_inv_chance = 20;
 const uint32_t g_field_start_animation_duration = 240;
 const uint32_t g_death_animation_duration = 180;
 const uint32_t g_death_animation_flicker_duration = 12;
+
+const uint32_t g_transition_time_out_of_borders_elements_disappear = 30 + g_field_start_animation_duration + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_field_change = g_transition_time_out_of_borders_elements_disappear + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_field_border_tile_change = g_transition_time_field_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_bonuses_show = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_snake_visual_change = g_transition_time_bonuses_show + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_stats_show = g_transition_time_snake_visual_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_change_end = g_transition_time_snake_visual_change;
 
 uint32_t GetLengthForNextLevelTransition(const uint32_t level)
 {
@@ -52,6 +61,11 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 {
 	(void) keyboard_state;
 
+	if(tick_ < g_transition_time_snake_visual_change && field_start_animation_end_tick_ == std::nullopt)
+	{
+		ManipulateSnakeAsTetrisPiece(events);
+	}
+
 	for(const SDL_Event& event : events)
 	{
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
@@ -59,7 +73,10 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
 		if(event.type == SDL_KEYDOWN &&
-			snake_ != std::nullopt && death_animation_end_tick_ == std::nullopt && field_start_animation_end_tick_ == std::nullopt)
+			snake_ != std::nullopt &&
+			death_animation_end_tick_ == std::nullopt &&
+			field_start_animation_end_tick_ == std::nullopt &&
+			tick_ >= g_transition_time_snake_visual_change)
 		{
 			// Turn snake, but do not allow to turn directly towards the neck.
 			if(event.key.keysym.scancode == SDL_SCANCODE_LEFT &&
@@ -97,7 +114,17 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	const uint32_t speed = GetSpeedForLevel(level_);
 	if(tick_ % speed == 0)
 	{
-		MoveSnake();
+		if(death_animation_end_tick_ == std::nullopt && field_start_animation_end_tick_ == std::nullopt)
+		{
+			if(tick_ < g_transition_time_snake_visual_change)
+			{
+				MoveSnakeAsTetrisPiece();
+			}
+			else
+			{
+				MoveSnake();
+			}
+		}
 	}
 	if(tick_ % speed == speed / 2)
 	{
@@ -162,33 +189,49 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = c_block_size;
 	const uint32_t field_offset_y = c_block_size;
 
-	const SpriteBMP border_sprite(Sprites::snake_field_border);
-
-	for(uint32_t x = 0; x < c_field_width; ++x)
+	if(tick_ < g_transition_time_out_of_borders_elements_disappear)
 	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + x * c_block_size,
-			field_offset_y - c_block_size);
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + x * c_block_size,
-			field_offset_y + c_field_height * c_block_size);
+		DrawTetrisNextPiece(frame_buffer, TetrisBlock::I);
+		DrawTetrisStats(frame_buffer, level_, score_);
 	}
-	for(uint32_t y = 0; y < c_field_height + 2; ++y)
+
+	if(tick_ < g_transition_time_field_change)
 	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x - 1 * c_block_size,
-			field_offset_y + y * c_block_size - c_block_size);
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + c_field_width * c_block_size,
-			field_offset_y + y * c_block_size - c_block_size);
+		DrawTetrisFieldBorder(frame_buffer, false);
+	}
+	else
+	{
+		const SpriteBMP border_sprite(
+				tick_ >= g_transition_time_field_border_tile_change
+					? Sprites::snake_field_border
+					: Sprites::tetris_block_8);
+
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x + x * c_block_size,
+				field_offset_y - c_block_size);
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x + x * c_block_size,
+				field_offset_y + c_field_height * c_block_size);
+		}
+		for(uint32_t y = 0; y < c_field_height + 2; ++y)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x - 1 * c_block_size,
+				field_offset_y + y * c_block_size - c_block_size);
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				field_offset_x + c_field_width * c_block_size,
+				field_offset_y + y * c_block_size - c_block_size);
+		}
 	}
 
 	const SpriteBMP tetris_blocks_sprites[g_tetris_num_piece_types]
@@ -202,22 +245,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_3,
 	};
 
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
-	{
-		const TetrisBlock block = tetris_field_[x + y * c_field_width];
-		if(block == TetrisBlock::Empty)
-		{
-			continue;
-		}
-
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			tetris_blocks_sprites[uint32_t(block) - 1],
-			0,
-			field_offset_x + x * c_block_size,
-			field_offset_y + y * c_block_size);
-	}
+	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, tetris_field_, c_field_width, c_field_height);
 
 	if(tetris_active_piece_ != std::nullopt)
 	{
@@ -236,27 +264,43 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP bonus_sprites[]
+	if(tick_ >= g_transition_time_bonuses_show)
 	{
-		Sprites::snake_food_small,
-		Sprites::snake_food_medium,
-		Sprites::snake_food_large,
-		Sprites::snake_extra_life,
-	};
+		const SpriteBMP bonus_sprites[]
+		{
+			Sprites::snake_food_small,
+			Sprites::snake_food_medium,
+			Sprites::snake_food_large,
+			Sprites::snake_extra_life,
+		};
 
-	for(const Bonus& bonus : bonuses_)
+		for(const Bonus& bonus : bonuses_)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				bonus_sprites[size_t(bonus.type)],
+				0,
+				field_offset_x + bonus.position[0] * c_block_size,
+				field_offset_y + bonus.position[1] * c_block_size);
+		}
+	}
+
+	if(snake_ != std::nullopt && tick_ < g_transition_time_snake_visual_change)
 	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			bonus_sprites[size_t(bonus.type)],
-			0,
-			field_offset_x + bonus.position[0] * c_block_size,
-			field_offset_y + bonus.position[1] * c_block_size);
+		for(const SnakeSegment& segment : snake_->segments)
+		{
+			DrawSprite(
+				frame_buffer,
+				Sprites::tetris_block_4,
+				field_offset_x + segment.position[0] * c_block_size,
+				field_offset_y + segment.position[1] * c_block_size);
+		}
 	}
 
 	if(snake_ != std::nullopt &&
 		field_start_animation_end_tick_ == std::nullopt &&
-		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0))
+		(death_animation_end_tick_ == std::nullopt || (tick_ / g_death_animation_flicker_duration) % 2 == 0) &&
+		tick_ >= g_transition_time_snake_visual_change)
 	{
 		const SpriteBMP head_sprite(Sprites::snake_head);
 		const SpriteBMP body_segment_sprite(Sprites::snake_body_segment);
@@ -450,24 +494,33 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			Strings::snake_game_over);
 	}
 
-	const char* const stats_names[]{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
-	const uint32_t stats[]{uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()), lifes_, level_, score_};
-	const uint8_t stats_colors[]{6, 4, 1, 2};
-	for(uint32_t i = 0; i < 4; ++i)
+	if(tick_ >= g_transition_time_stats_show)
 	{
-		const uint32_t x = (i + 1) * g_glyph_width * 9;
-		// TODO - fix this. strlen works wrongly for UTF-8.
-		const uint32_t len = uint32_t(std::strlen(stats_names[i]));
+		const char* const stats_names[]
+			{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
+		const uint32_t stats[]{uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()), lifes_, level_, score_};
+		const uint8_t stats_colors[]{6, 4, 1, 2};
+		for(uint32_t i = 0; i < 4; ++i)
+		{
+			const uint32_t x = (i + 1) * g_glyph_width * 9;
+			// TODO - fix this. strlen works wrongly for UTF-8.
+			const uint32_t len = uint32_t(std::strlen(stats_names[i]));
 
-		DrawText(
-			frame_buffer,
-			g_cga_palette[stats_colors[i]],
-			x - g_glyph_width * len,
-			frame_buffer.height - g_glyph_height * 2 - 3,
-			stats_names[i]);
+			DrawText(
+				frame_buffer,
+				g_cga_palette[stats_colors[i]],
+				x - g_glyph_width * len,
+				frame_buffer.height - g_glyph_height * 2 - 3,
+				stats_names[i]);
 
-		NumToString(text, sizeof(text), stats[i], 5);
-		DrawText(frame_buffer, g_color_white, x - g_glyph_width * 5, frame_buffer.height - g_glyph_height - 1, text);
+			NumToString(text, sizeof(text), stats[i], 5);
+			DrawText(
+				frame_buffer,
+				g_color_white,
+				x - g_glyph_width * 5,
+				frame_buffer.height - g_glyph_height - 1,
+				text);
+		}
 	}
 }
 
@@ -515,11 +568,13 @@ void GameSnake::SpawnSnake()
 	Snake snake;
 	snake.direction = SnakeDirection::YPlus;
 
-	for(uint32_t i = 0; i < 5; ++i)
+	const uint32_t c_initial_length = 4;
+	const uint32_t offset = level_ <= 1 ? (c_initial_length - 1) : ((c_field_height + c_initial_length) / 2);
+	for(uint32_t i = 0; i < c_initial_length; ++i)
 	{
 		SnakeSegment segment;
 		segment.position[0] = c_field_width / 2;
-		segment.position[1] = c_field_height / 2 - i;
+		segment.position[1] = offset - i;
 		snake.segments.push_back(segment);
 	}
 
@@ -529,10 +584,6 @@ void GameSnake::SpawnSnake()
 void GameSnake::MoveSnake()
 {
 	if(snake_ == std::nullopt)
-	{
-		return;
-	}
-	if(death_animation_end_tick_ != std::nullopt || field_start_animation_end_tick_ != std::nullopt)
 	{
 		return;
 	}
@@ -596,7 +647,6 @@ void GameSnake::MoveSnake()
 		}
 	}
 
-
 	if(hit_obstacle)
 	{
 		OnSnakeDeath();
@@ -657,6 +707,153 @@ void GameSnake::MoveSnake()
 		{
 			OnSnakeDeath();
 			return;
+		}
+	}
+}
+
+void GameSnake::MoveSnakeAsTetrisPiece()
+{
+	if(snake_ == std::nullopt)
+	{
+		return;
+	}
+
+	bool can_move = true;
+	for(const SnakeSegment& snake_segment : snake_->segments)
+	{
+		can_move &= snake_segment.position[1] + 1 < c_field_height;
+	}
+
+	if(can_move)
+	{
+		for(SnakeSegment& snake_segment : snake_->segments)
+		{
+			snake_segment.position[1] += 1;
+		}
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+	}
+}
+
+void GameSnake::ManipulateSnakeAsTetrisPiece(const std::vector<SDL_Event>& events)
+{
+	if (snake_ == std::nullopt)
+	{
+		return;
+	}
+
+	bool has_move_left = false;
+	bool has_move_right = false;
+	bool has_move_down = false;
+	bool has_rotate = false;
+	for(const SDL_Event& event : events)
+	{
+		if(event.type == SDL_KEYDOWN)
+		{
+
+			has_move_left |= event.key.keysym.scancode == SDL_SCANCODE_LEFT;
+			has_move_right |= event.key.keysym.scancode == SDL_SCANCODE_RIGHT;
+			has_move_down |= event.key.keysym.scancode == SDL_SCANCODE_DOWN;
+			has_rotate |= event.key.keysym.scancode == SDL_SCANCODE_UP;
+		}
+	}
+
+	const auto try_side_move_piece =
+	[&](const int32_t delta)
+	{
+		bool can_move = true;
+		for(const SnakeSegment& snake_segment : snake_->segments)
+		{
+			const auto next_x = int32_t(snake_segment.position[0]) + delta;
+			if( next_x < 0 || next_x >= int32_t(c_field_width ))
+			{
+				// Do not check for field blocks because in tetris transition there is no tetris blocks on the field.
+				can_move = false;
+			}
+		}
+
+		if(can_move)
+		{
+			for(SnakeSegment& snake_segment : snake_->segments)
+			{
+				snake_segment.position[0] += uint32_t(delta);
+			}
+		}
+	};
+
+	if(has_move_left)
+	{
+		try_side_move_piece(-1);
+	}
+	if(has_move_right)
+	{
+		try_side_move_piece(1);
+	}
+
+	if(has_move_down)
+	{
+		bool can_move = true;
+		for(const SnakeSegment& snake_segment : snake_->segments)
+		{
+			can_move &= snake_segment.position[1] + 1 < c_field_height;
+		}
+
+		if(can_move)
+		{
+			for(SnakeSegment& snake_segment : snake_->segments)
+			{
+				snake_segment.position[1] += 1;
+			}
+			sound_player_.PlaySound(SoundId::TetrisFigureStep);
+		}
+	}
+
+	if(has_rotate)
+	{
+		std::vector<SnakeSegment> segments_transformed;
+		segments_transformed.reserve(snake_->segments.size());
+		bool can_rotate = true;
+
+		const std::array<int32_t, 2> center = {
+			int32_t(snake_->segments[snake_->segments.size() / 2].position[0]),
+			int32_t(snake_->segments[snake_->segments.size() / 2].position[1])};
+		for(const SnakeSegment& segment : snake_->segments)
+		{
+			const int32_t rel_x = int32_t(segment.position[0]) - center[0];
+			const int32_t rel_y = int32_t(segment.position[1]) - center[1];
+			const int32_t new_x = center[0] + rel_y;
+			const int32_t new_y = center[1] - rel_x;
+
+			if(new_x < 0 || new_y < 0 || new_x >= int32_t(c_field_width) || new_y >= int32_t(c_field_height))
+			{
+				can_rotate = false;
+				break;
+			}
+
+			SnakeSegment segment_transformed;
+			segment_transformed.position = {uint32_t(new_x), uint32_t(new_y)};
+			segments_transformed.push_back(segment_transformed);
+		}
+
+		if(can_rotate)
+		{
+			SnakeDirection new_direction = snake_->direction;
+			switch(snake_->direction)
+			{
+			case SnakeDirection::XPlus:
+				new_direction = SnakeDirection::YMinus;
+				break;
+			case SnakeDirection::XMinus:
+				new_direction = SnakeDirection::YPlus;
+				break;
+			case SnakeDirection::YPlus:
+				new_direction = SnakeDirection::XPlus;
+				break;
+			case SnakeDirection::YMinus:
+				new_direction = SnakeDirection::XMinus;
+				break;
+			}
+			snake_->direction = new_direction;
+			snake_->segments = segments_transformed;
 		}
 	}
 }
@@ -973,6 +1170,10 @@ GameSnake::Bonus GameSnake::SpawnBonus()
 
 void GameSnake::TrySpawnTetrisPiece()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
 	if(tetris_active_piece_ != std::nullopt)
 	{
 		return;
@@ -1082,6 +1283,10 @@ void GameSnake::TrySpawnTetrisPiece()
 
 void GameSnake::TrySpawnArkanoidBall()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
 	if(rand_.Next() % 7 != 0)
 	{
 		return;

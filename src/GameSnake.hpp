@@ -79,6 +79,8 @@ private:
 	void NewField();
 	void SpawnSnake();
 	void MoveSnake();
+	void MoveSnakeAsTetrisPiece();
+	void ManipulateSnakeAsTetrisPiece(const std::vector<SDL_Event>& events);
 	void OnSnakeDeath();
 	void MoveTetrisPieceDown();
 	// Returns true if need to kill it.

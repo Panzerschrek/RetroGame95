@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GameSnake.hpp"
+#include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
@@ -191,58 +192,14 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = (320 - c_field_width * block_width) / 2;
-	const uint32_t field_offset_y = block_height;
-	const uint32_t next_piece_offset_x = field_offset_x + block_width * (c_field_width - 2);
-	const uint32_t next_piece_offset_y = field_offset_y + 7 * block_height;
-
-	const uint32_t texts_offset_x = field_offset_x - g_glyph_width * 13;
-	const uint32_t texts_offset_y = field_offset_y + block_height * c_field_height - g_glyph_height * 3;
+	const uint32_t field_offset_x = GetTetrisFieldOffsetX(frame_buffer);
+	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
-	const SpriteBMP border_sprite(Sprites::tetris_block_8);
+	DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
 
-	for(uint32_t x = 0; x < c_field_width; ++x)
-	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + x * block_width,
-			field_offset_y + c_field_height * block_height);
-	}
-	for(uint32_t y = laser_ship_is_active ? 2 : 0; y < c_field_height + 2; ++y)
-	{
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x - 1 * block_width,
-			field_offset_y + y * block_height - block_height);
-		DrawSprite(
-			frame_buffer,
-			border_sprite,
-			field_offset_x + c_field_width * block_width,
-			field_offset_y + y * block_height - block_height);
-	}
-
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x)
-		{
-			const TetrisBlock block = field_[x + y * c_field_width];
-			if(block == TetrisBlock::Empty)
-			{
-				continue;
-			}
-
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				sprites[uint32_t(block) - 1],
-				0,
-				field_offset_x + x * block_width,
-				field_offset_y + y * block_height);
-		}
-	}
+	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
 
 	if(active_piece_ != std::nullopt)
 	{
@@ -329,34 +286,8 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
 	}
 
-	const auto next_piece_index = uint32_t(next_piece_type_) - uint32_t(TetrisBlock::I);
-
-	const uint8_t pieces_colors[g_tetris_num_piece_types]{ 4, 7, 5, 1, 2, 6, 3, };
-	DrawText(
-		frame_buffer,
-		g_cga_palette[pieces_colors[uint32_t(next_piece_index)]],
-		next_piece_offset_x + block_width * 4,
-		next_piece_offset_y - block_height * 6,
-		Strings::tetris_next);
-
-	for(const auto& piece_block : g_tetris_pieces_blocks[next_piece_index])
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprites[next_piece_index],
-			0,
-			next_piece_offset_x + uint32_t(piece_block[0]) * block_width,
-			next_piece_offset_y + uint32_t(piece_block[1]) * block_height);
-	}
-
-	char text[64];
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, Strings::tetris_level);
-	NumToString(text, sizeof(text), level_, 3);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y, text);
-
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
-	NumToString(text, sizeof(text), score_, 3);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y + g_glyph_height * 2, text);
+	DrawTetrisNextPiece(frame_buffer, next_piece_type_);
+	DrawTetrisStats(frame_buffer, level_, score_);
 
 	if(game_over_)
 	{

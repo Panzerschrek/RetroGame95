@@ -22,8 +22,8 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	static const constexpr uint32_t c_field_width = 10;
-	static const constexpr uint32_t c_field_height = 20;
+	static const constexpr uint32_t c_field_width  = g_tetris_field_width;
+	static const constexpr uint32_t c_field_height = g_tetris_field_height;
 
 	enum class BonusType : uint8_t
 	{
