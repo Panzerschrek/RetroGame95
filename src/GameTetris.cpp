@@ -73,7 +73,8 @@ uint32_t GetSpeedForLevel(const uint32_t level)
 
 uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 {
-	return std::min(3 * level + 7, 20u);
+	const uint32_t transition_extra_lines = level == 1 ? 3 : 0;
+	return std::min(3 * level + 7 + transition_extra_lines, 20u);
 }
 
 TetrisBlock TetrisBlockForArkanoidBlock(const ArkanoidBlockType block_type)
@@ -115,8 +116,7 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 
 	NextLevel();
 
-	// TODO - use special field, than can be transitioned to tetris field.
-	FillArkanoidField(temp_arkanoid_field_, arkanoid_level2);
+	FillArkanoidField(temp_arkanoid_field_, arkanoid_level_tetris_transition);
 
 	for(uint32_t y = 0; y < std::min(g_tetris_field_height, g_arkanoid_field_height); ++y)
 	for(uint32_t x = 0; x < 5; ++x)
@@ -318,7 +318,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
 	}
 
-	if(active_piece_ != std::nullopt)
+	if(active_piece_ != std::nullopt && tick_ >= g_transition_time_change_end)
 	{
 		for(const auto& piece_block : active_piece_->blocks)
 		{
