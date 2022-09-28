@@ -2,7 +2,7 @@
 #include "ArkanoidLevels.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
-#include  "GamesCommon.hpp"
+#include "GamesDrawCommon.hpp"
 #include "GameTetris.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
@@ -59,50 +59,10 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 {
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
-	const uint32_t field_offset_x = 10;
-	const uint32_t field_offset_y = 10;
+	const uint32_t field_offset_x = g_arkanoid_field_offset_x;
+	const uint32_t field_offset_y = g_arkanoid_field_offset_y;
 
-	const uint32_t texts_offset_x = 264;
-	const uint32_t texts_offset_y = 32;
-
-	const SpriteBMP block_sprites[]
-	{
-		Sprites::arkanoid_block_1,
-		Sprites::arkanoid_block_2,
-		Sprites::arkanoid_block_3,
-		Sprites::arkanoid_block_4,
-		Sprites::arkanoid_block_5,
-		Sprites::arkanoid_block_6,
-		Sprites::arkanoid_block_7,
-		Sprites::arkanoid_block_8,
-		Sprites::arkanoid_block_9,
-		Sprites::arkanoid_block_10,
-		Sprites::arkanoid_block_11,
-		Sprites::arkanoid_block_12,
-		Sprites::arkanoid_block_13,
-		Sprites::arkanoid_block_14,
-		Sprites::arkanoid_block_15,
-		Sprites::arkanoid_block_concrete,
-		Sprites::arkanoid_block_14_15,
-	};
-
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x)
-		{
-			const Block& block = field_[x + y * c_field_width];
-			if(block.type == BlockType::Empty)
-			{
-				continue;
-			}
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				block_sprites[uint32_t(block.type) - 1],
-				0,
-				field_offset_x + x * c_block_width,
-				field_offset_y + y * c_block_height);
-		}
-	}
+	DrawArkanoidField(frame_buffer, field_);
 
 	const bool playing_level_start_animation = tick_ < level_start_animation_end_tick_;
 
@@ -211,148 +171,14 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(bonus.position[1])) - c_bonus_half_height);
 	}
 
-	const SpriteBMP sprites_trim_top[]
-	{
-		Sprites::arkanoid_trim_corner_top_left,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_1,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_segment_top_0,
-		Sprites::arkanoid_trim_corner_top_right,
-	};
+	DrawArkanoidFieldBorder(frame_buffer, next_level_exit_is_open_);
 
-	uint32_t trim_top_x = field_offset_x - 10;
-	for(const SpriteBMP& sprite : sprites_trim_top)
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			trim_top_x,
-			field_offset_y - 10);
-
-		trim_top_x += sprite.GetWidth();
-	}
-
-	const SpriteBMP sprites_trim_left[]
-	{
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_0,
-		Sprites::arkanoid_trim_segment_side_1,
-	};
-
-	uint32_t trim_side_y = field_offset_y;
-	const uint32_t side_trim_offset_x = field_offset_x - 10;
-	for(const SpriteBMP& sprite : sprites_trim_left)
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x,
-			trim_side_y);
-
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
-			trim_side_y);
-
-		trim_side_y += sprite.GetHeight();
-	}
-
-	if(next_level_exit_is_open_)
-	{
-		const SpriteBMP sprite(Sprites::arkanoid_level_exit_gate);
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
-			trim_side_y);
-	}
-
-	// Draw two lover sprites of side trimming, including level exit.
-	for(size_t i = 0; i < 2; ++i)
-	{
-		const SpriteBMP sprite(Sprites::arkanoid_trim_segment_side_0);
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			side_trim_offset_x,
-			trim_side_y);
-
-		if(!next_level_exit_is_open_)
-		{
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				sprite,
-				0,
-				side_trim_offset_x + c_block_width * c_field_width + sprite.GetWidth(),
-				trim_side_y);
-		}
-
-		trim_side_y += sprite.GetHeight();
-	}
-
-	char text[64];
-
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
-
-	NumToString(text, sizeof(text), level_, 5);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
+	DrawArakoindStats(frame_buffer, level_, score_);
 
 	if(tick_ < level_start_animation_end_tick_)
 	{
-		DrawTextCentered(
-			frame_buffer,
-			g_cga_palette[9],
-			field_offset_x + c_block_width  * c_field_width  / 2,
-			field_offset_y + c_block_height * (c_field_height - 6),
-			Strings::arkanoid_round);
-
-		NumToString(text, sizeof(text), level_, 0);
-		DrawTextCentered(
-			frame_buffer,
-			g_color_white,
-			field_offset_x + c_block_width  * c_field_width  / 2,
-			field_offset_y + c_block_height * (c_field_height - 6) + g_glyph_height * 2,
-			text);
+		DrawArkanoidLevelStartSplash(frame_buffer, level_);
 	}
-
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
-
-	NumToString(text, sizeof(text), score_, 5);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
 
 	if(game_over_)
 	{
@@ -372,16 +198,14 @@ GameInterfacePtr GameArkanoid::AskForNextGameTransition()
 
 void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	const fixed16_t keyboard_move_sensetivity = g_fixed16_one * 3 / 2; // TODO - make this configurable.
-
 	if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
 	{
-		ship_->position[0] -= keyboard_move_sensetivity;
+		ship_->position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
 		CorrectShipPosition();
 	}
 	if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
 	{
-		ship_->position[0] += keyboard_move_sensetivity;
+		ship_->position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
 		CorrectShipPosition();
 	}
 
@@ -391,8 +215,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 		{
 			if (ship_ != std::nullopt)
 			{
-				const fixed16_t sensetivity = g_fixed16_one / 3; // TODO - make this configurable.
-				ship_->position[0] += event.motion.xrel * sensetivity;
+				ship_->position[0] += event.motion.xrel * g_arkanoid_ship_mouse_move_sensetivity;
 				CorrectShipPosition();
 			}
 		}
@@ -508,8 +331,8 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 	{
 		for(uint32_t x = 0; x < c_field_width; ++x)
 		{
-			const Block& block = field_[x + y * c_field_width];
-			if(block.type != BlockType::Empty)
+			const ArkanoidBlock& block = field_[x + y * c_field_width];
+			if(block.type != ArkanoidBlockType::Empty)
 			{
 				++num_non_empty_blocks;
 			}
@@ -589,27 +412,7 @@ void GameArkanoid::NextLevel()
 	next_level_exit_is_open_ = false;
 	slow_down_end_tick_ = 0;
 
-	const char* level_data = arkanoid_levels[(level_ - 1) % std::size(arkanoid_levels)];
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	{
-		for(uint32_t x = 0; x < c_field_width; ++x, ++level_data)
-		{
-			Block& block = field_[x + y * c_field_width];
-			block.type = GetBlockTypeForLevelDataByte(*level_data);
-
-			block.health = 1;
-			if(block.type == BlockType::Concrete)
-			{
-				block.health = 2;
-			}
-			else if(block.type == BlockType::Color14_15)
-			{
-				block.health = 4;
-			}
-		}
-		assert(*level_data == '\n');
-		++level_data;
-	}
+	FillArkanoidField(field_, arkanoid_levels[(level_ - 1) % std::size(arkanoid_levels)]);
 
 	SpawnShip();
 
@@ -668,8 +471,8 @@ bool GameArkanoid::UpdateBall(Ball& ball)
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty)
+		ArkanoidBlock& block = field_[x + y * c_field_width];
+		if(block.type == ArkanoidBlockType::Empty)
 		{
 			continue;
 		}
@@ -852,8 +655,8 @@ bool GameArkanoid::UpdateLaserBeam(LaserBeam& laser_beam)
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width; ++x)
 	{
-		Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty)
+		ArkanoidBlock& block = field_[x + y * c_field_width];
+		if(block.type == ArkanoidBlockType::Empty)
 		{
 			continue;
 		}
@@ -887,8 +690,8 @@ bool GameArkanoid::UpdateLaserBeam(LaserBeam& laser_beam)
 
 void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
 {
-	Block& block = field_[ block_x + block_y * c_field_width ];
-	if(block.type == BlockType::Empty)
+	ArkanoidBlock& block = field_[ block_x + block_y * c_field_width ];
+	if(block.type == ArkanoidBlockType::Empty)
 	{
 		return;
 	}
@@ -901,7 +704,7 @@ void GameArkanoid::DamageBlock(const uint32_t block_x, const uint32_t block_y)
 
 	if(block.health == 0)
 	{
-		block.type = BlockType::Empty;
+		block.type = ArkanoidBlockType::Empty;
 		TrySpawnNewBonus(block_x, block_y);
 	}
 }
@@ -1056,24 +859,4 @@ uint32_t GameArkanoid::GetShipHalfWidthForState(const ShipState ship_state)
 
 	assert(false);
 	return c_ship_half_width_normal;
-}
-
-GameArkanoid::BlockType GameArkanoid::GetBlockTypeForLevelDataByte(const char level_data_byte)
-{
-	if(
-		level_data_byte >= 'A' &&
-		uint32_t(level_data_byte) < 'A' + (1 + uint32_t(BlockType::Color15) - uint32_t(BlockType::Color1)))
-	{
-		return BlockType(uint32_t(BlockType::Color1) + uint32_t(level_data_byte) - 'A');
-	}
-	if(level_data_byte == '#')
-	{
-		return BlockType::Concrete;
-	}
-	if(level_data_byte == '@')
-	{
-		return BlockType::Color14_15;
-	}
-
-	return BlockType::Empty;
 }

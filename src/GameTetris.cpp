@@ -1,4 +1,5 @@
 #include "GameTetris.hpp"
+#include "ArkanoidLevels.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GameSnake.hpp"
@@ -20,6 +21,18 @@ const fixed16_t g_laser_beam_speed = g_fixed16_one / 5;
 const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
+
+const uint32_t g_transition_time_show_arkanoid_level_splash = GameInterface::c_update_frequency * 3 / 2;
+const uint32_t g_transition_time_arkanoid_ship_disappear = GameInterface::c_update_frequency * 3;
+const uint32_t g_transition_time_field_border_tile_change = g_transition_time_arkanoid_ship_disappear +  GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_transform_blocks = g_transition_time_show_stats + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_start_move_blocks_down = g_transition_time_transform_blocks + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_finish_move_blocks_down = g_transition_time_start_move_blocks_down + GameInterface::c_update_frequency * 7 / 2;
+
+const uint32_t g_transition_time_change_end = g_transition_time_finish_move_blocks_down;
 
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 {
@@ -63,7 +76,37 @@ uint32_t GetSpeedForLevel(const uint32_t level)
 
 uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 {
-	return std::min(3 * level + 7, 20u);
+	const uint32_t transition_extra_lines = level == 1 ? 3 : 0;
+	return std::min(3 * level + 7 + transition_extra_lines, 20u);
+}
+
+TetrisBlock TetrisBlockForArkanoidBlock(const ArkanoidBlockType block_type)
+{
+	switch(block_type)
+	{
+	case ArkanoidBlockType::Empty: return TetrisBlock::Empty;
+	case ArkanoidBlockType::Color1: return TetrisBlock::O;
+	case ArkanoidBlockType::Color2: return TetrisBlock::S;
+	case ArkanoidBlockType::Color3: return TetrisBlock::Z;
+	case ArkanoidBlockType::Color4: return TetrisBlock::I;
+	case ArkanoidBlockType::Color5: return TetrisBlock::L;
+	case ArkanoidBlockType::Color6: return TetrisBlock::T;
+	case ArkanoidBlockType::Color7: return TetrisBlock::J;
+	case ArkanoidBlockType::Color8: return TetrisBlock::O;
+	case ArkanoidBlockType::Color9: return TetrisBlock::O;
+	case ArkanoidBlockType::Color10: return TetrisBlock::S;
+	case ArkanoidBlockType::Color11: return TetrisBlock::Z;
+	case ArkanoidBlockType::Color12: return TetrisBlock::I;
+	case ArkanoidBlockType::Color13: return TetrisBlock::L;
+	case ArkanoidBlockType::Color14: return TetrisBlock::T;
+	case ArkanoidBlockType::Color15: return TetrisBlock::J;
+	case ArkanoidBlockType::Concrete: return TetrisBlock::J;
+	case ArkanoidBlockType::Color14_15: return TetrisBlock::J;
+	case ArkanoidBlockType::NumTypes: break;
+	}
+
+	assert(false);
+	return TetrisBlock::Empty;
 }
 
 } // namespace
@@ -75,14 +118,52 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 	OpenGame(GameId::Tetris);
 
 	NextLevel();
+
+	FillArkanoidField(temp_arkanoid_field_, arkanoid_level_tetris_transition);
+
+	for(uint32_t y = 0; y < std::min(g_tetris_field_height, g_arkanoid_field_height); ++y)
+	for(uint32_t x = 0; x < 5; ++x)
+	{
+		const ArkanoidBlock& src_block = temp_arkanoid_field_[5 + x + y * g_arkanoid_field_width];
+		if(src_block.type == ArkanoidBlockType::Empty)
+		{
+			continue;
+		}
+
+		TetrisBlock* dst = field_ + x * 2 + y * c_field_width;
+		dst[0] = dst[1] = TetrisBlockForArkanoidBlock(src_block.type);
+	}
+
+	temp_arkanoid_ship_.position =
+	{
+		IntToFixed16(g_arkanoid_field_width  * g_arkanoid_block_width  / 2),
+		IntToFixed16(g_arkanoid_field_height * g_arkanoid_block_height + 5),
+	};
 }
 
 void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	(void) keyboard_state;
+	if(tick_ >= g_transition_time_show_arkanoid_level_splash)
+	{
+		if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
+		{
+			temp_arkanoid_ship_.position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
+		if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
+		{
+			temp_arkanoid_ship_.position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
+	}
 
 	for(const SDL_Event& event : events)
 	{
+		if(event.type == SDL_MOUSEMOTION && tick_ >= g_transition_time_show_arkanoid_level_splash)
+		{
+			temp_arkanoid_ship_.position[0] += event.motion.xrel * g_arkanoid_ship_mouse_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
@@ -104,16 +185,27 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	TrySpawnRandomArkanoidBall();
 
-	ManipulatePiece(events);
+	if(tick_ >= g_transition_time_change_end)
+	{
+		ManipulatePiece(events);
+	}
 
 	uint32_t speed = GetSpeedForLevel(level_);
 	if(tick_ <= slow_down_end_tick_)
 	{
 		speed = speed * 3 / 2;
 	}
+
 	if(tick_ % speed == 0)
 	{
-		MovePieceDown();
+		if(tick_ >= g_transition_time_start_move_blocks_down && tick_ < g_transition_time_finish_move_blocks_down)
+		{
+			TryMoveWholeFieldDown();
+		}
+		if(tick_ >= g_transition_time_change_end)
+		{
+			MovePieceDown();
+		}
 	}
 
 	for(size_t b = 0; b < arkanoid_balls_.size();)
@@ -197,11 +289,73 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	const bool laser_ship_is_active = tick_ <= laser_ship_end_tick_;
 
-	DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
+	if(tick_ < g_transition_time_field_remove_arkanoid_stats)
+	{
+		DrawArakoindStats(frame_buffer, level_, score_);
+	}
 
-	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
+	if(tick_ < g_transition_time_field_border_change)
+	{
+		DrawArkanoidField(frame_buffer, temp_arkanoid_field_);
+	}
+	else if(tick_ < g_transition_time_transform_blocks)
+	{
+		DrawArkanoidField(frame_buffer, temp_arkanoid_field_, 5, 10);
+	}
 
-	if(active_piece_ != std::nullopt)
+	if(tick_ < g_transition_time_field_border_tile_change)
+	{
+		DrawArkanoidFieldBorder(frame_buffer, false);
+	}
+	else if(tick_ < g_transition_time_field_border_change)
+	{
+		const SpriteBMP border_sprite(Sprites::tetris_block_8);
+		for(uint32_t x = 0; x < g_arkanoid_field_width * 2 + 2; ++x)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				g_arkanoid_field_offset_x - 10 + x * block_width,
+				g_arkanoid_field_offset_y - 10);
+		}
+
+		for(uint32_t y = 0; y < g_arkanoid_field_height + 1; ++y)
+		{
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				g_arkanoid_field_offset_x - 10,
+				g_arkanoid_field_offset_y + y * block_height);
+
+			DrawSprite(
+				frame_buffer,
+				border_sprite,
+				g_arkanoid_field_offset_x - 10 + (g_arkanoid_field_width * 2 + 1) * block_width,
+				g_arkanoid_field_offset_y + y * block_height);
+		}
+	}
+	else
+	{
+		DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
+	}
+
+	if(tick_ >= g_transition_time_transform_blocks)
+	{
+		DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
+	}
+
+	if(tick_ < g_transition_time_arkanoid_ship_disappear)
+	{
+		const SpriteBMP sprite = (Sprites::arkanoid_ship);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			g_arkanoid_field_offset_x + uint32_t(Fixed16FloorToInt(temp_arkanoid_ship_.position[0])) - sprite.GetWidth () / 2,
+			g_arkanoid_field_offset_y + uint32_t(Fixed16FloorToInt(temp_arkanoid_ship_.position[1])) - sprite.GetHeight() / 2);
+	}
+
+	if(active_piece_ != std::nullopt && tick_ >= g_transition_time_change_end)
 	{
 		for(const auto& piece_block : active_piece_->blocks)
 		{
@@ -286,8 +440,16 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
 	}
 
-	DrawTetrisNextPiece(frame_buffer, next_piece_type_);
-	DrawTetrisStats(frame_buffer, level_, score_);
+	if(tick_ < g_transition_time_show_arkanoid_level_splash)
+	{
+		DrawArkanoidLevelStartSplash(frame_buffer, level_);
+	}
+
+	if(tick_ >= g_transition_time_show_stats)
+	{
+		DrawTetrisNextPiece(frame_buffer, next_piece_type_);
+		DrawTetrisStats(frame_buffer, level_, score_);
+	}
 
 	if(game_over_)
 	{
@@ -298,6 +460,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + block_height * c_field_height / 2,
 			Strings::tetris_game_over);
 	}
+}
+
+bool GameTetris::NeedToCaptureMouse()
+{
+	return tick_ < g_transition_time_arkanoid_ship_disappear;
 }
 
 GameInterfacePtr GameTetris::AskForNextGameTransition()
@@ -319,7 +486,6 @@ void GameTetris::OnNextLeveltriggered()
 
 void GameTetris::NextLevel()
 {
-	tick_ = 0;
 	level_ += 1;
 	lines_removed_for_this_level_ = 0;
 
@@ -559,76 +725,112 @@ void GameTetris::MovePieceDown()
 				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] = active_piece_->type;
 			}
 
-			// Remove lines.
-			uint32_t lines_removed = 0;
-			for(uint32_t y = c_field_height -1;;)
-			{
-				bool line_is_full = true;
-				for(uint32_t x = 0; x < c_field_width; ++x)
-				{
-					line_is_full &= field_[x + y * c_field_width] != TetrisBlock::Empty;
-				}
-
-				if(line_is_full)
-				{
-					++lines_removed;
-
-					// Remove this line.
-					for(uint32_t dst_y = y; ; --dst_y)
-					{
-						if(dst_y == 0)
-						{
-							for(uint32_t x = 0; x < c_field_width; ++x)
-							{
-								field_[x + dst_y * c_field_width] =TetrisBlock::Empty;
-							}
-						}
-						else
-						{
-							const uint32_t src_y = dst_y - 1;
-
-							for(uint32_t x = 0; x < c_field_width; ++x)
-							{
-								field_[x + dst_y * c_field_width] = field_[x + src_y * c_field_width];
-								field_[x + src_y * c_field_width] = TetrisBlock::Empty;
-							}
-						}
-
-						if(dst_y == 0)
-						{
-							break;
-						}
-					} // Shift lines after removal.
-				}
-				else if (y > 0)
-				{
-					--y;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			if(!game_over_)
-			{
-				assert(lines_removed <= 4);
-				for(uint32_t i = 0; i < lines_removed; ++i)
-				{
-					TrySpawnNewBonus(active_piece_->blocks[i][0], active_piece_->blocks[i][1]);
-				}
-			}
-
-			if(lines_removed > 0)
-			{
-				sound_player_.PlaySound(SoundId::SnakeBonusEat);
-			}
-
-			UpdateScore(lines_removed);
+			TryRemoveLines();
 
 			active_piece_ = std::nullopt;
 		}
 	}
+}
+
+void GameTetris::TryMoveWholeFieldDown()
+{
+	bool can_move = true;
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		can_move &= field_[x + (c_field_height - 1) * c_field_width] == TetrisBlock::Empty;
+	}
+
+	if(!can_move)
+	{
+		TryRemoveLines();
+		return;
+	}
+
+	for(uint32_t y = c_field_height - 1; y > 0; --y)
+	{
+		const TetrisBlock* const src = field_ + (y - 1) * c_field_width;
+		TetrisBlock* const dst = field_ + y * c_field_width;
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			dst[x] = src[x];
+		}
+	}
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		field_[x] = TetrisBlock::Empty;
+	}
+
+	sound_player_.PlaySound(SoundId::TetrisFigureStep);
+}
+
+void GameTetris::TryRemoveLines()
+{
+	// Remove lines.
+	uint32_t lines_removed = 0;
+	for(uint32_t y = c_field_height -1;;)
+	{
+		bool line_is_full = true;
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			line_is_full &= field_[x + y * c_field_width] != TetrisBlock::Empty;
+		}
+
+		if(line_is_full)
+		{
+			++lines_removed;
+
+			// Remove this line.
+			for(uint32_t dst_y = y; ; --dst_y)
+			{
+				if(dst_y == 0)
+				{
+					for(uint32_t x = 0; x < c_field_width; ++x)
+					{
+						field_[x + dst_y * c_field_width] =TetrisBlock::Empty;
+					}
+				}
+				else
+				{
+					const uint32_t src_y = dst_y - 1;
+
+					for(uint32_t x = 0; x < c_field_width; ++x)
+					{
+						field_[x + dst_y * c_field_width] = field_[x + src_y * c_field_width];
+						field_[x + src_y * c_field_width] = TetrisBlock::Empty;
+					}
+				}
+
+				if(dst_y == 0)
+				{
+					break;
+				}
+			} // Shift lines after removal.
+		}
+		else if (y > 0)
+		{
+			--y;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if(!game_over_ && active_piece_ != std::nullopt)
+	{
+		assert(lines_removed <= 4);
+		for(uint32_t i = 0; i < lines_removed; ++i)
+		{
+			TrySpawnNewBonus(active_piece_->blocks[i][0], active_piece_->blocks[i][1]);
+		}
+	}
+
+	if(lines_removed > 0)
+	{
+		sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	}
+
+	UpdateScore(lines_removed);
 }
 
 void GameTetris::UpdateScore(const uint32_t lines_removed)
@@ -783,6 +985,11 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 
 void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
+
 	if(rand_.Next() % 2 != 0)
 	{
 		return;
@@ -876,6 +1083,11 @@ bool GameTetris::UpdateLaserBeam(LaserBeam& laser_beam)
 
 void GameTetris::TrySpawnRandomArkanoidBall()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
+
 	if(rand_.Next() % (60 * GameInterface::c_update_frequency) == 73)
 	{
 		SpawnArkanoidBall();
@@ -902,6 +1114,20 @@ void GameTetris::SpawnArkanoidBall()
 	arkanoid_ball.velocity[1] = Fixed16Mul(sin, speed);
 
 	arkanoid_balls_.push_back(arkanoid_ball);
+}
+
+void GameTetris::CorrectArkanoidShipPosition()
+{
+	const fixed16_t half_width = IntToFixed16(int32_t(c_arkanoid_ship_half_width));
+	if(temp_arkanoid_ship_.position[0] - half_width < 0)
+	{
+		temp_arkanoid_ship_.position[0] = half_width;
+	}
+	fixed16_t right_border = IntToFixed16(g_arkanoid_field_width * g_arkanoid_block_width);
+	if(temp_arkanoid_ship_.position[0] + half_width >= right_border)
+	{
+		temp_arkanoid_ship_.position[0] = right_border - half_width;
+	}
 }
 
 TetrisPiece GameTetris::SpawnActivePiece()

@@ -1,6 +1,7 @@
 #pragma once
 #include "Fixed.hpp"
 #include "GameInterface.hpp"
+#include "GamesCommon.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
 #include <optional>
@@ -22,35 +23,6 @@ public: // GameInterface
 private:
 	// Integer coordinates are in pixels.
 	// fixed16 coordinates are in pixels too, but in fixed16 format.
-
-	enum class BlockType : uint8_t
-	{
-		Empty,
-		Color1,
-		Color2,
-		Color3,
-		Color4,
-		Color5,
-		Color6,
-		Color7,
-		Color8,
-		Color9,
-		Color10,
-		Color11,
-		Color12,
-		Color13,
-		Color14,
-		Color15,
-		Concrete,
-		Color14_15,
-		NumTypes,
-	};
-
-	struct Block
-	{
-		BlockType type = BlockType::Empty;
-		uint8_t health = 0;
-	};
 
 	struct Ball
 	{
@@ -110,13 +82,13 @@ private:
 		fixed16vec2_t position{};
 	};
 
-	static const constexpr uint32_t c_field_width = 11;
-	static const constexpr uint32_t c_field_height = 21;
+	static const constexpr uint32_t c_field_width  = g_arkanoid_field_width ;
+	static const constexpr uint32_t c_field_height = g_arkanoid_field_height;
 
 	// Size on pixels.
 	static const constexpr uint32_t c_ball_half_size = 3;
-	static const constexpr uint32_t c_block_width = 20;
-	static const constexpr uint32_t c_block_height = 10;
+	static const constexpr uint32_t c_block_width  = g_arkanoid_block_width ;
+	static const constexpr uint32_t c_block_height = g_arkanoid_block_height;
 	static const constexpr uint32_t c_bonus_half_width = 10;
 	static const constexpr uint32_t c_bonus_half_height = 5;
 	static const constexpr uint32_t c_laser_beam_width = 1;
@@ -149,7 +121,6 @@ private:
 	void CorrectShipPosition();
 
 	static uint32_t GetShipHalfWidthForState(ShipState ship_state);
-	static BlockType GetBlockTypeForLevelDataByte(const char level_data_byte);
 
 private:
 	SoundPlayer& sound_player_;
@@ -159,7 +130,7 @@ private:
 
 	GameInterfacePtr next_game_;
 
-	Block field_[c_field_width * c_field_height];
+	ArkanoidBlock field_[c_field_width * c_field_height];
 	std::optional<Ship> ship_;
 	std::optional<DeathAnimation> death_animation_;
 	bool game_over_ = false;

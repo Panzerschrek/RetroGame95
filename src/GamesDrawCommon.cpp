@@ -3,6 +3,7 @@
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include "Strings.hpp"
+#include <cassert>
 
 namespace
 {
@@ -19,6 +20,213 @@ const SpriteBMP g_tetris_blocks[g_tetris_num_piece_types]
 };
 
 } // namespace
+
+void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exit)
+{
+	const SpriteBMP sprites_trim_top[]
+	{
+		Sprites::arkanoid_trim_corner_top_left,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_1,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_segment_top_0,
+		Sprites::arkanoid_trim_corner_top_right,
+	};
+
+	uint32_t trim_top_x = g_arkanoid_field_offset_x - 10;
+	for(const SpriteBMP& sprite : sprites_trim_top)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			trim_top_x,
+			g_arkanoid_field_offset_y - 10);
+
+		trim_top_x += sprite.GetWidth();
+	}
+
+	const SpriteBMP sprites_trim_left[]
+	{
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_0,
+		Sprites::arkanoid_trim_segment_side_1,
+	};
+
+	uint32_t trim_side_y = g_arkanoid_field_offset_y;
+	const uint32_t side_trim_offset_x = g_arkanoid_field_offset_x - 10;
+	for(const SpriteBMP& sprite : sprites_trim_left)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x,
+			trim_side_y);
+
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x + g_arkanoid_block_width * g_arkanoid_field_width + sprite.GetWidth(),
+			trim_side_y);
+
+		trim_side_y += sprite.GetHeight();
+	}
+
+	if(draw_exit)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_level_exit_gate);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x + g_arkanoid_block_width * g_arkanoid_field_width + sprite.GetWidth(),
+			trim_side_y);
+	}
+
+	// Draw two lover sprites of side trimming, including level exit.
+	for(size_t i = 0; i < 2; ++i)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_trim_segment_side_0);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			side_trim_offset_x,
+			trim_side_y);
+
+		if(!draw_exit)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				side_trim_offset_x + g_arkanoid_block_width * g_arkanoid_field_width + sprite.GetWidth(),
+				trim_side_y);
+		}
+
+		trim_side_y += sprite.GetHeight();
+	}
+}
+
+void DrawArkanoidField(const FrameBuffer frame_buffer, const ArkanoidBlock* const field)
+{
+	DrawArkanoidField(frame_buffer, field, 0, g_arkanoid_field_width);
+}
+
+void DrawArkanoidField(
+	FrameBuffer frame_buffer,
+	const ArkanoidBlock* const field,
+	const uint32_t start_column,
+	const uint32_t end_column)
+{
+	assert(start_column <= end_column);
+	assert(end_column <= g_arkanoid_field_width);
+
+	const SpriteBMP block_sprites[]
+	{
+		Sprites::arkanoid_block_1,
+		Sprites::arkanoid_block_2,
+		Sprites::arkanoid_block_3,
+		Sprites::arkanoid_block_4,
+		Sprites::arkanoid_block_5,
+		Sprites::arkanoid_block_6,
+		Sprites::arkanoid_block_7,
+		Sprites::arkanoid_block_8,
+		Sprites::arkanoid_block_9,
+		Sprites::arkanoid_block_10,
+		Sprites::arkanoid_block_11,
+		Sprites::arkanoid_block_12,
+		Sprites::arkanoid_block_13,
+		Sprites::arkanoid_block_14,
+		Sprites::arkanoid_block_15,
+		Sprites::arkanoid_block_concrete,
+		Sprites::arkanoid_block_14_15,
+	};
+
+	for(uint32_t y = 0; y < g_arkanoid_field_height; ++y)
+	{
+		for(uint32_t x = start_column; x < end_column; ++x)
+		{
+			const ArkanoidBlock& block = field[x + y * g_arkanoid_field_width];
+			if(block.type == ArkanoidBlockType::Empty)
+			{
+				continue;
+			}
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				block_sprites[uint32_t(block.type) - 1],
+				0,
+				g_arkanoid_field_offset_x + x * g_arkanoid_block_width,
+				g_arkanoid_field_offset_y + y * g_arkanoid_block_height);
+		}
+	}
+}
+
+void DrawArkanoidLevelStartSplash(const FrameBuffer frame_buffer, const uint32_t level)
+{
+	DrawTextCentered(
+		frame_buffer,
+		g_cga_palette[9],
+		g_arkanoid_field_offset_x + g_arkanoid_block_width  * g_arkanoid_field_width  / 2,
+		g_arkanoid_field_offset_y + g_arkanoid_block_height * (g_arkanoid_field_height - 6),
+		Strings::arkanoid_round);
+
+	char text[64];
+	NumToString(text, sizeof(text), level, 0);
+	DrawTextCentered(
+		frame_buffer,
+		g_color_white,
+		g_arkanoid_field_offset_x + g_arkanoid_block_width  * g_arkanoid_field_width  / 2,
+		g_arkanoid_field_offset_y + g_arkanoid_block_height * (g_arkanoid_field_height - 6) + g_glyph_height * 2,
+		text);
+}
+
+void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, const uint32_t score)
+{
+	const uint32_t texts_offset_x = 264;
+	const uint32_t texts_offset_y = 32;
+
+	char text[64];
+
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
+
+	NumToString(text, sizeof(text), level, 5);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
+
+	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
+
+	NumToString(text, sizeof(text), score, 5);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
+}
 
 uint32_t GetTetrisFieldOffsetX(const FrameBuffer frame_buffer)
 {

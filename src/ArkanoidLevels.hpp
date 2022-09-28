@@ -76,3 +76,28 @@ inline const char* const arkanoid_levels[]
 	arkanoid_level1,
 	arkanoid_level2,
 };
+
+inline const char arkanoid_level_tetris_transition[] =
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"         F \n"
+"         G \n"
+"     A   GC\n"
+"  C  A#  AB\n"
+"  DEAB# BAA\n"
+"##CDEEF#DEA\n"
+"ABCEEF#ABCD\n"
+"FECF##DEABA\n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+"           \n"
+;
