@@ -175,24 +175,9 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 
 	DrawArakoindStats(frame_buffer, level_, score_);
 
-	char text[64];
-
 	if(tick_ < level_start_animation_end_tick_)
 	{
-		DrawTextCentered(
-			frame_buffer,
-			g_cga_palette[9],
-			field_offset_x + c_block_width  * c_field_width  / 2,
-			field_offset_y + c_block_height * (c_field_height - 6),
-			Strings::arkanoid_round);
-
-		NumToString(text, sizeof(text), level_, 0);
-		DrawTextCentered(
-			frame_buffer,
-			g_color_white,
-			field_offset_x + c_block_width  * c_field_width  / 2,
-			field_offset_y + c_block_height * (c_field_height - 6) + g_glyph_height * 2,
-			text);
+		DrawArkanoidLevelStartSplash(frame_buffer, level_);
 	}
 
 	if(game_over_)

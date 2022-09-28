@@ -22,6 +22,7 @@ const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
 
+const uint32_t g_transition_time_show_arkanoid_level_splash = GameInterface::c_update_frequency * 3 / 2;
 const uint32_t g_transition_time_arkanoid_ship_disappear = GameInterface::c_update_frequency * 3;
 const uint32_t g_transition_time_field_border_tile_change = g_transition_time_arkanoid_ship_disappear +  GameInterface::c_update_frequency * 2 / 3;
 const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 2 / 3;
@@ -135,27 +136,30 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 
 	temp_arkanoid_ship_.position =
 	{
-		IntToFixed16(g_arkanoid_block_width * g_arkanoid_block_height / 2),
+		IntToFixed16(g_arkanoid_field_width  * g_arkanoid_block_width  / 2),
 		IntToFixed16(g_arkanoid_field_height * g_arkanoid_block_height + 5),
 	};
 }
 
 void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
+	if(tick_ >= g_transition_time_show_arkanoid_level_splash)
 	{
-		temp_arkanoid_ship_.position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
-		CorrectArkanoidShipPosition();
-	}
-	if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
-	{
-		temp_arkanoid_ship_.position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
-		CorrectArkanoidShipPosition();
+		if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
+		{
+			temp_arkanoid_ship_.position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
+		if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
+		{
+			temp_arkanoid_ship_.position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
 	}
 
 	for(const SDL_Event& event : events)
 	{
-		if(event.type == SDL_MOUSEMOTION)
+		if(event.type == SDL_MOUSEMOTION && tick_ >= g_transition_time_show_arkanoid_level_splash)
 		{
 			temp_arkanoid_ship_.position[0] += event.motion.xrel * g_arkanoid_ship_mouse_move_sensetivity;
 			CorrectArkanoidShipPosition();
@@ -434,6 +438,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * arkanoid_ball.position[0])) - sprite.GetWidth () / 2,
 			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
+	}
+
+	if(tick_ < g_transition_time_show_arkanoid_level_splash)
+	{
+		DrawArkanoidLevelStartSplash(frame_buffer, level_);
 	}
 
 	if(tick_ >= g_transition_time_show_stats)

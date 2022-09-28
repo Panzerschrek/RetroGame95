@@ -191,6 +191,25 @@ void DrawAranoidField(
 	}
 }
 
+void DrawArkanoidLevelStartSplash(const FrameBuffer frame_buffer, const uint32_t level)
+{
+	DrawTextCentered(
+		frame_buffer,
+		g_cga_palette[9],
+		g_arkanoid_field_offset_x + g_arkanoid_block_width  * g_arkanoid_field_width  / 2,
+		g_arkanoid_field_offset_y + g_arkanoid_block_height * (g_arkanoid_field_height - 6),
+		Strings::arkanoid_round);
+
+	char text[64];
+	NumToString(text, sizeof(text), level, 0);
+	DrawTextCentered(
+		frame_buffer,
+		g_color_white,
+		g_arkanoid_field_offset_x + g_arkanoid_block_width  * g_arkanoid_field_width  / 2,
+		g_arkanoid_field_offset_y + g_arkanoid_block_height * (g_arkanoid_field_height - 6) + g_glyph_height * 2,
+		text);
+}
+
 void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, const uint32_t score)
 {
 	const uint32_t texts_offset_x = 264;
