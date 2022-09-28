@@ -22,7 +22,8 @@ const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
 
-const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency * 2;
+const uint32_t g_transition_time_arkanoid_ship_disappear = GameInterface::c_update_frequency * 3;
+const uint32_t g_transition_time_field_border_tile_change = g_transition_time_arkanoid_ship_disappear +  GameInterface::c_update_frequency * 2 / 3;
 const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 2 / 3;
 const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency * 2 / 3;
 const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency * 2 / 3;
@@ -131,14 +132,34 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 		TetrisBlock* dst = field_ + x * 2 + y * c_field_width;
 		dst[0] = dst[1] = TetrisBlockForArkanoidBlock(src_block.type);
 	}
+
+	temp_arkanoid_ship_.position =
+	{
+		IntToFixed16(g_arkanoid_block_width * g_arkanoid_block_height / 2),
+		IntToFixed16(g_arkanoid_field_height * g_arkanoid_block_height + 5),
+	};
 }
 
 void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	(void) keyboard_state;
+	if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
+	{
+		temp_arkanoid_ship_.position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
+		CorrectArkanoidShipPosition();
+	}
+	if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
+	{
+		temp_arkanoid_ship_.position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
+		CorrectArkanoidShipPosition();
+	}
 
 	for(const SDL_Event& event : events)
 	{
+		if(event.type == SDL_MOUSEMOTION)
+		{
+			temp_arkanoid_ship_.position[0] += event.motion.xrel * g_arkanoid_ship_mouse_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
@@ -319,6 +340,17 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
 	}
 
+	if(tick_ < g_transition_time_arkanoid_ship_disappear)
+	{
+		const SpriteBMP sprite = (Sprites::arkanoid_ship);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			g_arkanoid_field_offset_x + uint32_t(Fixed16FloorToInt(temp_arkanoid_ship_.position[0])) - sprite.GetWidth () / 2,
+			g_arkanoid_field_offset_y + uint32_t(Fixed16FloorToInt(temp_arkanoid_ship_.position[1])) - sprite.GetHeight() / 2);
+	}
+
 	if(active_piece_ != std::nullopt && tick_ >= g_transition_time_change_end)
 	{
 		for(const auto& piece_block : active_piece_->blocks)
@@ -419,6 +451,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + block_height * c_field_height / 2,
 			Strings::tetris_game_over);
 	}
+}
+
+bool GameTetris::NeedToCaptureMouse()
+{
+	return tick_ < g_transition_time_arkanoid_ship_disappear;
 }
 
 GameInterfacePtr GameTetris::AskForNextGameTransition()
@@ -1068,6 +1105,20 @@ void GameTetris::SpawnArkanoidBall()
 	arkanoid_ball.velocity[1] = Fixed16Mul(sin, speed);
 
 	arkanoid_balls_.push_back(arkanoid_ball);
+}
+
+void GameTetris::CorrectArkanoidShipPosition()
+{
+	const fixed16_t half_width = IntToFixed16(int32_t(c_arkanoid_ship_half_width));
+	if(temp_arkanoid_ship_.position[0] - half_width < 0)
+	{
+		temp_arkanoid_ship_.position[0] = half_width;
+	}
+	fixed16_t right_border = IntToFixed16(g_arkanoid_field_width * g_arkanoid_block_width);
+	if(temp_arkanoid_ship_.position[0] + half_width >= right_border)
+	{
+		temp_arkanoid_ship_.position[0] = right_border - half_width;
+	}
 }
 
 TetrisPiece GameTetris::SpawnActivePiece()

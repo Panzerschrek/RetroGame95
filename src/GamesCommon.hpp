@@ -40,6 +40,9 @@ const constexpr uint32_t g_arkanoid_block_height = 10;
 constexpr const uint32_t g_arkanoid_field_width  = 11;
 constexpr const uint32_t g_arkanoid_field_height = 21;
 
+const fixed16_t g_arkanoid_ship_keyboard_move_sensetivity = g_fixed16_one * 3 / 2; // TODO - make this configurable.
+const fixed16_t g_arkanoid_ship_mouse_move_sensetivity = g_fixed16_one / 3; // TODO - make this configurable.
+
 void FillArkanoidField(ArkanoidBlock* field, const char* field_data);
 
 //

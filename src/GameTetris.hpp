@@ -19,6 +19,8 @@ public: // GameInterface
 
 	virtual void Draw(FrameBuffer frame_buffer) const override;
 
+	virtual bool NeedToCaptureMouse() override;
+
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
@@ -56,6 +58,14 @@ private:
 		fixed16vec2_t position{};
 	};
 
+	struct ArkanoidShip
+	{
+		// Center position.
+		fixed16vec2_t position{};
+	};
+
+	static const constexpr uint32_t c_arkanoid_ship_half_width = 16;
+
 private:
 	void OnNextLeveltriggered();
 	void NextLevel();
@@ -78,6 +88,8 @@ private:
 	void TrySpawnNewBonus(int32_t x, int32_t y);
 	void TrySpawnRandomArkanoidBall();
 	void SpawnArkanoidBall();
+
+	void CorrectArkanoidShipPosition();
 
 	TetrisPiece SpawnActivePiece();
 	void GenerateNextPieceType();
@@ -111,6 +123,7 @@ private:
 
 	// Used for transition animation.
 	ArkanoidBlock temp_arkanoid_field_[g_arkanoid_field_width * g_arkanoid_field_height];
+	ArkanoidShip temp_arkanoid_ship_;
 
 	GameInterfacePtr next_game_;
 };
