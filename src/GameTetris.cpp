@@ -678,72 +678,7 @@ void GameTetris::MovePieceDown()
 				field_[uint32_t(piece_block[0]) + uint32_t(piece_block[1]) * c_field_width] = active_piece_->type;
 			}
 
-			// Remove lines.
-			uint32_t lines_removed = 0;
-			for(uint32_t y = c_field_height -1;;)
-			{
-				bool line_is_full = true;
-				for(uint32_t x = 0; x < c_field_width; ++x)
-				{
-					line_is_full &= field_[x + y * c_field_width] != TetrisBlock::Empty;
-				}
-
-				if(line_is_full)
-				{
-					++lines_removed;
-
-					// Remove this line.
-					for(uint32_t dst_y = y; ; --dst_y)
-					{
-						if(dst_y == 0)
-						{
-							for(uint32_t x = 0; x < c_field_width; ++x)
-							{
-								field_[x + dst_y * c_field_width] =TetrisBlock::Empty;
-							}
-						}
-						else
-						{
-							const uint32_t src_y = dst_y - 1;
-
-							for(uint32_t x = 0; x < c_field_width; ++x)
-							{
-								field_[x + dst_y * c_field_width] = field_[x + src_y * c_field_width];
-								field_[x + src_y * c_field_width] = TetrisBlock::Empty;
-							}
-						}
-
-						if(dst_y == 0)
-						{
-							break;
-						}
-					} // Shift lines after removal.
-				}
-				else if (y > 0)
-				{
-					--y;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			if(!game_over_)
-			{
-				assert(lines_removed <= 4);
-				for(uint32_t i = 0; i < lines_removed; ++i)
-				{
-					TrySpawnNewBonus(active_piece_->blocks[i][0], active_piece_->blocks[i][1]);
-				}
-			}
-
-			if(lines_removed > 0)
-			{
-				sound_player_.PlaySound(SoundId::SnakeBonusEat);
-			}
-
-			UpdateScore(lines_removed);
+			TryRemoveLines();
 
 			active_piece_ = std::nullopt;
 		}
@@ -760,6 +695,7 @@ void GameTetris::TryMoveWholeFieldDown()
 
 	if(!can_move)
 	{
+		TryRemoveLines();
 		return;
 	}
 
@@ -778,6 +714,76 @@ void GameTetris::TryMoveWholeFieldDown()
 	}
 
 	sound_player_.PlaySound(SoundId::TetrisFigureStep);
+}
+
+void GameTetris::TryRemoveLines()
+{
+	// Remove lines.
+	uint32_t lines_removed = 0;
+	for(uint32_t y = c_field_height -1;;)
+	{
+		bool line_is_full = true;
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			line_is_full &= field_[x + y * c_field_width] != TetrisBlock::Empty;
+		}
+
+		if(line_is_full)
+		{
+			++lines_removed;
+
+			// Remove this line.
+			for(uint32_t dst_y = y; ; --dst_y)
+			{
+				if(dst_y == 0)
+				{
+					for(uint32_t x = 0; x < c_field_width; ++x)
+					{
+						field_[x + dst_y * c_field_width] =TetrisBlock::Empty;
+					}
+				}
+				else
+				{
+					const uint32_t src_y = dst_y - 1;
+
+					for(uint32_t x = 0; x < c_field_width; ++x)
+					{
+						field_[x + dst_y * c_field_width] = field_[x + src_y * c_field_width];
+						field_[x + src_y * c_field_width] = TetrisBlock::Empty;
+					}
+				}
+
+				if(dst_y == 0)
+				{
+					break;
+				}
+			} // Shift lines after removal.
+		}
+		else if (y > 0)
+		{
+			--y;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if(!game_over_ && active_piece_ != std::nullopt)
+	{
+		assert(lines_removed <= 4);
+		for(uint32_t i = 0; i < lines_removed; ++i)
+		{
+			TrySpawnNewBonus(active_piece_->blocks[i][0], active_piece_->blocks[i][1]);
+		}
+	}
+
+	if(lines_removed > 0)
+	{
+		sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	}
+
+	UpdateScore(lines_removed);
 }
 
 void GameTetris::UpdateScore(const uint32_t lines_removed)
@@ -932,6 +938,11 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 
 void GameTetris::TrySpawnNewBonus(const int32_t x, const int32_t y)
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
+
 	if(rand_.Next() % 2 != 0)
 	{
 		return;
