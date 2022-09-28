@@ -79,7 +79,8 @@ const uint32_t g_score_for_deadly_bonus = 30;
 const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
-const uint32_t g_transition_time_change_end = 60 * 9;
+const uint32_t g_transition_snake_move_speed = 60;
+const uint32_t g_transition_time_change_end = g_transition_snake_move_speed * 19 / 2;
 
 } // namespace
 
@@ -89,10 +90,14 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 {
 	OpenGame(GameId::Pacman);
 
-	SpawnPacmanAndGhosts();
+	NextLevel();
 
-	spawn_animation_end_tick_ += g_transition_time_change_end;
-	next_ghosts_mode_swith_tick_ += g_transition_time_change_end;
+	spawn_animation_end_tick_ = g_transition_time_change_end;
+	assert(g_transition_time_change_end >= g_spawn_animation_duration);
+	next_ghosts_mode_swith_tick_ += g_transition_time_change_end - g_spawn_animation_duration;
+
+	pacman_.target_position = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(17) + g_fixed16_one / 2};
+	pacman_.position = pacman_.target_position;
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -401,7 +406,20 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	DrawPacman(frame_buffer);
+	if(tick_ < g_transition_time_change_end)
+	{
+		const uint32_t snake_segment_size = 10;
+		const uint32_t offset_x = 15;
+		const uint32_t offset_y = c_block_size * 2 + (tick_ / g_transition_snake_move_speed) * snake_segment_size;
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 1);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 2);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * 3);
+	}
+	else
+	{
+		DrawPacman(frame_buffer);
+	}
 
 	for(const Ghost& ghost : ghosts_)
 	{
@@ -409,17 +427,6 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawGhost(frame_buffer, ghost);
 		}
-	}
-
-	if(tick_ < g_transition_time_change_end)
-	{
-		const uint32_t snake_segment_size = 10;
-		const uint32_t offset_x = 15;
-		const uint32_t offset_y = c_block_size * 2 + (tick_ / 60) * snake_segment_size;
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 1);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 2);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * 3);
 	}
 
 	for(const LaserBeam& laser_beam : laser_beams_)
