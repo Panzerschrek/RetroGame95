@@ -8,6 +8,7 @@ const constexpr uint32_t g_arkanoid_field_offset_y = 10;
 void DrawArkanoidFieldBorder(FrameBuffer frame_buffer, bool draw_exit);
 
 void DrawAranoidField(FrameBuffer frame_buffer, const ArkanoidBlock* field);
+void DrawAranoidField(FrameBuffer frame_buffer, const ArkanoidBlock* field, uint32_t start_column, uint32_t end_column);
 
 void DrawArakoindStats(FrameBuffer frame_buffer, uint32_t level, uint32_t score);
 

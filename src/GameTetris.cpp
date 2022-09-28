@@ -220,6 +220,13 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		FillArkanoidField(arkanoid_field, arkanoid_level2);
 		DrawAranoidField(frame_buffer, arkanoid_field);
 	}
+	else if(tick_ < g_transition_time_show_stats)
+	{
+		ArkanoidBlock arkanoid_field[g_arkanoid_field_width * g_arkanoid_field_height];
+		// TODO - use special field, than can be transitioned to tetris field.
+		FillArkanoidField(arkanoid_field, arkanoid_level2);
+		DrawAranoidField(frame_buffer, arkanoid_field, 5, 10);
+	}
 
 	if(tick_ < g_transition_time_field_border_tile_change)
 	{

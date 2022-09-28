@@ -3,6 +3,7 @@
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
 #include "Strings.hpp"
+#include <cassert>
 
 namespace
 {
@@ -138,6 +139,18 @@ void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exi
 
 void DrawAranoidField(const FrameBuffer frame_buffer, const ArkanoidBlock* const field)
 {
+	DrawAranoidField(frame_buffer, field, 0, g_arkanoid_field_width);
+}
+
+void DrawAranoidField(
+	FrameBuffer frame_buffer,
+	const ArkanoidBlock* const field,
+	const uint32_t start_column,
+	const uint32_t end_column)
+{
+	assert(start_column <= end_column);
+	assert(end_column <= g_arkanoid_field_width);
+
 	const SpriteBMP block_sprites[]
 	{
 		Sprites::arkanoid_block_1,
@@ -161,7 +174,7 @@ void DrawAranoidField(const FrameBuffer frame_buffer, const ArkanoidBlock* const
 
 	for(uint32_t y = 0; y < g_arkanoid_field_height; ++y)
 	{
-		for(uint32_t x = 0; x < g_arkanoid_field_width; ++x)
+		for(uint32_t x = start_column; x < end_column; ++x)
 		{
 			const ArkanoidBlock& block = field[x + y * g_arkanoid_field_width];
 			if(block.type == ArkanoidBlockType::Empty)
