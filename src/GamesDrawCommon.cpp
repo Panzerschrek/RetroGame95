@@ -137,12 +137,12 @@ void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exi
 	}
 }
 
-void DrawAranoidField(const FrameBuffer frame_buffer, const ArkanoidBlock* const field)
+void DrawArkanoidField(const FrameBuffer frame_buffer, const ArkanoidBlock* const field)
 {
-	DrawAranoidField(frame_buffer, field, 0, g_arkanoid_field_width);
+	DrawArkanoidField(frame_buffer, field, 0, g_arkanoid_field_width);
 }
 
-void DrawAranoidField(
+void DrawArkanoidField(
 	FrameBuffer frame_buffer,
 	const ArkanoidBlock* const field,
 	const uint32_t start_column,

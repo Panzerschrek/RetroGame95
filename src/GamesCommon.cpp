@@ -4,7 +4,7 @@
 namespace
 {
 
-ArkanoidBlockType GetBlockTypeForLevelDataByte(const char level_data_byte)
+ArkanoidBlockType GetArkanoidBlockTypeForLevelDataByte(const char level_data_byte)
 {
 	if(
 		level_data_byte >= 'A' &&
@@ -33,7 +33,7 @@ void FillArkanoidField(ArkanoidBlock* const field, const char* field_data)
 		for(uint32_t x = 0; x < g_arkanoid_field_width; ++x, ++field_data)
 		{
 			ArkanoidBlock& block = field[x + y * g_arkanoid_field_width];
-			block.type = GetBlockTypeForLevelDataByte(*field_data);
+			block.type = GetArkanoidBlockTypeForLevelDataByte(*field_data);
 
 			block.health = 1;
 			if(block.type == ArkanoidBlockType::Concrete)

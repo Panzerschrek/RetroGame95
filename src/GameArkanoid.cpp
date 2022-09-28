@@ -62,7 +62,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = g_arkanoid_field_offset_x;
 	const uint32_t field_offset_y = g_arkanoid_field_offset_y;
 
-	DrawAranoidField(frame_buffer, field_);
+	DrawArkanoidField(frame_buffer, field_);
 
 	const bool playing_level_start_animation = tick_ < level_start_animation_end_tick_;
 

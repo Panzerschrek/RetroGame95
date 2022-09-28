@@ -296,11 +296,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	if(tick_ < g_transition_time_field_border_change)
 	{
-		DrawAranoidField(frame_buffer, temp_arkanoid_field_);
+		DrawArkanoidField(frame_buffer, temp_arkanoid_field_);
 	}
 	else if(tick_ < g_transition_time_transform_blocks)
 	{
-		DrawAranoidField(frame_buffer, temp_arkanoid_field_, 5, 10);
+		DrawArkanoidField(frame_buffer, temp_arkanoid_field_, 5, 10);
 	}
 
 	if(tick_ < g_transition_time_field_border_tile_change)

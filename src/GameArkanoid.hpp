@@ -82,12 +82,12 @@ private:
 		fixed16vec2_t position{};
 	};
 
-	static const constexpr uint32_t c_field_width = g_arkanoid_field_width;
+	static const constexpr uint32_t c_field_width  = g_arkanoid_field_width ;
 	static const constexpr uint32_t c_field_height = g_arkanoid_field_height;
 
 	// Size on pixels.
 	static const constexpr uint32_t c_ball_half_size = 3;
-	static const constexpr uint32_t c_block_width = g_arkanoid_block_width;
+	static const constexpr uint32_t c_block_width  = g_arkanoid_block_width ;
 	static const constexpr uint32_t c_block_height = g_arkanoid_block_height;
 	static const constexpr uint32_t c_bonus_half_width = 10;
 	static const constexpr uint32_t c_bonus_half_height = 5;
