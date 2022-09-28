@@ -79,6 +79,8 @@ const uint32_t g_score_for_deadly_bonus = 30;
 const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
+const uint32_t g_transition_time_change_end = 60 * 9;
+
 } // namespace
 
 GamePacman::GamePacman(SoundPlayer& sound_player)
@@ -88,6 +90,9 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	OpenGame(GameId::Pacman);
 
 	SpawnPacmanAndGhosts();
+
+	spawn_animation_end_tick_ += g_transition_time_change_end;
+	next_ghosts_mode_swith_tick_ += g_transition_time_change_end;
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -404,6 +409,17 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawGhost(frame_buffer, ghost);
 		}
+	}
+
+	if(tick_ < g_transition_time_change_end)
+	{
+		const uint32_t snake_segment_size = 10;
+		const uint32_t offset_x = 15;
+		const uint32_t offset_y = c_block_size * 2 + (tick_ / 60) * snake_segment_size;
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 1);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 2);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * 3);
 	}
 
 	for(const LaserBeam& laser_beam : laser_beams_)
