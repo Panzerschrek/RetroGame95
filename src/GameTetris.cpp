@@ -22,12 +22,13 @@ const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_laser_ship_bonus_duration = 960;
 const uint32_t g_min_shoot_interval = 45;
 
-const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency;
-const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_transform_blocks = g_transition_time_field_border_change + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_show_stats = g_transition_time_transform_blocks + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_finish_move_blocks_down = g_transition_time_show_stats + GameInterface::c_update_frequency * 3;
+const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency * 2;
+const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_transform_blocks = g_transition_time_show_stats + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_start_move_blocks_down = g_transition_time_transform_blocks + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_finish_move_blocks_down = g_transition_time_start_move_blocks_down + GameInterface::c_update_frequency * 7 / 2;
 
 const uint32_t g_transition_time_change_end = g_transition_time_finish_move_blocks_down;
 
@@ -172,7 +173,7 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	if(tick_ % speed == 0)
 	{
-		if(tick_ >= g_transition_time_transform_blocks && tick_ < g_transition_time_finish_move_blocks_down)
+		if(tick_ >= g_transition_time_start_move_blocks_down && tick_ < g_transition_time_finish_move_blocks_down)
 		{
 			TryMoveWholeFieldDown();
 		}
