@@ -25,7 +25,8 @@ const uint32_t g_min_shoot_interval = 45;
 const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency;
 const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_show_stats = g_transition_time_field_border_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_trransform_blocks = g_transition_time_field_border_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_stats = g_transition_time_trransform_blocks + GameInterface::c_update_frequency;
 
 const uint32_t g_transition_time_change_end = g_transition_time_show_stats;
 
@@ -74,6 +75,35 @@ uint32_t GetNumRemovedLinesForLevelFinish(const uint32_t level)
 	return std::min(3 * level + 7, 20u);
 }
 
+TetrisBlock TetrisBlockForArkanoidBlock(const ArkanoidBlockType block_type)
+{
+	switch(block_type)
+	{
+	case ArkanoidBlockType::Empty: return TetrisBlock::Empty;
+	case ArkanoidBlockType::Color1: return TetrisBlock::O;
+	case ArkanoidBlockType::Color2: return TetrisBlock::S;
+	case ArkanoidBlockType::Color3: return TetrisBlock::Z;
+	case ArkanoidBlockType::Color4: return TetrisBlock::I;
+	case ArkanoidBlockType::Color5: return TetrisBlock::L;
+	case ArkanoidBlockType::Color6: return TetrisBlock::T;
+	case ArkanoidBlockType::Color7: return TetrisBlock::J;
+	case ArkanoidBlockType::Color8: return TetrisBlock::O;
+	case ArkanoidBlockType::Color9: return TetrisBlock::O;
+	case ArkanoidBlockType::Color10: return TetrisBlock::S;
+	case ArkanoidBlockType::Color11: return TetrisBlock::Z;
+	case ArkanoidBlockType::Color12: return TetrisBlock::I;
+	case ArkanoidBlockType::Color13: return TetrisBlock::L;
+	case ArkanoidBlockType::Color14: return TetrisBlock::T;
+	case ArkanoidBlockType::Color15: return TetrisBlock::J;
+	case ArkanoidBlockType::Concrete: return TetrisBlock::J;
+	case ArkanoidBlockType::Color14_15: return TetrisBlock::J;
+	case ArkanoidBlockType::NumTypes: break;
+	}
+
+	assert(false);
+	return TetrisBlock::Empty;
+}
+
 } // namespace
 
 GameTetris::GameTetris(SoundPlayer& sound_player)
@@ -83,6 +113,22 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 	OpenGame(GameId::Tetris);
 
 	NextLevel();
+
+	// TODO - use special field, than can be transitioned to tetris field.
+	FillArkanoidField(temp_arkanoid_field_, arkanoid_level2);
+
+	for(uint32_t y = 0; y < std::min(g_tetris_field_height, g_arkanoid_field_height); ++y)
+	for(uint32_t x = 0; x < 5; ++x)
+	{
+		const ArkanoidBlock& src_block = temp_arkanoid_field_[5 + x + y * g_arkanoid_field_width];
+		if(src_block.type == ArkanoidBlockType::Empty)
+		{
+			continue;
+		}
+
+		TetrisBlock* dst = field_ + x * 2 + y * c_field_width;
+		dst[0] = dst[1] = TetrisBlockForArkanoidBlock(src_block.type);
+	}
 }
 
 void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -215,17 +261,11 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 
 	if(tick_ < g_transition_time_field_border_change)
 	{
-		ArkanoidBlock arkanoid_field[g_arkanoid_field_width * g_arkanoid_field_height];
-		// TODO - use special field, than can be transitioned to tetris field.
-		FillArkanoidField(arkanoid_field, arkanoid_level2);
-		DrawAranoidField(frame_buffer, arkanoid_field);
+		DrawAranoidField(frame_buffer, temp_arkanoid_field_);
 	}
-	else if(tick_ < g_transition_time_show_stats)
+	else if(tick_ < g_transition_time_trransform_blocks)
 	{
-		ArkanoidBlock arkanoid_field[g_arkanoid_field_width * g_arkanoid_field_height];
-		// TODO - use special field, than can be transitioned to tetris field.
-		FillArkanoidField(arkanoid_field, arkanoid_level2);
-		DrawAranoidField(frame_buffer, arkanoid_field, 5, 10);
+		DrawAranoidField(frame_buffer, temp_arkanoid_field_, 5, 10);
 	}
 
 	if(tick_ < g_transition_time_field_border_tile_change)
@@ -264,7 +304,10 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
 	}
 
-	DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
+	if(tick_ >= g_transition_time_trransform_blocks)
+	{
+		DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
+	}
 
 	if(active_piece_ != std::nullopt)
 	{
@@ -387,7 +430,6 @@ void GameTetris::OnNextLeveltriggered()
 
 void GameTetris::NextLevel()
 {
-	tick_ = 0;
 	level_ += 1;
 	lines_removed_for_this_level_ = 0;
 

@@ -107,5 +107,8 @@ private:
 
 	uint32_t pieces_spawnded_ = 0;
 
+	// Used for transition animation.
+	ArkanoidBlock temp_arkanoid_field_[g_arkanoid_field_width * g_arkanoid_field_height];
+
 	GameInterfacePtr next_game_;
 };
