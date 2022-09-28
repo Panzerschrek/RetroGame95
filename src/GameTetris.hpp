@@ -62,6 +62,7 @@ private:
 	void ProcessShootRequest();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
 	void MovePieceDown();
+	void TryMoveWholeFieldDown();
 	void UpdateScore(uint32_t lines_removed);
 
 	// Returns true if need to kill it.

@@ -25,10 +25,11 @@ const uint32_t g_min_shoot_interval = 45;
 const uint32_t g_transition_time_field_border_tile_change = GameInterface::c_update_frequency;
 const uint32_t g_transition_time_field_remove_arkanoid_stats = g_transition_time_field_border_tile_change + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_field_border_change = g_transition_time_field_remove_arkanoid_stats + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_trransform_blocks = g_transition_time_field_border_change + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_show_stats = g_transition_time_trransform_blocks + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_transform_blocks = g_transition_time_field_border_change + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_stats = g_transition_time_transform_blocks + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_finish_move_blocks_down = g_transition_time_show_stats + GameInterface::c_update_frequency * 3;
 
-const uint32_t g_transition_time_change_end = g_transition_time_show_stats;
+const uint32_t g_transition_time_change_end = g_transition_time_finish_move_blocks_down;
 
 uint32_t GetBaseLineRemovalScore(const uint32_t lines_removed)
 {
@@ -161,13 +162,21 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 	if(tick_ >= g_transition_time_change_end)
 	{
 		ManipulatePiece(events);
+	}
 
-		uint32_t speed = GetSpeedForLevel(level_);
-		if(tick_ <= slow_down_end_tick_)
+	uint32_t speed = GetSpeedForLevel(level_);
+	if(tick_ <= slow_down_end_tick_)
+	{
+		speed = speed * 3 / 2;
+	}
+
+	if(tick_ % speed == 0)
+	{
+		if(tick_ >= g_transition_time_transform_blocks && tick_ < g_transition_time_finish_move_blocks_down)
 		{
-			speed = speed * 3 / 2;
+			TryMoveWholeFieldDown();
 		}
-		if(tick_ % speed == 0)
+		if(tick_ >= g_transition_time_change_end)
 		{
 			MovePieceDown();
 		}
@@ -263,7 +272,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawAranoidField(frame_buffer, temp_arkanoid_field_);
 	}
-	else if(tick_ < g_transition_time_trransform_blocks)
+	else if(tick_ < g_transition_time_transform_blocks)
 	{
 		DrawAranoidField(frame_buffer, temp_arkanoid_field_, 5, 10);
 	}
@@ -304,7 +313,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		DrawTetrisFieldBorder(frame_buffer, laser_ship_is_active);
 	}
 
-	if(tick_ >= g_transition_time_trransform_blocks)
+	if(tick_ >= g_transition_time_transform_blocks)
 	{
 		DrawTetrisField(frame_buffer, field_offset_x, field_offset_y, field_, c_field_width, c_field_height);
 	}
@@ -739,6 +748,36 @@ void GameTetris::MovePieceDown()
 			active_piece_ = std::nullopt;
 		}
 	}
+}
+
+void GameTetris::TryMoveWholeFieldDown()
+{
+	bool can_move = true;
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		can_move &= field_[x + (c_field_height - 1) * c_field_width] == TetrisBlock::Empty;
+	}
+
+	if(!can_move)
+	{
+		return;
+	}
+
+	for(uint32_t y = c_field_height - 1; y > 0; --y)
+	{
+		const TetrisBlock* const src = field_ + (y - 1) * c_field_width;
+		TetrisBlock* const dst = field_ + y * c_field_width;
+		for(uint32_t x = 0; x < c_field_width; ++x)
+		{
+			dst[x] = src[x];
+		}
+	}
+	for(uint32_t x = 0; x < c_field_width; ++x)
+	{
+		field_[x] = TetrisBlock::Empty;
+	}
+
+	sound_player_.PlaySound(SoundId::TetrisFigureStep);
 }
 
 void GameTetris::UpdateScore(const uint32_t lines_removed)

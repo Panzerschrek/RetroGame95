@@ -89,7 +89,7 @@ void SoundOut::PlaySound(const SoundData& src_sound_data)
 {
 	LockChannel();
 
-	channel_.is_active = false;
+	channel_.is_active = true;
 	channel_.src_sound_data = &src_sound_data;
 	channel_.position_samples = 0;
 
