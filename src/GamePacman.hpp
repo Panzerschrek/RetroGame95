@@ -116,8 +116,7 @@ private:
 	static const constexpr uint32_t c_num_ghosts = 4;
 
 private:
-	void DrawField(FrameBuffer frame_buffer) const;
-	void DrawBonuses(FrameBuffer frame_buffer) const;
+	void DrawFieldAndBonuses(FrameBuffer frame_buffer) const;
 	void DrawPacman(FrameBuffer frame_buffer) const;
 	void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost) const;
 

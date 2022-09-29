@@ -84,10 +84,11 @@ const uint32_t g_transition_snake_move_speed = 60;
 const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 13;
 const uint32_t g_transition_time_hide_snake_stats = g_transition_time_change_snake * 1 / 3;
 const uint32_t g_transition_time_change_field_border = g_transition_time_change_snake * 2 / 3;
-const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency * 2 / 3;
-const uint32_t g_transition_time_show_pacman_stats = g_transition_time_show_pacman_field + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_start_show_pacman_field = g_transition_time_change_snake;
+const uint32_t g_transition_time_end_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_pacman_stats = g_transition_time_end_show_pacman_field + GameInterface::c_update_frequency * 2 / 3;
 
-const uint32_t g_transition_time_change_end = g_transition_time_show_pacman_field;
+const uint32_t g_transition_time_change_end = g_transition_time_start_show_pacman_field;
 
 const SpriteBMP g_bonus_sprites[]
 {
@@ -250,7 +251,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 
 	}
-	else if(tick_ < g_transition_time_show_pacman_field)
+	else if(tick_ < g_transition_time_start_show_pacman_field)
 	{
 		for(uint32_t x = 0; x < 26; ++x)
 		{
@@ -279,8 +280,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	}
 	else
 	{
-		DrawBonuses(frame_buffer);
-		DrawField(frame_buffer);
+		DrawFieldAndBonuses(frame_buffer);
 	}
 
 	if(tick_ < g_transition_time_change_snake)
@@ -296,7 +296,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 				uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 		}
 	}
-	if(tick_ >= g_transition_time_change_snake && tick_ < g_transition_time_show_pacman_field)
+	if(tick_ >= g_transition_time_change_snake && tick_ < g_transition_time_start_show_pacman_field)
 	{
 		const uint32_t y = 7;
 		for(uint32_t x = uint32_t(Fixed16FloorToInt(pacman_.position[0])); x < c_field_width ; ++x)
@@ -317,7 +317,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	if(tick_ >= g_transition_time_show_pacman_field)
+	if(tick_ >= g_transition_time_end_show_pacman_field)
 	{
 		for(const Ghost& ghost : ghosts_)
 		{
@@ -347,7 +347,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		DrawPacman(frame_buffer);
 	}
 
-	if(tick_ >= g_transition_time_show_pacman_field)
+	if(tick_ >= g_transition_time_end_show_pacman_field)
 	{
 		for(const Ghost& ghost : ghosts_)
 		{
@@ -450,16 +450,35 @@ GameInterfacePtr GamePacman::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
-void GamePacman::DrawField(const FrameBuffer frame_buffer) const
+void GamePacman::DrawFieldAndBonuses(const FrameBuffer frame_buffer) const
 {
+	uint32_t x_start = 0;
+	uint32_t x_end = c_field_width;
+	uint32_t y_start = 0;
+	uint32_t y_end = c_field_height;
+	if(tick_ >= g_transition_time_start_show_pacman_field && tick_ < g_transition_time_end_show_pacman_field)
+	{
+		const uint32_t time_add = GameInterface::c_update_frequency / 2;
+		const uint32_t time_delta = time_add + tick_ - g_transition_time_start_show_pacman_field;
+		const uint32_t time_div = (time_add + g_transition_time_end_show_pacman_field - g_transition_time_start_show_pacman_field) * 2;
+
+		const uint32_t x_delta = c_field_width * time_delta / time_div;
+		x_start = c_field_width / 2 - std::min(x_delta, c_field_width / 2);
+		x_end = std::min(c_field_width / 2 + x_delta, c_field_width);
+
+		const uint32_t y_delta = c_field_height * time_delta / time_div;
+		y_start = c_field_height / 2 - std::min(y_delta, c_field_height / 2);
+		y_end = std::min(c_field_height / 2 + y_delta, c_field_height);
+	}
+
 	const Color32 c_wall_color = g_cga_palette[1];
-	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t y = y_start; y < y_end; ++y)
 	{
 		const char* const line = g_game_field + y * c_field_width;
 		const char* const line_y_minus = g_game_field + (std::max(1u, y) - 1) * c_field_width;
 		const char* const line_y_plus  = g_game_field + (std::min(c_field_height - 2, y) + 1) * c_field_width;
 
-		for(uint32_t x = 0; x < c_field_width ; ++x)
+		for(uint32_t x = x_start; x < x_end ; ++x)
 		{
 			const char block = line[x];
 			if(block != g_wall_symbol)
@@ -617,12 +636,9 @@ void GamePacman::DrawField(const FrameBuffer frame_buffer) const
 			}
 		} // for x
 	} // for y
-}
 
-void GamePacman::DrawBonuses(const FrameBuffer frame_buffer) const
-{
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
+	for(uint32_t y = y_start; y < y_end; ++y)
+	for(uint32_t x = x_start; x < x_end; ++x)
 	{
 		const Bonus bonus = bonuses_[x + y * c_field_width];
 		if(bonus == Bonus::None)
