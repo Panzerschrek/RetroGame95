@@ -296,6 +296,26 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 				uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 		}
 	}
+	if(tick_ >= g_transition_time_change_snake && tick_ < g_transition_time_show_pacman_field)
+	{
+		const uint32_t y = 7;
+		for(uint32_t x = uint32_t(Fixed16FloorToInt(pacman_.position[0])); x < c_field_width ; ++x)
+		{
+			const Bonus bonus = bonuses_[x + y * c_field_width];
+			if(bonus == Bonus::None)
+			{
+				continue;
+			}
+
+			const SpriteBMP sprite = g_bonus_sprites[uint32_t(bonus)];
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				x * c_block_size + c_block_size / 2 - sprite.GetWidth () / 2,
+				y * c_block_size + c_block_size / 2 - sprite.GetHeight() / 2);
+		}
+	}
 
 	if(tick_ >= g_transition_time_show_pacman_field)
 	{
