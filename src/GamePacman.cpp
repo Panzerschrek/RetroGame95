@@ -273,6 +273,20 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			DrawSprite(frame_buffer, snake_border_sprite, 0, y * snake_border_sprite.GetHeight());
 			DrawSprite(frame_buffer, snake_border_sprite, 254, y * snake_border_sprite.GetHeight());
 		}
+
+		for(uint32_t x = 12; x < 16; ++x)
+		{
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), 90 - 2);
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), 140 + 2);
+		}
+		for(uint32_t y = 9; y < 15; ++y)
+		{
+			DrawSprite(frame_buffer, snake_border_sprite, 120, y * snake_border_sprite.GetHeight());
+			if(y < 11 || y > 12)
+			{
+				DrawSprite(frame_buffer, snake_border_sprite, 150, y * snake_border_sprite.GetHeight());
+			}
+		}
 	}
 	else
 	{
