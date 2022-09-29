@@ -138,6 +138,8 @@ private:
 	void TryPlaceRandomTetrisPiece();
 	void TrySpawnSnakeBonus();
 
+	void UpdateSnakePosition();
+
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
 	static void ReverseGhostMovement(Ghost& ghost);
@@ -164,6 +166,9 @@ private:
 	GhostMode current_ghosts_mode_ = GhostMode::Scatter;
 	uint32_t ghosts_mode_switches_left_ = 0;
 	uint32_t next_ghosts_mode_swith_tick_ = 0;
+
+	// Position of head center. Used in transition.
+	fixed16vec2_t temp_snake_position_{};
 
 	GameInterfacePtr next_game_;
 };

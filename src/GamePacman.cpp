@@ -104,8 +104,7 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	//next_ghosts_mode_swith_tick_ += g_transition_time_change_end - g_spawn_animation_duration;
 	spawn_animation_end_tick_ = g_transition_time_change_snake;
 
-	pacman_.target_position = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(17) + g_fixed16_one / 2};
-	pacman_.position = pacman_.target_position;
+	temp_snake_position_ = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(8) + g_fixed16_one / 2};
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -153,6 +152,7 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	UpdateGhostsMode();
 
+	UpdateSnakePosition();
 	MovePacman();
 
 	if(tick_ >= g_transition_time_change_end)
@@ -261,12 +261,16 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	if(tick_ < g_transition_time_change_snake)
 	{
 		const uint32_t snake_segment_size = 10;
-		const uint32_t offset_x = 15;
-		const uint32_t offset_y = c_block_size * 2 + (tick_ / g_transition_snake_move_speed) * snake_segment_size;
+		const uint32_t half_snake_segment_size = snake_segment_size / 2;
+		const uint32_t num_snake_segments = 4;
+		const uint32_t offset_x = uint32_t(Fixed16FloorToInt(temp_snake_position_[0] * int32_t(c_block_size))) - half_snake_segment_size;
+		const uint32_t offset_y = uint32_t(Fixed16FloorToInt(temp_snake_position_[1] * int32_t(c_block_size))) - half_snake_segment_size - num_snake_segments * snake_segment_size;
 		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 1);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 2);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * 3);
+		for(uint32_t i = 1; i + 1 < num_snake_segments; ++i)
+		{
+			DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * i);
+		}
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * (num_snake_segments - 1));
 	}
 	else
 	{
@@ -1854,6 +1858,26 @@ void GamePacman::TrySpawnSnakeBonus()
 			++bonuses_left_;
 			break;
 		}
+	}
+}
+
+void GamePacman::UpdateSnakePosition()
+{
+	if(tick_ == g_transition_time_change_snake)
+	{
+		pacman_.target_position = temp_snake_position_;
+		pacman_.position = pacman_.target_position;
+	}
+	if(tick_ >= g_transition_time_change_snake)
+	{
+		return;
+	}
+
+	const uint32_t diff = (tick_ + 1) / g_transition_snake_move_speed - tick_ / g_transition_snake_move_speed;
+	for(uint32_t i = 0; i < diff; ++i)
+	{
+		temp_snake_position_[1] += IntToFixed16(10) / int32_t(c_block_size);
+		sound_player_.PlaySound(SoundId::TetrisFigureStep);
 	}
 }
 
