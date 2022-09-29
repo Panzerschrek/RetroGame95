@@ -117,10 +117,8 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 
 	NextLevel();
 
-	//spawn_animation_end_tick_ = g_transition_time_change_end;
-	//assert(g_transition_time_change_end >= g_spawn_animation_duration);
-	//next_ghosts_mode_swith_tick_ += g_transition_time_change_end - g_spawn_animation_duration;
 	spawn_animation_end_tick_ = g_transition_time_change_snake;
+	next_ghosts_mode_swith_tick_ = spawn_animation_end_tick_ + g_scatter_duration_first;
 
 	temp_snake_position_ = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(5) + g_fixed16_one / 2};
 
