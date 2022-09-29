@@ -1947,7 +1947,8 @@ void GamePacman::UpdateSnakePosition()
 	const uint32_t diff = (tick_ + 1) / g_transition_snake_move_speed - tick_ / g_transition_snake_move_speed;
 	for(uint32_t i = 0; i < diff; ++i)
 	{
-		temp_snake_position_[0] += IntToFixed16(10) / int32_t(c_block_size);
+		const fixed16_t step = IntToFixed16(10) / int32_t(c_block_size);
+		temp_snake_position_[0] += step;
 
 		if(!snake_transition_bonuses_.empty() && snake_transition_bonuses_.front().position[0] <= temp_snake_position_[0])
 		{
@@ -1956,21 +1957,20 @@ void GamePacman::UpdateSnakePosition()
 
 			const fixed16_t bonus_x = temp_snake_position_[0];
 			const fixed16_t bonus_y = temp_snake_position_[1];
-			const fixed16_t bonus_step = g_fixed16_one * 10 / 8;
 			switch(bonus_type)
 			{
 			case Bonus::SnakeFoodSmall:
-				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 3, bonus_y}, Bonus::SnakeFoodMedium});
+				snake_transition_bonuses_.push_back({{bonus_x + step * 3, bonus_y}, Bonus::SnakeFoodMedium});
 				break;
 			case Bonus::SnakeFoodMedium:
-				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 2, bonus_y}, Bonus::SnakeFoodLarge});
+				snake_transition_bonuses_.push_back({{bonus_x + step * 2, bonus_y}, Bonus::SnakeFoodLarge});
 				break;
 			case Bonus::SnakeFoodLarge:
-				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 1, bonus_y}, Bonus::Food});
-				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 2, bonus_y}, Bonus::Food});
-				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 3, bonus_y}, Bonus::Food});
+				snake_transition_bonuses_.push_back({{bonus_x + step * 1, bonus_y}, Bonus::Food});
+				snake_transition_bonuses_.push_back({{bonus_x + step * 2, bonus_y}, Bonus::Food});
+				snake_transition_bonuses_.push_back({{bonus_x + step * 3, bonus_y}, Bonus::Food});
 			case Bonus::Food:
-				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 3, bonus_y}, Bonus::Food});
+				snake_transition_bonuses_.push_back({{bonus_x + step * 3, bonus_y}, Bonus::Food});
 				break;
 			default:
 				break;
