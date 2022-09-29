@@ -1716,6 +1716,11 @@ void GamePacman::EnterFrightenedMode()
 
 void GamePacman::TryPlaceRandomTetrisPiece()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
+
 	if(rand_.Next() % 48 != 17)
 	{
 		return;
@@ -1833,6 +1838,11 @@ void GamePacman::TryPlaceRandomTetrisPiece()
 
 void GamePacman::TrySpawnSnakeBonus()
 {
+	if(tick_ < g_transition_time_change_end)
+	{
+		return;
+	}
+
 	if(rand_.Next() % 24 != 3)
 	{
 		return;
