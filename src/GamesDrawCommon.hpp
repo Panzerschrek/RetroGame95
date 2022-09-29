@@ -29,3 +29,5 @@ void DrawTetrisField(
 	const TetrisBlock* blocks,
 	uint32_t field_width,
 	uint32_t field_height);
+
+void DrawSnakeStats(FrameBuffer frame_buffer, uint32_t length, uint32_t lifes, uint32_t level, uint32_t score);

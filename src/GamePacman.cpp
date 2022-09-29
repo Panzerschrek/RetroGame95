@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "GamesCommon.hpp"
+#include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
 #include "Strings.hpp"
@@ -80,9 +81,13 @@ const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
 const uint32_t g_transition_snake_move_speed = 60;
-const uint32_t g_transition_time_change_end = g_transition_snake_move_speed * 19 / 2;
-const uint32_t g_transition_time_change_field_border = g_transition_time_change_end * 1 / 4;
-const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_end * 2 / 4;
+const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 19 / 2;
+const uint32_t g_transition_time_hide_snake_stats = g_transition_time_change_snake * 1 / 3;
+const uint32_t g_transition_time_change_field_border = g_transition_time_change_snake * 2 / 3;
+const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_show_pacman_stats = g_transition_time_show_pacman_field + GameInterface::c_update_frequency * 2 / 3;
+
+const uint32_t g_transition_time_change_end = g_transition_time_show_pacman_field;
 
 } // namespace
 
@@ -94,9 +99,10 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 
 	NextLevel();
 
-	spawn_animation_end_tick_ = g_transition_time_change_end;
-	assert(g_transition_time_change_end >= g_spawn_animation_duration);
-	next_ghosts_mode_swith_tick_ += g_transition_time_change_end - g_spawn_animation_duration;
+	//spawn_animation_end_tick_ = g_transition_time_change_end;
+	//assert(g_transition_time_change_end >= g_spawn_animation_duration);
+	//next_ghosts_mode_swith_tick_ += g_transition_time_change_end - g_spawn_animation_duration;
+	spawn_animation_end_tick_ = g_transition_time_change_snake;
 
 	pacman_.target_position = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(17) + g_fixed16_one / 2};
 	pacman_.position = pacman_.target_position;
@@ -149,9 +155,12 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	MovePacman();
 
-	for(Ghost& ghost : ghosts_)
+	if(tick_ >= g_transition_time_change_end)
 	{
-		MoveGhost(ghost);
+		for(Ghost& ghost : ghosts_)
+		{
+			MoveGhost(ghost);
+		}
 	}
 
 	for(size_t b = 0; b < laser_beams_.size();)
@@ -199,15 +208,20 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
+	if(tick_ < g_transition_time_hide_snake_stats)
+	{
+		DrawSnakeStats(frame_buffer, 4, lifes_, level_, score_);
+	}
+
 	const SpriteBMP snake_border_sprite( Sprites::snake_field_border);
 	if(tick_ < g_transition_time_change_field_border)
 	{
 		for(uint32_t x = 0; x < frame_buffer.width / snake_border_sprite.GetWidth(); ++x)
 		{
 			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), 0);
-			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), frame_buffer.height - snake_border_sprite.GetHeight());
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), frame_buffer.height - 3 * snake_border_sprite.GetHeight());
 		}
-		for(uint32_t y = 0; y < frame_buffer.height / snake_border_sprite.GetHeight(); ++y)
+		for(uint32_t y = 0; y < frame_buffer.height / snake_border_sprite.GetHeight() - 3; ++y)
 		{
 			DrawSprite(frame_buffer, snake_border_sprite, 0, y * snake_border_sprite.GetHeight());
 			DrawSprite(frame_buffer, snake_border_sprite, frame_buffer.width - snake_border_sprite.GetWidth(), y * snake_border_sprite.GetHeight());
@@ -233,15 +247,18 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		DrawField(frame_buffer);
 	}
 
-	for(const Ghost& ghost : ghosts_)
+	if(tick_ >= g_transition_time_change_end)
 	{
-		if(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten)
+		for(const Ghost& ghost : ghosts_)
 		{
-			DrawGhost(frame_buffer, ghost);
+			if(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten)
+			{
+				DrawGhost(frame_buffer, ghost);
+			}
 		}
 	}
 
-	if(tick_ < g_transition_time_change_end)
+	if(tick_ < g_transition_time_change_snake)
 	{
 		const uint32_t snake_segment_size = 10;
 		const uint32_t offset_x = 15;
@@ -256,11 +273,14 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		DrawPacman(frame_buffer);
 	}
 
-	for(const Ghost& ghost : ghosts_)
+	if(tick_ >= g_transition_time_change_end)
 	{
-		if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
+		for(const Ghost& ghost : ghosts_)
 		{
-			DrawGhost(frame_buffer, ghost);
+			if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
+			{
+				DrawGhost(frame_buffer, ghost);
+			}
 		}
 	}
 
@@ -291,51 +311,54 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP life_spirte(Sprites::pacman_life);
-	for(uint32_t i = 0; i < lifes_; ++i)
+	if(tick_ >= g_transition_time_show_pacman_stats)
 	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			life_spirte,
-			0,
-			c_field_width * c_block_size - c_block_size / 2 + i % 4 * (life_spirte.GetWidth() + 2),
-			c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
-	}
+		const SpriteBMP life_spirte(Sprites::pacman_life);
+		for(uint32_t i = 0; i < lifes_; ++i)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				life_spirte,
+				0,
+				c_field_width * c_block_size - c_block_size / 2 + i % 4 * (life_spirte.GetWidth() + 2),
+				c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
+		}
 
-	const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
-	const uint32_t texts_offset_y = 8 * g_glyph_height;
+		const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
+		const uint32_t texts_offset_y = 8 * g_glyph_height;
 
-	char text[64];
+		char text[64];
 
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
+		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
 
-	NumToString(text, sizeof(text), level_, 7);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
+		NumToString(text, sizeof(text), level_, 7);
+		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
 
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
+		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
 
-	NumToString(text, sizeof(text), score_, 7);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
+		NumToString(text, sizeof(text), score_, 7);
+		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
 
-	if(tick_ < spawn_animation_end_tick_)
-	{
-		DrawTextCentered(
-			frame_buffer,
-			g_cga_palette[9 + tick_ / 16 % 7],
-			c_field_width  * c_block_size / 2,
-			c_field_height * c_block_size / 2,
-			Strings::pacman_ready);
-	}
-	if(game_over_)
-	{
-		if(tick_ / 16 % 2 != 0)
+		if(tick_ < spawn_animation_end_tick_)
 		{
 			DrawTextCentered(
 				frame_buffer,
-				g_cga_palette[14],
+				g_cga_palette[9 + tick_ / 16 % 7],
 				c_field_width  * c_block_size / 2,
 				c_field_height * c_block_size / 2,
-				Strings::pacman_game_over);
+				Strings::pacman_ready);
+		}
+		if(game_over_)
+		{
+			if(tick_ / 16 % 2 != 0)
+			{
+				DrawTextCentered(
+					frame_buffer,
+					g_cga_palette[14],
+					c_field_width  * c_block_size / 2,
+					c_field_height * c_block_size / 2,
+					Strings::pacman_game_over);
+			}
 		}
 	}
 }
