@@ -120,22 +120,19 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	spawn_animation_end_tick_ = g_transition_time_change_snake;
 	next_ghosts_mode_swith_tick_ = spawn_animation_end_tick_ + g_scatter_duration_first;
 
-	temp_snake_position_ = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(5) + g_fixed16_one / 2};
+	pacman_.direction = pacman_.next_direction = GridDirection::XPlus;
 
-	const fixed16_t bonus_x = IntToFixed16(2) + g_fixed16_one / 2;
+	temp_snake_position_ = {IntToFixed16(5) + g_fixed16_one / 2, IntToFixed16(7) + g_fixed16_one / 2};
+
+	const fixed16_t bonus_x = temp_snake_position_[0];
+	const fixed16_t bonus_y = temp_snake_position_[1];
 	const fixed16_t bonus_step = g_fixed16_one * 10 / 8;
-	snake_transition_bonuses_.push_back(
-		{{bonus_x, temp_snake_position_[1] + bonus_step * 2}, Bonus::SnakeFoodSmall});
-	snake_transition_bonuses_.push_back(
-		{{bonus_x, temp_snake_position_[1] + bonus_step * 5}, Bonus::SnakeFoodMedium});
-	snake_transition_bonuses_.push_back(
-		{{bonus_x, temp_snake_position_[1] + bonus_step * 7}, Bonus::SnakeFoodLarge});
-	snake_transition_bonuses_.push_back(
-		{{bonus_x, temp_snake_position_[1] + bonus_step * 8}, Bonus::Food});
-	snake_transition_bonuses_.push_back(
-		{{bonus_x, temp_snake_position_[1] + bonus_step * 9}, Bonus::Food});
-	snake_transition_bonuses_.push_back(
-		{{bonus_x, temp_snake_position_[1] + bonus_step * 10}, Bonus::Food});
+	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 2, bonus_y}, Bonus::SnakeFoodSmall});
+	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 5, bonus_y}, Bonus::SnakeFoodMedium});
+	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 7, bonus_y}, Bonus::SnakeFoodLarge});
+	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 8, bonus_y}, Bonus::Food});
+	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 9, bonus_y}, Bonus::Food});
+	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 10, bonus_y}, Bonus::Food});
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -320,14 +317,14 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t snake_segment_size = 10;
 		const uint32_t half_snake_segment_size = snake_segment_size / 2;
 		const uint32_t num_snake_segments = 4;
-		const uint32_t offset_x = uint32_t(Fixed16FloorToInt(temp_snake_position_[0] * int32_t(c_block_size))) - half_snake_segment_size;
-		const uint32_t offset_y = uint32_t(Fixed16FloorToInt(temp_snake_position_[1] * int32_t(c_block_size))) - half_snake_segment_size - (num_snake_segments - 1) * snake_segment_size;
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
+		const uint32_t offset_x = uint32_t(Fixed16FloorToInt(temp_snake_position_[0] * int32_t(c_block_size))) - half_snake_segment_size - (num_snake_segments - 1) * snake_segment_size;
+		const uint32_t offset_y = uint32_t(Fixed16FloorToInt(temp_snake_position_[1] * int32_t(c_block_size))) - half_snake_segment_size;
+		DrawSpriteWithAlphaRotate270(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
 		for(uint32_t i = 1; i + 1 < num_snake_segments; ++i)
 		{
-			DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * i);
+			DrawSpriteWithAlphaRotate270(frame_buffer, Sprites::snake_body_segment, 0, offset_x + snake_segment_size * i, offset_y);
 		}
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * (num_snake_segments - 1));
+		DrawSpriteWithAlphaRotate270(frame_buffer, Sprites::snake_head, 0, offset_x + snake_segment_size * (num_snake_segments - 1), offset_y);
 	}
 	else
 	{
@@ -1934,9 +1931,9 @@ void GamePacman::UpdateSnakePosition()
 	const uint32_t diff = (tick_ + 1) / g_transition_snake_move_speed - tick_ / g_transition_snake_move_speed;
 	for(uint32_t i = 0; i < diff; ++i)
 	{
-		temp_snake_position_[1] += IntToFixed16(10) / int32_t(c_block_size);
+		temp_snake_position_[0] += IntToFixed16(10) / int32_t(c_block_size);
 
-		if(!snake_transition_bonuses_.empty() && snake_transition_bonuses_.front().position[1] <= temp_snake_position_[1])
+		if(!snake_transition_bonuses_.empty() && snake_transition_bonuses_.front().position[0] <= temp_snake_position_[0])
 		{
 			snake_transition_bonuses_.erase(snake_transition_bonuses_.begin());
 			sound_player_.PlaySound(SoundId::SnakeBonusEat);
