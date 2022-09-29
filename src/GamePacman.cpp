@@ -81,7 +81,7 @@ const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
 const uint32_t g_transition_snake_move_speed = 60;
-const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 22 / 2;
+const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 13;
 const uint32_t g_transition_time_hide_snake_stats = g_transition_time_change_snake * 1 / 3;
 const uint32_t g_transition_time_change_field_border = g_transition_time_change_snake * 2 / 3;
 const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency * 2 / 3;
@@ -124,15 +124,9 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 
 	temp_snake_position_ = {IntToFixed16(5) + g_fixed16_one / 2, IntToFixed16(7) + g_fixed16_one / 2};
 
-	const fixed16_t bonus_x = temp_snake_position_[0];
-	const fixed16_t bonus_y = temp_snake_position_[1];
 	const fixed16_t bonus_step = g_fixed16_one * 10 / 8;
-	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 2, bonus_y}, Bonus::SnakeFoodSmall});
-	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 5, bonus_y}, Bonus::SnakeFoodMedium});
-	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 7, bonus_y}, Bonus::SnakeFoodLarge});
-	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 8, bonus_y}, Bonus::Food});
-	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 9, bonus_y}, Bonus::Food});
-	snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 10, bonus_y}, Bonus::Food});
+	snake_transition_bonuses_.push_back(
+		{{temp_snake_position_[0] + bonus_step * 4, temp_snake_position_[1]}, Bonus::SnakeFoodSmall});
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -289,16 +283,18 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		DrawField(frame_buffer);
 	}
 
-	if(tick_ < g_transition_time_change_snake && !snake_transition_bonuses_.empty())
+	if(tick_ < g_transition_time_change_snake)
 	{
-		const SnakeTransitionBonus& bonus = snake_transition_bonuses_.front();
-		const SpriteBMP sprite = g_bonus_sprites[uint32_t(bonus.type)];
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			uint32_t(Fixed16FloorToInt(bonus.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
-			uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+		for(const SnakeTransitionBonus& bonus : snake_transition_bonuses_)
+		{
+			const SpriteBMP sprite = g_bonus_sprites[uint32_t(bonus.type)];
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				uint32_t(Fixed16FloorToInt(bonus.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+				uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+		}
 	}
 
 	if(tick_ >= g_transition_time_show_pacman_field)
@@ -1935,7 +1931,31 @@ void GamePacman::UpdateSnakePosition()
 
 		if(!snake_transition_bonuses_.empty() && snake_transition_bonuses_.front().position[0] <= temp_snake_position_[0])
 		{
+			const Bonus bonus_type = snake_transition_bonuses_.front().type;
 			snake_transition_bonuses_.erase(snake_transition_bonuses_.begin());
+
+			const fixed16_t bonus_x = temp_snake_position_[0];
+			const fixed16_t bonus_y = temp_snake_position_[1];
+			const fixed16_t bonus_step = g_fixed16_one * 10 / 8;
+			switch(bonus_type)
+			{
+			case Bonus::SnakeFoodSmall:
+				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 3, bonus_y}, Bonus::SnakeFoodMedium});
+				break;
+			case Bonus::SnakeFoodMedium:
+				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 2, bonus_y}, Bonus::SnakeFoodLarge});
+				break;
+			case Bonus::SnakeFoodLarge:
+				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 1, bonus_y}, Bonus::Food});
+				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 2, bonus_y}, Bonus::Food});
+				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 3, bonus_y}, Bonus::Food});
+			case Bonus::Food:
+				snake_transition_bonuses_.push_back({{bonus_x + bonus_step * 3, bonus_y}, Bonus::Food});
+				break;
+			default:
+				break;
+			}
+
 			sound_player_.PlaySound(SoundId::SnakeBonusEat);
 		}
 		else
