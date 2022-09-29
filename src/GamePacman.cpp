@@ -84,8 +84,8 @@ const uint32_t g_transition_snake_move_speed = 60;
 const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 22 / 2;
 const uint32_t g_transition_time_hide_snake_stats = g_transition_time_change_snake * 1 / 3;
 const uint32_t g_transition_time_change_field_border = g_transition_time_change_snake * 2 / 3;
-const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency / 2;
-const uint32_t g_transition_time_show_pacman_stats = g_transition_time_show_pacman_field + GameInterface::c_update_frequency / 2;
+const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_show_pacman_stats = g_transition_time_show_pacman_field + GameInterface::c_update_frequency * 2 / 3;
 
 const uint32_t g_transition_time_change_end = g_transition_time_show_pacman_field;
 
@@ -304,7 +304,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
-	if(tick_ >= g_transition_time_change_end)
+	if(tick_ >= g_transition_time_show_pacman_field)
 	{
 		for(const Ghost& ghost : ghosts_)
 		{
@@ -334,7 +334,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		DrawPacman(frame_buffer);
 	}
 
-	if(tick_ >= g_transition_time_change_end)
+	if(tick_ >= g_transition_time_show_pacman_field)
 	{
 		for(const Ghost& ghost : ghosts_)
 		{
