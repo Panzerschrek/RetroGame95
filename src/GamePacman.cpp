@@ -81,6 +81,8 @@ const uint32_t g_score_for_ghost = 200;
 
 const uint32_t g_transition_snake_move_speed = 60;
 const uint32_t g_transition_time_change_end = g_transition_snake_move_speed * 19 / 2;
+const uint32_t g_transition_time_change_field_border = g_transition_time_change_end * 1 / 4;
+const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_end * 2 / 4;
 
 } // namespace
 
@@ -197,6 +199,154 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 	FillWholeFrameBuffer(frame_buffer, g_color_black);
 
+	const SpriteBMP snake_border_sprite( Sprites::snake_field_border);
+	if(tick_ < g_transition_time_change_field_border)
+	{
+		for(uint32_t x = 0; x < frame_buffer.width / snake_border_sprite.GetWidth(); ++x)
+		{
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), 0);
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), frame_buffer.height - snake_border_sprite.GetHeight());
+		}
+		for(uint32_t y = 0; y < frame_buffer.height / snake_border_sprite.GetHeight(); ++y)
+		{
+			DrawSprite(frame_buffer, snake_border_sprite, 0, y * snake_border_sprite.GetHeight());
+			DrawSprite(frame_buffer, snake_border_sprite, frame_buffer.width - snake_border_sprite.GetWidth(), y * snake_border_sprite.GetHeight());
+		}
+
+	}
+	else if(tick_ < g_transition_time_show_pacman_field)
+	{
+		for(uint32_t x = 0; x < 26; ++x)
+		{
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), 0);
+			DrawSprite(frame_buffer, snake_border_sprite, x * snake_border_sprite.GetWidth(), 230);
+		}
+		for(uint32_t y = 0; y < 24; ++y)
+		{
+			DrawSprite(frame_buffer, snake_border_sprite, 0, y * snake_border_sprite.GetHeight());
+			DrawSprite(frame_buffer, snake_border_sprite, 254, y * snake_border_sprite.GetHeight());
+		}
+	}
+	else
+	{
+		DrawBonuses(frame_buffer);
+		DrawField(frame_buffer);
+	}
+
+	for(const Ghost& ghost : ghosts_)
+	{
+		if(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten)
+		{
+			DrawGhost(frame_buffer, ghost);
+		}
+	}
+
+	if(tick_ < g_transition_time_change_end)
+	{
+		const uint32_t snake_segment_size = 10;
+		const uint32_t offset_x = 15;
+		const uint32_t offset_y = c_block_size * 2 + (tick_ / g_transition_snake_move_speed) * snake_segment_size;
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 1);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 2);
+		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * 3);
+	}
+	else
+	{
+		DrawPacman(frame_buffer);
+	}
+
+	for(const Ghost& ghost : ghosts_)
+	{
+		if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
+		{
+			DrawGhost(frame_buffer, ghost);
+		}
+	}
+
+	for(const LaserBeam& laser_beam : laser_beams_)
+	{
+		const SpriteBMP sprite(Sprites::arkanoid_laser_beam);
+		const uint32_t x = uint32_t(Fixed16FloorToInt(laser_beam.position[0] * int32_t(c_block_size)));
+		const uint32_t y = uint32_t(Fixed16FloorToInt(laser_beam.position[1] * int32_t(c_block_size)));
+		const uint32_t half_height = sprite.GetHeight() / 2;
+		switch(laser_beam.direction)
+		{
+		case GridDirection::XMinus:
+			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y - 2);
+			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y + 1);
+			break;
+		case GridDirection::XPlus:
+			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y - 2);
+			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y + 1);
+			break;
+		case GridDirection::YMinus:
+			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x - 2, y - half_height);
+			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x + 1, y - half_height);
+			break;
+		case GridDirection::YPlus:
+			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x - 2, y - half_height);
+			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x + 1, y - half_height);
+			break;
+		}
+	}
+
+	const SpriteBMP life_spirte(Sprites::pacman_life);
+	for(uint32_t i = 0; i < lifes_; ++i)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			life_spirte,
+			0,
+			c_field_width * c_block_size - c_block_size / 2 + i % 4 * (life_spirte.GetWidth() + 2),
+			c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
+	}
+
+	const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
+	const uint32_t texts_offset_y = 8 * g_glyph_height;
+
+	char text[64];
+
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
+
+	NumToString(text, sizeof(text), level_, 7);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
+
+	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
+
+	NumToString(text, sizeof(text), score_, 7);
+	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
+
+	if(tick_ < spawn_animation_end_tick_)
+	{
+		DrawTextCentered(
+			frame_buffer,
+			g_cga_palette[9 + tick_ / 16 % 7],
+			c_field_width  * c_block_size / 2,
+			c_field_height * c_block_size / 2,
+			Strings::pacman_ready);
+	}
+	if(game_over_)
+	{
+		if(tick_ / 16 % 2 != 0)
+		{
+			DrawTextCentered(
+				frame_buffer,
+				g_cga_palette[14],
+				c_field_width  * c_block_size / 2,
+				c_field_height * c_block_size / 2,
+				Strings::pacman_game_over);
+		}
+	}
+}
+
+GameInterfacePtr GamePacman::AskForNextGameTransition()
+{
+	return std::move(next_game_);
+}
+
+void GamePacman::DrawField(const FrameBuffer frame_buffer) const
+{
 	const Color32 c_wall_color = g_cga_palette[1];
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	{
@@ -362,7 +512,10 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			}
 		} // for x
 	} // for y
+}
 
+void GamePacman::DrawBonuses(const FrameBuffer frame_buffer) const
+{
 	const SpriteBMP bonus_sprites[]
 	{
 		Sprites::pacman_food,
@@ -397,117 +550,6 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			x * c_block_size + c_block_size / 2 - sprite.GetWidth () / 2,
 			y * c_block_size + c_block_size / 2 - sprite.GetHeight() / 2);
 	}
-
-	for(const Ghost& ghost : ghosts_)
-	{
-		if(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten)
-		{
-			DrawGhost(frame_buffer, ghost);
-		}
-	}
-
-	if(tick_ < g_transition_time_change_end)
-	{
-		const uint32_t snake_segment_size = 10;
-		const uint32_t offset_x = 15;
-		const uint32_t offset_y = c_block_size * 2 + (tick_ / g_transition_snake_move_speed) * snake_segment_size;
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 1);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_body_segment, 0, offset_x, offset_y + snake_segment_size * 2);
-		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_head, 0, offset_x, offset_y + snake_segment_size * 3);
-	}
-	else
-	{
-		DrawPacman(frame_buffer);
-	}
-
-	for(const Ghost& ghost : ghosts_)
-	{
-		if(!(ghost.mode == GhostMode::Frightened || ghost.mode == GhostMode::Eaten))
-		{
-			DrawGhost(frame_buffer, ghost);
-		}
-	}
-
-	for(const LaserBeam& laser_beam : laser_beams_)
-	{
-		const SpriteBMP sprite(Sprites::arkanoid_laser_beam);
-		const uint32_t x = uint32_t(Fixed16FloorToInt(laser_beam.position[0] * int32_t(c_block_size)));
-		const uint32_t y = uint32_t(Fixed16FloorToInt(laser_beam.position[1] * int32_t(c_block_size)));
-		const uint32_t half_height = sprite.GetHeight() / 2;
-		switch(laser_beam.direction)
-		{
-		case GridDirection::XMinus:
-			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y - 2);
-			DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, x - half_height, y + 1);
-			break;
-		case GridDirection::XPlus:
-			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y - 2);
-			DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, x - half_height, y + 1);
-			break;
-		case GridDirection::YMinus:
-			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x - 2, y - half_height);
-			DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, x + 1, y - half_height);
-			break;
-		case GridDirection::YPlus:
-			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x - 2, y - half_height);
-			DrawSpriteWithAlpha         (frame_buffer, sprite, 0, x + 1, y - half_height);
-			break;
-		}
-	}
-
-	const SpriteBMP life_spirte(Sprites::pacman_life);
-	for(uint32_t i = 0; i < lifes_; ++i)
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			life_spirte,
-			0,
-			c_field_width * c_block_size - c_block_size / 2 + i % 4 * (life_spirte.GetWidth() + 2),
-			c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
-	}
-
-	const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
-	const uint32_t texts_offset_y = 8 * g_glyph_height;
-
-	char text[64];
-
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
-
-	NumToString(text, sizeof(text), level_, 7);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
-
-	DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
-
-	NumToString(text, sizeof(text), score_, 7);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
-
-	if(tick_ < spawn_animation_end_tick_)
-	{
-		DrawTextCentered(
-			frame_buffer,
-			g_cga_palette[9 + tick_ / 16 % 7],
-			c_field_width  * c_block_size / 2,
-			c_field_height * c_block_size / 2,
-			Strings::pacman_ready);
-	}
-	if(game_over_)
-	{
-		if(tick_ / 16 % 2 != 0)
-		{
-			DrawTextCentered(
-				frame_buffer,
-				g_cga_palette[14],
-				c_field_width  * c_block_size / 2,
-				c_field_height * c_block_size / 2,
-				Strings::pacman_game_over);
-		}
-	}
-}
-
-GameInterfacePtr GamePacman::AskForNextGameTransition()
-{
-	return std::move(next_game_);
 }
 
 void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
