@@ -385,6 +385,14 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 				c_block_size * 2 + i / 4 * (life_spirte.GetHeight() + 3));
 		}
 
+		for(uint32_t i = 0; i < pacman_.turret_shots_left; ++i)
+		{
+			const uint32_t offset_x = c_field_width * c_block_size - c_block_size / 2 + i * 12;
+			const uint32_t offset_y = frame_buffer.height - 20;
+			DrawSpriteWithAlpha(frame_buffer, Sprites::arkanoid_laser_beam, 0, offset_x, offset_y);
+			DrawSpriteWithAlpha(frame_buffer, Sprites::arkanoid_laser_beam, 0, offset_x + 3, offset_y);
+		}
+
 		const uint32_t texts_offset_x = c_field_width * c_block_size - c_block_size / 2;
 		const uint32_t texts_offset_y = 8 * g_glyph_height;
 
