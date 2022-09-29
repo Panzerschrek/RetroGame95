@@ -103,6 +103,12 @@ private:
 		SnakeExtraLife,
 	};
 
+	struct SnakeTransitionBonus
+	{
+		fixed16vec2_t position{};
+		Bonus type = Bonus::Food;
+	};
+
 	static const constexpr uint32_t c_field_width = 33;
 	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
@@ -169,6 +175,7 @@ private:
 
 	// Position of head center. Used in transition.
 	fixed16vec2_t temp_snake_position_{};
+	std::vector<SnakeTransitionBonus> snake_transition_bonuses_;
 
 	GameInterfacePtr next_game_;
 };

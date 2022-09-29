@@ -81,13 +81,31 @@ const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
 const uint32_t g_transition_snake_move_speed = 60;
-const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 19 / 2;
+const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 22 / 2;
 const uint32_t g_transition_time_hide_snake_stats = g_transition_time_change_snake * 1 / 3;
 const uint32_t g_transition_time_change_field_border = g_transition_time_change_snake * 2 / 3;
-const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency * 2 / 3;
-const uint32_t g_transition_time_show_pacman_stats = g_transition_time_show_pacman_field + GameInterface::c_update_frequency * 2 / 3;
+const uint32_t g_transition_time_show_pacman_field = g_transition_time_change_snake + GameInterface::c_update_frequency / 2;
+const uint32_t g_transition_time_show_pacman_stats = g_transition_time_show_pacman_field + GameInterface::c_update_frequency / 2;
 
 const uint32_t g_transition_time_change_end = g_transition_time_show_pacman_field;
+
+const SpriteBMP g_bonus_sprites[]
+{
+	Sprites::pacman_food,
+	Sprites::pacman_food,
+	Sprites::pacman_bonus_deadly,
+	Sprites::tetris_block_small_4,
+	Sprites::tetris_block_small_7,
+	Sprites::tetris_block_small_5,
+	Sprites::tetris_block_small_1,
+	Sprites::tetris_block_small_2,
+	Sprites::tetris_block_small_6,
+	Sprites::tetris_block_small_3,
+	Sprites::snake_food_small,
+	Sprites::snake_food_medium,
+	Sprites::snake_food_large,
+	Sprites::snake_extra_life,
+};
 
 } // namespace
 
@@ -104,7 +122,22 @@ GamePacman::GamePacman(SoundPlayer& sound_player)
 	//next_ghosts_mode_swith_tick_ += g_transition_time_change_end - g_spawn_animation_duration;
 	spawn_animation_end_tick_ = g_transition_time_change_snake;
 
-	temp_snake_position_ = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(8) + g_fixed16_one / 2};
+	temp_snake_position_ = {IntToFixed16(2) + g_fixed16_one / 2, IntToFixed16(5) + g_fixed16_one / 2};
+
+	const fixed16_t bonus_x = IntToFixed16(2) + g_fixed16_one / 2;
+	const fixed16_t bonus_step = g_fixed16_one * 10 / 8;
+	snake_transition_bonuses_.push_back(
+		{{bonus_x, temp_snake_position_[1] + bonus_step * 2}, Bonus::SnakeFoodSmall});
+	snake_transition_bonuses_.push_back(
+		{{bonus_x, temp_snake_position_[1] + bonus_step * 5}, Bonus::SnakeFoodMedium});
+	snake_transition_bonuses_.push_back(
+		{{bonus_x, temp_snake_position_[1] + bonus_step * 7}, Bonus::SnakeFoodLarge});
+	snake_transition_bonuses_.push_back(
+		{{bonus_x, temp_snake_position_[1] + bonus_step * 8}, Bonus::Food});
+	snake_transition_bonuses_.push_back(
+		{{bonus_x, temp_snake_position_[1] + bonus_step * 9}, Bonus::Food});
+	snake_transition_bonuses_.push_back(
+		{{bonus_x, temp_snake_position_[1] + bonus_step * 10}, Bonus::Food});
 }
 
 void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -247,6 +280,18 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		DrawField(frame_buffer);
 	}
 
+	if(tick_ < g_transition_time_change_snake && !snake_transition_bonuses_.empty())
+	{
+		const SnakeTransitionBonus& bonus = snake_transition_bonuses_.front();
+		const SpriteBMP sprite = g_bonus_sprites[uint32_t(bonus.type)];
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			uint32_t(Fixed16FloorToInt(bonus.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+
 	if(tick_ >= g_transition_time_change_end)
 	{
 		for(const Ghost& ghost : ghosts_)
@@ -264,7 +309,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t half_snake_segment_size = snake_segment_size / 2;
 		const uint32_t num_snake_segments = 4;
 		const uint32_t offset_x = uint32_t(Fixed16FloorToInt(temp_snake_position_[0] * int32_t(c_block_size))) - half_snake_segment_size;
-		const uint32_t offset_y = uint32_t(Fixed16FloorToInt(temp_snake_position_[1] * int32_t(c_block_size))) - half_snake_segment_size - num_snake_segments * snake_segment_size;
+		const uint32_t offset_y = uint32_t(Fixed16FloorToInt(temp_snake_position_[1] * int32_t(c_block_size))) - half_snake_segment_size - (num_snake_segments - 1) * snake_segment_size;
 		DrawSpriteWithAlpha(frame_buffer, Sprites::snake_tail, 0, offset_x, offset_y);
 		for(uint32_t i = 1; i + 1 < num_snake_segments; ++i)
 		{
@@ -543,23 +588,6 @@ void GamePacman::DrawField(const FrameBuffer frame_buffer) const
 
 void GamePacman::DrawBonuses(const FrameBuffer frame_buffer) const
 {
-	const SpriteBMP bonus_sprites[]
-	{
-		Sprites::pacman_food,
-		Sprites::pacman_food,
-		Sprites::pacman_bonus_deadly,
-		Sprites::tetris_block_small_4,
-		Sprites::tetris_block_small_7,
-		Sprites::tetris_block_small_5,
-		Sprites::tetris_block_small_1,
-		Sprites::tetris_block_small_2,
-		Sprites::tetris_block_small_6,
-		Sprites::tetris_block_small_3,
-		Sprites::snake_food_small,
-		Sprites::snake_food_medium,
-		Sprites::snake_food_large,
-		Sprites::snake_extra_life,
-	};
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
@@ -569,7 +597,7 @@ void GamePacman::DrawBonuses(const FrameBuffer frame_buffer) const
 			continue;
 		}
 
-		const SpriteBMP sprite = bonus_sprites[uint32_t(bonus)];
+		const SpriteBMP sprite = g_bonus_sprites[uint32_t(bonus)];
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
@@ -1877,7 +1905,16 @@ void GamePacman::UpdateSnakePosition()
 	for(uint32_t i = 0; i < diff; ++i)
 	{
 		temp_snake_position_[1] += IntToFixed16(10) / int32_t(c_block_size);
-		sound_player_.PlaySound(SoundId::TetrisFigureStep);
+
+		if(!snake_transition_bonuses_.empty() && snake_transition_bonuses_.front().position[1] <= temp_snake_position_[1])
+		{
+			snake_transition_bonuses_.erase(snake_transition_bonuses_.begin());
+			sound_player_.PlaySound(SoundId::SnakeBonusEat);
+		}
+		else
+		{
+			sound_player_.PlaySound(SoundId::TetrisFigureStep);
+		}
 	}
 }
 
