@@ -17,4 +17,6 @@ public: // GameInterface
 private:
 	SoundPlayer& sound_player_;
 	GameInterfacePtr next_game_;
+
+	bool music_started_ = false;
 };

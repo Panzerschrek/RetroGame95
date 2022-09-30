@@ -14,13 +14,19 @@ void GameEndScreen::Tick(const std::vector<SDL_Event>& events, const std::vector
 {
 	(void) keyboard_state;
 
-
 	for(const SDL_Event& event : events)
 	{
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
+	}
+
+	if(!music_started_)
+	{
+		music_started_ = true;
+		// TODO - use special music here.
+		sound_player_.PlayMusic(MusicId::Test);
 	}
 }
 
