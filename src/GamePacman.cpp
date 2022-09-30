@@ -297,7 +297,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 				uint32_t(Fixed16FloorToInt(bonus.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 		}
 	}
-	if(tick_ >= g_transition_time_change_snake && tick_ < g_transition_time_start_show_pacman_field)
+	if(tick_ >= g_transition_time_change_snake && tick_ < g_transition_time_end_show_pacman_field)
 	{
 		const uint32_t y = 7;
 		for(uint32_t x = uint32_t(Fixed16FloorToInt(pacman_.position[0])); x < c_field_width ; ++x)
