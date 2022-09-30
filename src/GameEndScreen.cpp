@@ -1,6 +1,7 @@
 #include "GameEndScreen.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
+#include "Sprites.hpp"
 
 GameEndScreen::GameEndScreen(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
@@ -24,7 +25,7 @@ void GameEndScreen::Tick(const std::vector<SDL_Event>& events, const std::vector
 
 void GameEndScreen::Draw(const FrameBuffer frame_buffer) const
 {
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
+	DrawSprite(frame_buffer, Sprites::dresdner_zwinger_in_der_nacht, 0, 0);
 
 	DrawText(frame_buffer, g_color_white, 0, 0, "The end");
 }
