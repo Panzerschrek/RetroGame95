@@ -251,7 +251,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		}
 
 	}
-	else if(tick_ < g_transition_time_start_show_pacman_field)
+	else if(tick_ < g_transition_time_end_show_pacman_field)
 	{
 		for(uint32_t x = 0; x < 26; ++x)
 		{
@@ -278,7 +278,8 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			}
 		}
 	}
-	else
+
+	if(tick_ >= g_transition_time_start_show_pacman_field)
 	{
 		DrawFieldAndBonuses(frame_buffer);
 	}
