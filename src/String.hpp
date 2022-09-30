@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 
 uint32_t ExtractUTF8CodePoint(const char*& ptr);
