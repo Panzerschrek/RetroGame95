@@ -40,6 +40,33 @@ DEFINE_STRING(pacman_score, "Zahl")
 DEFINE_STRING(pacman_ready, "Sei bereit!")
 DEFINE_STRING(pacman_game_over, "Spiel ist vorbei")
 
+DEFINE_STRING(end_screen_congratulations,
+R"(
+Gratulieren,
+
+Sie haben das Spiel gewonnen!
+)")
+
+DEFINE_STRING(end_screen_authors,
+R"(
+Diese Spiel wurde für den GameDev.ru
+
+Retrospielwettbewerb (2022) gemacht.
+
+
+
+Author: "Panzerschrek"
+)")
+
+DEFINE_STRING(end_screen_peace_text,
+R"(
+Es werde Frieden!
+
+Fick den Krieg!
+)")
+
+#undef DEFINE_STRING
+
 #undef DEFINE_STRING
 
 } // namespace Strings

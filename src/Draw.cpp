@@ -375,7 +375,7 @@ void DrawTextWithOutline(
 	DrawText(frame_buffer, shadow_color, start_x + 1, start_y, text);
 	DrawText(frame_buffer, shadow_color, start_x - 1, start_y, text);
 	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
-	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
+	DrawText(frame_buffer, shadow_color, start_x, start_y - 1, text);
 	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
 	DrawText(frame_buffer, shadow_color, start_x + 1, start_y - 1, text);
 	DrawText(frame_buffer, shadow_color, start_x - 1, start_y + 1, text);

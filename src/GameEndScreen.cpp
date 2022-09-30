@@ -2,6 +2,7 @@
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "Sprites.hpp"
+#include "Strings.hpp"
 
 GameEndScreen::GameEndScreen(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
@@ -27,7 +28,29 @@ void GameEndScreen::Draw(const FrameBuffer frame_buffer) const
 {
 	DrawSprite(frame_buffer, Sprites::dresdner_zwinger_in_der_nacht, 0, 0);
 
-	DrawText(frame_buffer, g_color_white, 0, 0, "The end");
+	DrawTextWithOutline(
+		frame_buffer,
+		g_cga_palette[11],
+		g_cga_palette[0],
+		g_glyph_width / 2,
+		g_glyph_height * 1,
+		Strings::end_screen_congratulations);
+
+	DrawTextWithOutline(
+		frame_buffer,
+		g_cga_palette[15],
+		g_cga_palette[0],
+		g_glyph_width / 2,
+		g_glyph_height * 10,
+		Strings::end_screen_authors);
+
+	DrawTextWithFullShadow(
+		frame_buffer,
+		g_cga_palette[14],
+		g_cga_palette[8],
+		frame_buffer.width - 20 * g_glyph_width,
+		frame_buffer.height - g_glyph_height * 4 - g_glyph_height / 2,
+		Strings::end_screen_peace_text);
 }
 
 GameInterfacePtr GameEndScreen::AskForNextGameTransition()
