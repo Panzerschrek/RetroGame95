@@ -80,7 +80,7 @@ const uint32_t g_score_for_deadly_bonus = 30;
 const uint32_t g_score_for_snake_bonus = 30;
 const uint32_t g_score_for_ghost = 200;
 
-const uint32_t g_transition_snake_move_speed = 60;
+const uint32_t g_transition_snake_move_speed = 50;
 const uint32_t g_transition_time_change_snake = g_transition_snake_move_speed * 13;
 const uint32_t g_transition_time_hide_snake_stats = g_transition_time_change_snake * 1 / 3;
 const uint32_t g_transition_time_change_field_border = g_transition_time_change_snake * 2 / 3;
@@ -1953,7 +1953,9 @@ void GamePacman::UpdateSnakePosition()
 {
 	if(tick_ == g_transition_time_change_snake)
 	{
-		pacman_.target_position = temp_snake_position_;
+		pacman_.target_position = {
+			IntToFixed16(Fixed16FloorToInt(temp_snake_position_[0])) + g_fixed16_one / 2,
+			IntToFixed16(Fixed16FloorToInt(temp_snake_position_[1])) + g_fixed16_one / 2};
 		pacman_.position = pacman_.target_position;
 	}
 	if(tick_ >= g_transition_time_change_snake)
