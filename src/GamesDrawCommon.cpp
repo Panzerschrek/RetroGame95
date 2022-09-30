@@ -4,6 +4,7 @@
 #include "SpriteBMP.hpp"
 #include "Strings.hpp"
 #include <cassert>
+#include <cstring>
 
 namespace
 {
@@ -354,5 +355,41 @@ void DrawTetrisField(
 			0,
 			offset_x + x * block_width,
 			offset_y + y * block_height);
+	}
+}
+
+void DrawSnakeStats(
+	const FrameBuffer frame_buffer,
+	const uint32_t length,
+	const uint32_t lifes,
+	const uint32_t level,
+	const uint32_t score)
+{
+	char text[64];
+
+	const char* const stats_names[]
+		{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
+	const uint32_t stats[]{length, lifes, level, score};
+	const uint8_t stats_colors[]{6, 4, 1, 2};
+	for(uint32_t i = 0; i < 4; ++i)
+	{
+		const uint32_t x = (i + 1) * g_glyph_width * 9;
+		// TODO - fix this. strlen works wrongly for UTF-8.
+		const uint32_t len = uint32_t(std::strlen(stats_names[i]));
+
+		DrawText(
+			frame_buffer,
+			g_cga_palette[stats_colors[i]],
+			x - g_glyph_width * len,
+			frame_buffer.height - g_glyph_height * 2 - 3,
+			stats_names[i]);
+
+		NumToString(text, sizeof(text), stats[i], 5);
+		DrawText(
+			frame_buffer,
+			g_color_white,
+			x - g_glyph_width * 5,
+			frame_buffer.height - g_glyph_height - 1,
+			text);
 	}
 }

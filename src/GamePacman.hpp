@@ -103,6 +103,12 @@ private:
 		SnakeExtraLife,
 	};
 
+	struct SnakeTransitionBonus
+	{
+		fixed16vec2_t position{};
+		Bonus type = Bonus::Food;
+	};
+
 	static const constexpr uint32_t c_field_width = 33;
 	static const constexpr uint32_t c_field_height = 30;
 	static const constexpr uint32_t c_block_size = 8;
@@ -110,6 +116,7 @@ private:
 	static const constexpr uint32_t c_num_ghosts = 4;
 
 private:
+	void DrawFieldAndBonuses(FrameBuffer frame_buffer) const;
 	void DrawPacman(FrameBuffer frame_buffer) const;
 	void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost) const;
 
@@ -135,6 +142,8 @@ private:
 
 	void TryPlaceRandomTetrisPiece();
 	void TrySpawnSnakeBonus();
+
+	void UpdateSnakePosition();
 
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
 	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
@@ -162,6 +171,10 @@ private:
 	GhostMode current_ghosts_mode_ = GhostMode::Scatter;
 	uint32_t ghosts_mode_switches_left_ = 0;
 	uint32_t next_ghosts_mode_swith_tick_ = 0;
+
+	// Position of head center. Used in transition.
+	fixed16vec2_t temp_snake_position_{};
+	std::vector<SnakeTransitionBonus> snake_transition_bonuses_;
 
 	GameInterfacePtr next_game_;
 };
