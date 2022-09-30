@@ -18,6 +18,7 @@ DEFINE_STRING(game_name_arkanoid, "das Verlorenes Raumschiff")
 DEFINE_STRING(game_name_tetris, "der Maurer")
 DEFINE_STRING(game_name_snake, "die Gefreßige Schlange")
 DEFINE_STRING(game_name_pacman, "Packmann")
+DEFINE_STRING(game_name_end_screen, "das Ende")
 
 DEFINE_STRING(arkanoid_round, "Runde")
 DEFINE_STRING(arkanoid_score, "Zahl")
