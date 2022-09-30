@@ -16,6 +16,7 @@ DEFINE_STRING(game_name_arkanoid, "Arkanoid")
 DEFINE_STRING(game_name_tetris, "Tetris")
 DEFINE_STRING(game_name_snake, "Snake")
 DEFINE_STRING(game_name_pacman, "Pacman")
+DEFINE_STRING(game_name_end_screen, "the End")
 
 DEFINE_STRING(arkanoid_round, "Round")
 DEFINE_STRING(arkanoid_score, "Score")
@@ -36,6 +37,29 @@ DEFINE_STRING(pacman_level, "Level")
 DEFINE_STRING(pacman_score, "Score")
 DEFINE_STRING(pacman_ready, "Ready!")
 DEFINE_STRING(pacman_game_over, "Game Over")
+
+DEFINE_STRING(end_screen_congratulations,
+R"(
+Congratulations, you have won the game!
+)")
+
+DEFINE_STRING(end_screen_authors,
+R"(
+This game was made specially for
+
+GameDev.ru RetroVibe-95 contest (2022).
+
+
+
+Author: "Panzerschrek"
+)")
+
+DEFINE_STRING(end_screen_peace_text,
+R"(
+Let there be peace!
+
+Fuck the war!
+)")
 
 #undef DEFINE_STRING
 

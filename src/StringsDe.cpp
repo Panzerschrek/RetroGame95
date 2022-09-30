@@ -18,6 +18,7 @@ DEFINE_STRING(game_name_arkanoid, "das Verlorenes Raumschiff")
 DEFINE_STRING(game_name_tetris, "der Maurer")
 DEFINE_STRING(game_name_snake, "die Gefreßige Schlange")
 DEFINE_STRING(game_name_pacman, "Packmann")
+DEFINE_STRING(game_name_end_screen, "das Ende")
 
 DEFINE_STRING(arkanoid_round, "Runde")
 DEFINE_STRING(arkanoid_score, "Zahl")
@@ -38,6 +39,33 @@ DEFINE_STRING(pacman_level, "Level")
 DEFINE_STRING(pacman_score, "Zahl")
 DEFINE_STRING(pacman_ready, "Sei bereit!")
 DEFINE_STRING(pacman_game_over, "Spiel ist vorbei")
+
+DEFINE_STRING(end_screen_congratulations,
+R"(
+Gratulieren,
+
+Sie haben das Spiel gewonnen!
+)")
+
+DEFINE_STRING(end_screen_authors,
+R"(
+Diese Spiel wurde für den GameDev.ru
+
+Retrospielwettbewerb (2022) gemacht.
+
+
+
+Author: "Panzerschrek"
+)")
+
+DEFINE_STRING(end_screen_peace_text,
+R"(
+Es werde Frieden!
+
+Fick den Krieg!
+)")
+
+#undef DEFINE_STRING
 
 #undef DEFINE_STRING
 

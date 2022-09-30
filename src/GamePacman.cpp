@@ -1,5 +1,6 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
+#include "GameEndScreen.hpp"
 #include "GameMainMenu.hpp"
 #include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
@@ -47,6 +48,8 @@ constexpr char g_game_field[]=
 constexpr char g_wall_symbol = '#';
 constexpr char g_food_symbol = '.';
 constexpr char g_bonus_deadly_symbol = '@';
+
+const uint32_t g_max_level = 2;
 
 // See https://www.gamedeveloper.com/design/the-pac-man-dossier.
 const fixed16_t g_base_move_speed = g_fixed16_one * 6 / GameInterface::c_update_frequency;
@@ -221,7 +224,14 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	if(bonuses_left_ == 0)
 	{
-		NextLevel();
+		if(level_ < g_max_level)
+		{
+			NextLevel();
+		}
+		else if(next_game_ == nullptr)
+		{
+			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		}
 	}
 }
 
