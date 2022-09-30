@@ -1,7 +1,6 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
 #include "GameMainMenu.hpp"
-#include "GamesCommon.hpp"
 #include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"

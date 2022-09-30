@@ -27,19 +27,11 @@ private:
 		std::array<uint32_t, 2> position{};
 	};
 
-	enum class SnakeDirection
-	{
-		XPlus,
-		XMinus,
-		YPlus,
-		YMinus,
-	};
-
 	struct Snake
 	{
 		// Head segment has index 0.
 		std::vector<SnakeSegment> segments;
-		SnakeDirection direction = SnakeDirection::XPlus;
+		GridDirection direction = GridDirection::XPlus;
 		uint32_t grow_points_ = 0;
 	};
 

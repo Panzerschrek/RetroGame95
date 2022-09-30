@@ -1,5 +1,6 @@
 #pragma once
 #include "GameInterface.hpp"
+#include "GamesCommon.hpp"
 #include "Fixed.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
@@ -20,14 +21,6 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	enum class GridDirection
-	{
-		XPlus,
-		XMinus,
-		YPlus,
-		YMinus,
-	};
-
 	struct ArkanoidBallModifier
 	{
 		fixed16vec2_t velocity{};

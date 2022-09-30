@@ -1,6 +1,14 @@
 #pragma once
 #include "Fixed.hpp"
 
+enum class GridDirection
+{
+	XPlus,
+	XMinus,
+	YPlus,
+	YMinus,
+};
+
 //
 // Arkanoid stuff
 //

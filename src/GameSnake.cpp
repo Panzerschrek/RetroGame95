@@ -82,22 +82,22 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 			if(event.key.keysym.scancode == SDL_SCANCODE_LEFT &&
 				snake_->segments[0].position[0] <= snake_->segments[1].position[0])
 			{
-				snake_->direction = SnakeDirection::XMinus;
+				snake_->direction = GridDirection::XMinus;
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_RIGHT &&
 				snake_->segments[0].position[0] >= snake_->segments[1].position[0])
 			{
-				snake_->direction = SnakeDirection::XPlus;
+				snake_->direction = GridDirection::XPlus;
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_DOWN &&
 				snake_->segments[0].position[1] >= snake_->segments[1].position[1])
 			{
-				snake_->direction = SnakeDirection::YPlus;
+				snake_->direction = GridDirection::YPlus;
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_UP &&
 				snake_->segments[0].position[1] <= snake_->segments[1].position[1])
 			{
-				snake_->direction = SnakeDirection::YMinus;
+				snake_->direction = GridDirection::YMinus;
 			}
 		}
 	}
@@ -547,7 +547,7 @@ void GameSnake::NewField()
 void GameSnake::SpawnSnake()
 {
 	Snake snake;
-	snake.direction = SnakeDirection::YPlus;
+	snake.direction = GridDirection::YPlus;
 
 	const uint32_t c_initial_length = 4;
 	const uint32_t offset = level_ <= 1 ? (c_initial_length - 1) : ((c_field_height + c_initial_length) / 2);
@@ -573,7 +573,7 @@ void GameSnake::MoveSnake()
 	bool hit_obstacle = false;
 	switch(snake_->direction)
 	{
-	case SnakeDirection::XPlus:
+	case GridDirection::XPlus:
 		if(new_segment.position[0] < c_field_width - 1)
 		{
 			new_segment.position[0] += 1;
@@ -583,7 +583,7 @@ void GameSnake::MoveSnake()
 			hit_obstacle = true;
 		}
 		break;
-	case SnakeDirection::XMinus:
+	case GridDirection::XMinus:
 		if(new_segment.position[0] > 0)
 		{
 			new_segment.position[0] -= 1;
@@ -593,7 +593,7 @@ void GameSnake::MoveSnake()
 			hit_obstacle = true;
 		}
 		break;
-	case SnakeDirection::YPlus:
+	case GridDirection::YPlus:
 		if(new_segment.position[1] < c_field_height - 1)
 		{
 			new_segment.position[1] += 1;
@@ -603,7 +603,7 @@ void GameSnake::MoveSnake()
 			hit_obstacle = true;
 		}
 		break;
-	case SnakeDirection::YMinus:
+	case GridDirection::YMinus:
 		if(new_segment.position[1] > 0)
 		{
 			new_segment.position[1] -= 1;
@@ -817,20 +817,20 @@ void GameSnake::ManipulateSnakeAsTetrisPiece(const std::vector<SDL_Event>& event
 
 		if(can_rotate)
 		{
-			SnakeDirection new_direction = snake_->direction;
+			GridDirection new_direction = snake_->direction;
 			switch(snake_->direction)
 			{
-			case SnakeDirection::XPlus:
-				new_direction = SnakeDirection::YMinus;
+			case GridDirection::XPlus:
+				new_direction = GridDirection::YMinus;
 				break;
-			case SnakeDirection::XMinus:
-				new_direction = SnakeDirection::YPlus;
+			case GridDirection::XMinus:
+				new_direction = GridDirection::YPlus;
 				break;
-			case SnakeDirection::YPlus:
-				new_direction = SnakeDirection::XPlus;
+			case GridDirection::YPlus:
+				new_direction = GridDirection::XPlus;
 				break;
-			case SnakeDirection::YMinus:
-				new_direction = SnakeDirection::XMinus;
+			case GridDirection::YMinus:
+				new_direction = GridDirection::XMinus;
 				break;
 			}
 			snake_->direction = new_direction;
