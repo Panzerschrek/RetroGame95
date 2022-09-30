@@ -213,20 +213,40 @@ void DrawArkanoidLevelStartSplash(const FrameBuffer frame_buffer, const uint32_t
 
 void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, const uint32_t score)
 {
-	const uint32_t texts_offset_x = 264;
+	const uint32_t texts_offset_x = frame_buffer.width - 2 * g_glyph_width;
 	const uint32_t texts_offset_y = 32;
 
 	char text[64];
 
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y, Strings::arkanoid_round);
+	DrawText(
+		frame_buffer,
+		g_cga_palette[9],
+		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(Strings::arkanoid_round)),
+		texts_offset_y,
+		Strings::arkanoid_round);
 
 	NumToString(text, sizeof(text), level, 5);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + g_glyph_height * 2, text);
+	DrawText(
+		frame_buffer,
+		g_color_white,
+		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(text)),
+		texts_offset_y + g_glyph_height * 2,
+		text);
 
-	DrawText(frame_buffer, g_cga_palette[9], texts_offset_x, texts_offset_y + 64, Strings::arkanoid_score);
+	DrawText(
+		frame_buffer,
+		g_cga_palette[9],
+		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(Strings::arkanoid_score)),
+		texts_offset_y + g_glyph_height * 8,
+		Strings::arkanoid_score);
 
 	NumToString(text, sizeof(text), score, 5);
-	DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 64 + g_glyph_height * 2, text);
+	DrawText(
+		frame_buffer,
+		g_color_white,
+		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(text)),
+		texts_offset_y + g_glyph_height * 10,
+		text);
 }
 
 uint32_t GetTetrisFieldOffsetX(const FrameBuffer frame_buffer)
@@ -316,17 +336,17 @@ void DrawTetrisStats(const FrameBuffer frame_buffer, const uint32_t level, const
 	const uint32_t field_offset_x = GetTetrisFieldOffsetX(frame_buffer);
 	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
 
-	const uint32_t texts_offset_x = field_offset_x - g_glyph_width * 13;
+	const uint32_t texts_offset_x = field_offset_x - g_glyph_width * 12;
 	const uint32_t texts_offset_y = field_offset_y + block_height * g_tetris_field_height - g_glyph_height * 3;
 
 	char text[64];
 	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, Strings::tetris_level);
-	NumToString(text, sizeof(text), level, 3);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y, text);
+	NumToString(text, sizeof(text), level, 4);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 6, texts_offset_y, text);
 
 	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
-	NumToString(text, sizeof(text), score, 3);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 7, texts_offset_y + g_glyph_height * 2, text);
+	NumToString(text, sizeof(text), score, 4);
+	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 6, texts_offset_y + g_glyph_height * 2, text);
 }
 
 void DrawTetrisField(
