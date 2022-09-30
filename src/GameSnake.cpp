@@ -6,6 +6,7 @@
 #include "Progress.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
+#include "String.hpp"
 #include "Strings.hpp"
 #include <cassert>
 #include <cstring>

@@ -4,6 +4,7 @@
 #include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
 #include "Sprites.hpp"
+#include "String.hpp"
 #include "Strings.hpp"
 #include <cassert>
 

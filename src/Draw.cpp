@@ -1,4 +1,5 @@
 #include "Draw.hpp"
+#include "String.hpp"
 #include <cassert>
 
 namespace
@@ -25,66 +26,6 @@ namespace
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-
-uint32_t ExtractUTF8CodePoint(const char*& ptr)
-{
-	// c_bit_masks[4] - menas save first 4 bits
-	static const uint32_t c_bit_masks[9]=
-	{
-		(1 << 0) - 1,
-		(1 << 1) - 1,
-		(1 << 2) - 1,
-		(1 << 3) - 1,
-		(1 << 4) - 1,
-		(1 << 5) - 1,
-		(1 << 6) - 1,
-		(1 << 7) - 1,
-		(1 << 8) - 1,
-	};
-
-	const char c= *ptr;
-	uint32_t code = 0;
-
-	if( ( c & 0b10000000 ) == 0 )
-	{
-		code = uint32_t(c);
-		++ptr;
-	}
-	else if( ( c & 0b11100000 ) == 0b11000000 )
-	{
-		code=
-			( (uint32_t(ptr[0]) & c_bit_masks[5]) << 6u ) |
-			( (uint32_t(ptr[1]) & c_bit_masks[6]) << 0u );
-
-		ptr += 2;
-	}
-	else if( ( c & 0b11110000 ) == 0b11100000 )
-	{
-		code=
-			( (uint32_t(ptr[0]) & c_bit_masks[4]) << 12u ) |
-			( (uint32_t(ptr[1]) & c_bit_masks[6]) <<  6u ) |
-			( (uint32_t(ptr[2]) & c_bit_masks[6]) <<  0u );
-
-		ptr += 3;
-	}
-	else if( ( c & 0b11111000 ) == 0b11110000 )
-	{
-		code=
-			( (uint32_t(ptr[0]) & c_bit_masks[3]) << 18u ) |
-			( (uint32_t(ptr[1]) & c_bit_masks[6]) << 12u ) |
-			( (uint32_t(ptr[2]) & c_bit_masks[6]) <<  6u ) |
-			( (uint32_t(ptr[3]) & c_bit_masks[6]) <<  0u );
-
-		ptr += 4;
-	}
-	else
-	{
-		// Codes above unicode range - wtf?
-		++ptr;
-	}
-
-	return code;
-}
 
 } // namespace
 

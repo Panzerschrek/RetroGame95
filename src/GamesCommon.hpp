@@ -106,6 +106,3 @@ bool MakeCollisionBetweenObjectAndBox(
 	const fixed16vec2_t& object_half_size,
 	fixed16vec2_t& object_position,
 	fixed16vec2_t& object_velocity);
-
-// Replacement for "snprintf". Do not use it, because it is too heavy.
-void NumToString(char* str, size_t str_len, uint32_t num, uint32_t target_num_digits);

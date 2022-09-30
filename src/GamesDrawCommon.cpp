@@ -2,9 +2,9 @@
 #include "Draw.hpp"
 #include "Sprites.hpp"
 #include "SpriteBMP.hpp"
+#include "String.hpp"
 #include "Strings.hpp"
 #include <cassert>
-#include <cstring>
 
 namespace
 {
@@ -374,8 +374,7 @@ void DrawSnakeStats(
 	for(uint32_t i = 0; i < 4; ++i)
 	{
 		const uint32_t x = (i + 1) * g_glyph_width * 9;
-		// TODO - fix this. strlen works wrongly for UTF-8.
-		const uint32_t len = uint32_t(std::strlen(stats_names[i]));
+		const uint32_t len = uint32_t(UTF8StringLen(stats_names[i]));
 
 		DrawText(
 			frame_buffer,
