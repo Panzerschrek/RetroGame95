@@ -42,6 +42,7 @@ DEFINE_STRING(pacman_level, "Level")
 DEFINE_STRING(pacman_score, "Zahl")
 DEFINE_STRING(pacman_ready, "Sei bereit!")
 DEFINE_STRING(pacman_game_over, "Spiel ist vorbei")
+DEFINE_STRING(pacman_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(end_screen_congratulations,
 R"(

@@ -113,6 +113,7 @@ private:
 	void DrawPacman(FrameBuffer frame_buffer) const;
 	void DrawGhost(FrameBuffer frame_buffer, const Ghost& ghost) const;
 
+	void EndLevel();
 	void NextLevel();
 	void SpawnPacmanAndGhosts();
 	void ProcessShootRequest();
@@ -151,6 +152,7 @@ private:
 
 	Pacman pacman_;
 	uint32_t spawn_animation_end_tick_ = 0;
+	uint32_t level_end_animation_end_tick_ = 0;
 	std::array<Ghost, c_num_ghosts> ghosts_;
 	Bonus bonuses_[c_field_width * c_field_height]{};
 	std::vector<LaserBeam> laser_beams_;

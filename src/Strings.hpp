@@ -40,6 +40,7 @@ DECLARE_STRING(pacman_level)
 DECLARE_STRING(pacman_score)
 DECLARE_STRING(pacman_ready)
 DECLARE_STRING(pacman_game_over)
+DECLARE_STRING(pacman_level_completed)
 
 DECLARE_STRING(end_screen_congratulations)
 DECLARE_STRING(end_screen_authors)
