@@ -15,6 +15,8 @@ enum class MusicId
 {
 	InTaberna,
 	HerrMannelig,
+	RittDerToten,
+	DuHastDenFarbfilmVergessen,
 	NumMelodies,
 };
 

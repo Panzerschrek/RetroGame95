@@ -24,6 +24,8 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 	{
 		{Music::in_taberna, std::size(Music::in_taberna)},
 		{Music::herr_mannelig, std::size(Music::herr_mannelig)},
+		{Music::ritt_der_toten, std::size(Music::ritt_der_toten)},
+		{Music::du_hast_den_farbfilm_vergessen, std::size(Music::du_hast_den_farbfilm_vergessen)},
 	};
 
 	for(size_t i= 0; i < size_t(MusicId::NumMelodies); ++i)
