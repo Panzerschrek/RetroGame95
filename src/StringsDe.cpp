@@ -29,6 +29,7 @@ DEFINE_STRING(tetris_next, "Folgend")
 DEFINE_STRING(tetris_level, "Level: ")
 DEFINE_STRING(tetris_score, "Zahl: ")
 DEFINE_STRING(tetris_game_over, "Spiel ist vorbei")
+DEFINE_STRING(tetris_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(snake_level, "Level")
 DEFINE_STRING(snake_length, "Länge")

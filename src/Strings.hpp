@@ -27,6 +27,7 @@ DECLARE_STRING(tetris_next)
 DECLARE_STRING(tetris_level)
 DECLARE_STRING(tetris_score)
 DECLARE_STRING(tetris_game_over)
+DECLARE_STRING(tetris_level_completed)
 
 DECLARE_STRING(snake_level)
 DECLARE_STRING(snake_length)
