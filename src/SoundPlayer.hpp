@@ -13,7 +13,8 @@ enum class SoundId
 
 enum class MusicId
 {
-	Test,
+	InTaberna,
+	HerrMannelig,
 	NumMelodies,
 };
 

@@ -22,7 +22,8 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 
 	const std::pair<const uint8_t*, size_t> c_music_data[]
 	{
-		{Music::test, std::size(Music::test)},
+		{Music::in_taberna, std::size(Music::in_taberna)},
+		{Music::herr_mannelig, std::size(Music::herr_mannelig)},
 	};
 
 	for(size_t i= 0; i < size_t(MusicId::NumMelodies); ++i)
