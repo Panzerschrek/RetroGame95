@@ -34,6 +34,7 @@ DECLARE_STRING(snake_length)
 DECLARE_STRING(snake_lives)
 DECLARE_STRING(snake_score)
 DECLARE_STRING(snake_game_over)
+DECLARE_STRING(snake_level_completed)
 
 DECLARE_STRING(pacman_level)
 DECLARE_STRING(pacman_score)

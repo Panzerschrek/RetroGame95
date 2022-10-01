@@ -36,6 +36,7 @@ DEFINE_STRING(snake_length, "Länge")
 DEFINE_STRING(snake_lives, "Leben")
 DEFINE_STRING(snake_score, "Zahl")
 DEFINE_STRING(snake_game_over, "Spiel ist vorbei")
+DEFINE_STRING(snake_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(pacman_level, "Level")
 DEFINE_STRING(pacman_score, "Zahl")
