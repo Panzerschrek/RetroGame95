@@ -21,6 +21,7 @@ DECLARE_STRING(game_name_end_screen)
 DECLARE_STRING(arkanoid_round)
 DECLARE_STRING(arkanoid_score)
 DECLARE_STRING(arkanoid_game_over)
+DECLARE_STRING(arkanoid_level_completed)
 
 DECLARE_STRING(tetris_next)
 DECLARE_STRING(tetris_level)

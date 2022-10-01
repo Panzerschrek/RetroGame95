@@ -48,3 +48,8 @@ void SoundPlayer::StopPlaying()
 {
 	sound_out_.StopPlaying();
 }
+
+fixed16_t SoundPlayer::GetMelodyDuration(const MusicId music_id) const
+{
+	return fixed16_t((int64_t(music_[size_t(music_id)].samples.size()) << g_fixed16_base) / int64_t(sound_out_.GetSampleRate()));
+}

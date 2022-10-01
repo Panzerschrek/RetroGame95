@@ -23,6 +23,7 @@ DEFINE_STRING(game_name_end_screen, "das Ende")
 DEFINE_STRING(arkanoid_round, "Runde")
 DEFINE_STRING(arkanoid_score, "Zahl")
 DEFINE_STRING(arkanoid_game_over, "Spiel ist vorbei")
+DEFINE_STRING(arkanoid_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(tetris_next, "Folgend")
 DEFINE_STRING(tetris_level, "Level: ")

@@ -32,6 +32,8 @@ public:
 	void PlayMusic(MusicId music_id);
 	void StopPlaying();
 
+	fixed16_t GetMelodyDuration(MusicId music_id) const;
+
 private:
 	SoundOut& sound_out_;
 	std::array<SoundData, size_t(SoundId::NumSounds)> sounds_;
