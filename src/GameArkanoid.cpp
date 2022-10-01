@@ -425,7 +425,7 @@ void GameArkanoid::EndLevel()
 
 	level_end_animation_end_tick_ =
 		tick_ +
-		Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id)) * GameInterface::c_update_frequency;
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
 }
 
 void GameArkanoid::NextLevel()
