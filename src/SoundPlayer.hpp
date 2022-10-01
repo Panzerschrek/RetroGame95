@@ -17,6 +17,8 @@ enum class MusicId
 	HerrMannelig,
 	RittDerToten,
 	DuHastDenFarbfilmVergessen,
+	InMeinemRaum,
+	HeavyMetal,
 	NumMelodies,
 };
 
