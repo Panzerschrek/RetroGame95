@@ -7,7 +7,7 @@ namespace Strings
 
 #define DEFINE_STRING(x, y) const char x[] = y;
 
-DEFINE_STRING(window_title, "AltesSpiel95")
+DEFINE_STRING(window_title, "Vermischung")
 
 DEFINE_STRING(paused, "angehalten")
 

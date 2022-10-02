@@ -1,4 +1,4 @@
-set(PROJECT_NAME RetroGame95)
+set(PROJECT_NAME Vermischung)
 
 cmake_minimum_required(VERSION 3.10)
 
