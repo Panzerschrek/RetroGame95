@@ -67,6 +67,7 @@ private:
 	static const constexpr uint32_t c_num_bonuses = 3;
 
 private:
+	void EndLevel();
 	void NextLevel();
 	void NewField();
 	void SpawnSnake();
@@ -97,6 +98,7 @@ private:
 	std::array<Bonus, c_num_bonuses> bonuses_;
 	std::optional<uint32_t> death_animation_end_tick_; // Non-empty if is dead.
 	std::optional<uint32_t> field_start_animation_end_tick_; // Non-empty if just started and show game field.
+	std::optional<uint32_t> level_end_animation_end_tick_; // Non-empty if playing level end animation.
 	uint32_t lifes_ = 2;
 	uint32_t level_ = 0;
 	uint32_t score_ = 0;

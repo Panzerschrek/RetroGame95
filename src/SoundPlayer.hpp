@@ -13,7 +13,12 @@ enum class SoundId
 
 enum class MusicId
 {
-	Test,
+	InTaberna,
+	HerrMannelig,
+	RittDerToten,
+	DuHastDenFarbfilmVergessen,
+	InMeinemRaum,
+	HeavyMetal,
 	NumMelodies,
 };
 
@@ -28,6 +33,8 @@ public:
 	void PlaySound(SoundId sound_id);
 	void PlayMusic(MusicId music_id);
 	void StopPlaying();
+
+	fixed16_t GetMelodyDuration(MusicId music_id) const;
 
 private:
 	SoundOut& sound_out_;

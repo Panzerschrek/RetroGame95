@@ -96,7 +96,7 @@ file(GENERATE OUTPUT ${SPRITES_HEADER} CONTENT "${SPRITES_HEADER_CONTENT}")
 # Add music.
 
 set(MUSIC_HEADERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/music)
-file(GLOB MUSIC "../music/*")
+file(GLOB MUSIC "../music/*.mid")
 set(MUSIC_HEADER_CONTENT "")
 foreach(MUSIC_FILE ${MUSIC})
 	get_filename_component(MUSIC_NAME ${MUSIC_FILE} NAME_WE)

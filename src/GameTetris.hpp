@@ -67,7 +67,8 @@ private:
 	static const constexpr uint32_t c_arkanoid_ship_half_width = 16;
 
 private:
-	void OnNextLeveltriggered();
+	void ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state);
+	void EndLevel();
 	void NextLevel();
 	void ProcessShootRequest();
 	void ManipulatePiece(const std::vector<SDL_Event>& events);
@@ -117,7 +118,8 @@ private:
 	uint32_t slow_down_end_tick_ = 0;
 	uint32_t laser_ship_end_tick_ = 0;
 	uint32_t next_shoot_tick_ = 0;
-	bool next_level_triggered_ = false;
+	bool end_level_triggered_ = false;
+	uint32_t level_end_animation_end_tick_ = 0;
 
 	uint32_t pieces_spawnded_ = 0;
 

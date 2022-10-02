@@ -143,126 +143,23 @@ GameTetris::GameTetris(SoundPlayer& sound_player)
 
 void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	if(tick_ >= g_transition_time_show_arkanoid_level_splash)
-	{
-		if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
-		{
-			temp_arkanoid_ship_.position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
-			CorrectArkanoidShipPosition();
-		}
-		if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
-		{
-			temp_arkanoid_ship_.position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
-			CorrectArkanoidShipPosition();
-		}
-	}
-
-	for(const SDL_Event& event : events)
-	{
-		if(event.type == SDL_MOUSEMOTION && tick_ >= g_transition_time_show_arkanoid_level_splash)
-		{
-			temp_arkanoid_ship_.position[0] += event.motion.xrel * g_arkanoid_ship_mouse_move_sensetivity;
-			CorrectArkanoidShipPosition();
-		}
-		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
-		{
-			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
-		}
-		if(event.type == SDL_KEYDOWN &&
-			(event.key.keysym.scancode == SDL_SCANCODE_RCTRL ||
-			 event.key.keysym.scancode == SDL_SCANCODE_LCTRL ||
-			 event.key.keysym.scancode == SDL_SCANCODE_SPACE))
-		{
-			ProcessShootRequest();
-		}
-		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1)
-		{
-			ProcessShootRequest();
-		}
-	}
-
 	++tick_;
 
-	TrySpawnRandomArkanoidBall();
-
-	if(tick_ >= g_transition_time_change_end)
+	if(tick_ == level_end_animation_end_tick_)
 	{
-		ManipulatePiece(events);
-	}
-
-	uint32_t speed = GetSpeedForLevel(level_);
-	if(tick_ <= slow_down_end_tick_)
-	{
-		speed = speed * 3 / 2;
-	}
-
-	if(tick_ % speed == 0)
-	{
-		if(tick_ >= g_transition_time_start_move_blocks_down && tick_ < g_transition_time_finish_move_blocks_down)
+		if(level_ >= g_max_level)
 		{
-			TryMoveWholeFieldDown();
-		}
-		if(tick_ >= g_transition_time_change_end)
-		{
-			MovePieceDown();
-		}
-	}
-
-	for(size_t b = 0; b < arkanoid_balls_.size();)
-	{
-		if(UpdateArkanoidBall(arkanoid_balls_[b]))
-		{
-			// This ball is dead.
-			if(b + 1 < arkanoid_balls_.size())
-			{
-				arkanoid_balls_[b] = arkanoid_balls_.back();
-			}
-			arkanoid_balls_.pop_back();
+			next_game_ = std::make_unique<GameSnake>(sound_player_);
 		}
 		else
 		{
-			++b;
+			NextLevel();
 		}
-	} // for balls.
+	}
 
-	for(size_t b = 0; b < bonuses_.size();)
+	if(tick_ >= level_end_animation_end_tick_)
 	{
-		if(UpdateBonus(bonuses_[b]))
-		{
-			// This bonus is dead.
-			if(b + 1 < bonuses_.size())
-			{
-				bonuses_[b] = bonuses_.back();
-			}
-			bonuses_.pop_back();
-		}
-		else
-		{
-			++b;
-		}
-	} // for bonuses.
-
-	for(size_t b = 0; b < laser_beams_.size();)
-	{
-		if(UpdateLaserBeam(laser_beams_[b]))
-		{
-			// This laser beam is dead.
-			if(b + 1 < laser_beams_.size())
-			{
-				laser_beams_[b] = laser_beams_.back();
-			}
-			laser_beams_.pop_back();
-		}
-		else
-		{
-			++b;
-		}
-	} // for laser beams.
-
-	if(next_level_triggered_)
-	{
-		next_level_triggered_ = false;
-		OnNextLeveltriggered();
+		ProcessLogic(events, keyboard_state);
 	}
 }
 
@@ -418,26 +315,31 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 		Sprites::arkanoid_bonus_s,
 	};
 
-	for(const Bonus& bonus : bonuses_)
-	{
-		const SpriteBMP sprite = bonuses_sprites[size_t(bonus.type)];
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * bonus.position[0])) - sprite.GetWidth () / 2,
-			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * bonus.position[1])) - sprite.GetHeight() / 2);
-	}
+	const bool playing_level_end_animation = tick_ < level_end_animation_end_tick_;
 
-	for(const ArkanoidBall& arkanoid_ball: arkanoid_balls_)
+	if(!playing_level_end_animation)
 	{
-		const SpriteBMP sprite(Sprites::arkanoid_ball);
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * arkanoid_ball.position[0])) - sprite.GetWidth () / 2,
-			field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
+		for(const Bonus& bonus : bonuses_)
+		{
+			const SpriteBMP sprite = bonuses_sprites[size_t(bonus.type)];
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * bonus.position[0])) - sprite.GetWidth () / 2,
+				field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * bonus.position[1])) - sprite.GetHeight() / 2);
+		}
+
+		for(const ArkanoidBall& arkanoid_ball: arkanoid_balls_)
+		{
+			const SpriteBMP sprite(Sprites::arkanoid_ball);
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + uint32_t(Fixed16FloorToInt(int32_t(block_width ) * arkanoid_ball.position[0])) - sprite.GetWidth () / 2,
+				field_offset_y + uint32_t(Fixed16FloorToInt(int32_t(block_height) * arkanoid_ball.position[1])) - sprite.GetHeight() / 2);
+		}
 	}
 
 	if(tick_ < g_transition_time_show_arkanoid_level_splash)
@@ -449,6 +351,16 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawTetrisNextPiece(frame_buffer, next_piece_type_);
 		DrawTetrisStats(frame_buffer, level_, score_);
+	}
+
+	if(playing_level_end_animation)
+	{
+		DrawTextCentered(
+			frame_buffer,
+			g_cga_palette[14],
+			field_offset_x + block_width  * c_field_width  / 2,
+			field_offset_y + block_height * c_field_height / 2,
+			Strings::tetris_level_completed);
 	}
 
 	if(game_over_)
@@ -472,16 +384,142 @@ GameInterfacePtr GameTetris::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
-void GameTetris::OnNextLeveltriggered()
+void GameTetris::ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
-	if(level_ >= g_max_level)
+	if(tick_ >= g_transition_time_show_arkanoid_level_splash)
 	{
-		next_game_ = std::make_unique<GameSnake>(sound_player_);
+		if(keyboard_state.size() > SDL_SCANCODE_LEFT  && keyboard_state[SDL_SCANCODE_LEFT ])
+		{
+			temp_arkanoid_ship_.position[0] -= g_arkanoid_ship_keyboard_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
+		if(keyboard_state.size() > SDL_SCANCODE_RIGHT && keyboard_state[SDL_SCANCODE_RIGHT])
+		{
+			temp_arkanoid_ship_.position[0] += g_arkanoid_ship_keyboard_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
 	}
-	else
+
+	for(const SDL_Event& event : events)
 	{
-		NextLevel();
+		if(event.type == SDL_MOUSEMOTION && tick_ >= g_transition_time_show_arkanoid_level_splash)
+		{
+			temp_arkanoid_ship_.position[0] += event.motion.xrel * g_arkanoid_ship_mouse_move_sensetivity;
+			CorrectArkanoidShipPosition();
+		}
+		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
+		{
+			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
+		}
+		if(event.type == SDL_KEYDOWN &&
+			(event.key.keysym.scancode == SDL_SCANCODE_RCTRL ||
+			 event.key.keysym.scancode == SDL_SCANCODE_LCTRL ||
+			 event.key.keysym.scancode == SDL_SCANCODE_SPACE))
+		{
+			ProcessShootRequest();
+		}
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == 1)
+		{
+			ProcessShootRequest();
+		}
 	}
+
+	TrySpawnRandomArkanoidBall();
+
+	if(tick_ >= g_transition_time_change_end)
+	{
+		ManipulatePiece(events);
+	}
+
+	uint32_t speed = GetSpeedForLevel(level_);
+	if(tick_ <= slow_down_end_tick_)
+	{
+		speed = speed * 3 / 2;
+	}
+
+	if(tick_ % speed == 0)
+	{
+		if(tick_ >= g_transition_time_start_move_blocks_down && tick_ < g_transition_time_finish_move_blocks_down)
+		{
+			TryMoveWholeFieldDown();
+		}
+		if(tick_ >= g_transition_time_change_end)
+		{
+			MovePieceDown();
+		}
+	}
+
+	for(size_t b = 0; b < arkanoid_balls_.size();)
+	{
+		if(UpdateArkanoidBall(arkanoid_balls_[b]))
+		{
+			// This ball is dead.
+			if(b + 1 < arkanoid_balls_.size())
+			{
+				arkanoid_balls_[b] = arkanoid_balls_.back();
+			}
+			arkanoid_balls_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for balls.
+
+	for(size_t b = 0; b < bonuses_.size();)
+	{
+		if(UpdateBonus(bonuses_[b]))
+		{
+			// This bonus is dead.
+			if(b + 1 < bonuses_.size())
+			{
+				bonuses_[b] = bonuses_.back();
+			}
+			bonuses_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for bonuses.
+
+	for(size_t b = 0; b < laser_beams_.size();)
+	{
+		if(UpdateLaserBeam(laser_beams_[b]))
+		{
+			// This laser beam is dead.
+			if(b + 1 < laser_beams_.size())
+			{
+				laser_beams_[b] = laser_beams_.back();
+			}
+			laser_beams_.pop_back();
+		}
+		else
+		{
+			++b;
+		}
+	} // for laser beams.
+
+	if(end_level_triggered_)
+	{
+		end_level_triggered_ = false;
+		EndLevel();
+	}
+}
+
+void GameTetris::EndLevel()
+{
+	if(tick_ < level_end_animation_end_tick_)
+	{
+		return;
+	}
+
+	const MusicId music_id = MusicId::RittDerToten;
+	sound_player_.PlayMusic(music_id);
+
+	level_end_animation_end_tick_ =
+		tick_ +
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
 }
 
 void GameTetris::NextLevel()
@@ -846,7 +884,7 @@ void GameTetris::UpdateScore(const uint32_t lines_removed)
 
 	if(lines_removed_for_this_level_ >= GetNumRemovedLinesForLevelFinish(level_))
 	{
-		OnNextLeveltriggered();
+		EndLevel();
 	}
 }
 
@@ -944,7 +982,7 @@ bool GameTetris::UpdateBonus(Bonus& bonus)
 				switch(bonus.type)
 				{
 				case BonusType::NextLevel:
-					next_level_triggered_ = true;
+					end_level_triggered_ = true;
 					break;
 
 				case BonusType::ArkanoidBallsSpawn:

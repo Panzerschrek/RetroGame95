@@ -25,8 +25,7 @@ void GameEndScreen::Tick(const std::vector<SDL_Event>& events, const std::vector
 	if(!music_started_)
 	{
 		music_started_ = true;
-		// TODO - use special music here.
-		sound_player_.PlayMusic(MusicId::Test);
+		sound_player_.PlayMusic(MusicId::InTaberna);
 	}
 }
 

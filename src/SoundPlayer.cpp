@@ -22,7 +22,12 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 
 	const std::pair<const uint8_t*, size_t> c_music_data[]
 	{
-		{Music::test, std::size(Music::test)},
+		{Music::in_taberna, std::size(Music::in_taberna)},
+		{Music::herr_mannelig, std::size(Music::herr_mannelig)},
+		{Music::ritt_der_toten, std::size(Music::ritt_der_toten)},
+		{Music::du_hast_den_farbfilm_vergessen, std::size(Music::du_hast_den_farbfilm_vergessen)},
+		{Music::in_meinem_raum, std::size(Music::in_meinem_raum)},
+		{Music::heavy_metal, std::size(Music::heavy_metal)},
 	};
 
 	for(size_t i= 0; i < size_t(MusicId::NumMelodies); ++i)
@@ -44,4 +49,9 @@ void SoundPlayer::PlayMusic(const MusicId music_id)
 void SoundPlayer::StopPlaying()
 {
 	sound_out_.StopPlaying();
+}
+
+fixed16_t SoundPlayer::GetMelodyDuration(const MusicId music_id) const
+{
+	return fixed16_t((int64_t(music_[size_t(music_id)].samples.size()) << g_fixed16_base) / int64_t(sound_out_.GetSampleRate()));
 }

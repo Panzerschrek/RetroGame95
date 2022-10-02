@@ -23,22 +23,26 @@ DEFINE_STRING(game_name_end_screen, "das Ende")
 DEFINE_STRING(arkanoid_round, "Runde")
 DEFINE_STRING(arkanoid_score, "Zahl")
 DEFINE_STRING(arkanoid_game_over, "Spiel ist vorbei")
+DEFINE_STRING(arkanoid_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(tetris_next, "Folgend")
 DEFINE_STRING(tetris_level, "Level: ")
 DEFINE_STRING(tetris_score, "Zahl: ")
 DEFINE_STRING(tetris_game_over, "Spiel ist vorbei")
+DEFINE_STRING(tetris_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(snake_level, "Level")
 DEFINE_STRING(snake_length, "Länge")
 DEFINE_STRING(snake_lives, "Leben")
 DEFINE_STRING(snake_score, "Zahl")
 DEFINE_STRING(snake_game_over, "Spiel ist vorbei")
+DEFINE_STRING(snake_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(pacman_level, "Level")
 DEFINE_STRING(pacman_score, "Zahl")
 DEFINE_STRING(pacman_ready, "Sei bereit!")
 DEFINE_STRING(pacman_game_over, "Spiel ist vorbei")
+DEFINE_STRING(pacman_level_completed, "Level ist geschlossen!")
 
 DEFINE_STRING(end_screen_congratulations,
 R"(

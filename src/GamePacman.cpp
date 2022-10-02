@@ -222,16 +222,13 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 		}
 	}
 
+	if(tick_ == level_end_animation_end_tick_)
+	{
+		NextLevel();
+	}
 	if(bonuses_left_ == 0)
 	{
-		if(level_ < g_max_level)
-		{
-			NextLevel();
-		}
-		else if(next_game_ == nullptr)
-		{
-			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
-		}
+		EndLevel();
 	}
 }
 
@@ -432,14 +429,24 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		NumToString(text, sizeof(text), score_, 7);
 		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
 
+		const Color32 center_text_color = g_cga_palette[9 + tick_ / 16 % 7];
 		if(tick_ < spawn_animation_end_tick_)
 		{
 			DrawTextCentered(
 				frame_buffer,
-				g_cga_palette[9 + tick_ / 16 % 7],
+				center_text_color,
 				c_field_width  * c_block_size / 2,
 				c_field_height * c_block_size / 2,
 				Strings::pacman_ready);
+		}
+		if(tick_ < level_end_animation_end_tick_)
+		{
+			DrawTextCentered(
+				frame_buffer,
+				center_text_color,
+				c_field_width  * c_block_size / 2,
+				c_field_height * c_block_size / 2,
+				Strings::pacman_level_completed);
 		}
 		if(game_over_)
 		{
@@ -840,8 +847,32 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) c
 		uint32_t(Fixed16FloorToInt(ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 }
 
+void GamePacman::EndLevel()
+{
+	if(tick_ < level_end_animation_end_tick_)
+	{
+		return;
+	}
+
+	const MusicId music_id = MusicId::HeavyMetal;
+	sound_player_.PlayMusic(music_id);
+
+	level_end_animation_end_tick_ =
+		tick_ +
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
+}
+
 void GamePacman::NextLevel()
 {
+	if(level_ >= g_max_level)
+	{
+		if(next_game_ == nullptr)
+		{
+			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		}
+		return;
+	}
+
 	++level_;
 
 	lifes_ = std::min(lifes_ + 2, g_max_lifes);
@@ -936,7 +967,8 @@ void GamePacman::ProcessShootRequest()
 
 void GamePacman::MovePacman()
 {
-	if(pacman_.dead_animation_end_tick != std::nullopt || tick_ < spawn_animation_end_tick_)
+	if(pacman_.dead_animation_end_tick != std::nullopt ||
+			tick_ < spawn_animation_end_tick_ || tick_ < level_end_animation_end_tick_)
 	{
 		return;
 	}
@@ -1144,7 +1176,7 @@ void GamePacman::MovePacman()
 
 void GamePacman::MoveGhost(Ghost& ghost)
 {
-	if(tick_ < spawn_animation_end_tick_)
+	if(tick_ < spawn_animation_end_tick_ || tick_ < level_end_animation_end_tick_)
 	{
 		return;
 	}

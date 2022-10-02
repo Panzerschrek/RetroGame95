@@ -101,6 +101,7 @@ private:
 private:
 	void ProcessLogic(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state);
 	void ProcessShootRequest();
+	void EndLevel();
 	void NextLevel();
 	void SpawnShip();
 
@@ -140,6 +141,7 @@ private:
 	std::vector<LaserBeam> laser_beams_;
 	bool next_level_exit_is_open_ = false;
 	uint32_t level_start_animation_end_tick_ = 0;
+	uint32_t level_end_animation_end_tick_ = 0;
 
 	uint32_t level_ = 0;
 	uint32_t lifes_ = 3;

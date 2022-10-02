@@ -62,7 +62,8 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 {
 	(void) keyboard_state;
 
-	if(tick_ < g_transition_time_snake_visual_change && field_start_animation_end_tick_ == std::nullopt)
+	if(tick_ < g_transition_time_snake_visual_change &&
+		field_start_animation_end_tick_ == std::nullopt && level_end_animation_end_tick_ == std::nullopt)
 	{
 		ManipulateSnakeAsTetrisPiece(events);
 	}
@@ -115,7 +116,8 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	const uint32_t speed = GetSpeedForLevel(level_);
 	if(tick_ % speed == 0)
 	{
-		if(death_animation_end_tick_ == std::nullopt && field_start_animation_end_tick_ == std::nullopt)
+		if(death_animation_end_tick_ == std::nullopt &&
+			field_start_animation_end_tick_ == std::nullopt && level_end_animation_end_tick_ == std::nullopt)
 		{
 			if(tick_ < g_transition_time_snake_visual_change)
 			{
@@ -172,14 +174,13 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	if(!game_over_ && death_animation_end_tick_ == std::nullopt &&
 		snake_ != std::nullopt && snake_->segments.size() >= GetLengthForNextLevelTransition(level_))
 	{
-		if(level_ >= g_max_level)
-		{
-			next_game_ = std::make_unique<GamePacman>(sound_player_);
-		}
-		else
-		{
-			NextLevel();
-		}
+		EndLevel();
+	}
+
+	if(level_end_animation_end_tick_ != std::nullopt && tick_ >= *level_end_animation_end_tick_)
+	{
+		level_end_animation_end_tick_ = std::nullopt;
+		NextLevel();
 	}
 }
 
@@ -485,6 +486,15 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + c_block_size * c_field_height / 2,
 			text);
 	}
+	if(level_end_animation_end_tick_ != std::nullopt)
+	{
+		DrawTextCentered(
+			frame_buffer,
+			g_color_white,
+			field_offset_x + c_block_size  * c_field_width  / 2,
+			field_offset_y + c_block_size * c_field_height / 2,
+			Strings::snake_level_completed);
+	}
 	if(game_over_)
 	{
 		DrawTextCentered(
@@ -511,8 +521,29 @@ GameInterfacePtr GameSnake::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
+void GameSnake::EndLevel()
+{
+	if(level_end_animation_end_tick_ != std::nullopt)
+	{
+		return;
+	}
+
+	const MusicId music_id = MusicId::InMeinemRaum;
+	sound_player_.PlayMusic(music_id);
+
+	level_end_animation_end_tick_ =
+		tick_ +
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
+}
+
 void GameSnake::NextLevel()
 {
+	if(level_ >= g_max_level)
+	{
+		next_game_ = std::make_unique<GamePacman>(sound_player_);
+		return;
+	}
+
 	++level_;
 
 	NewField();
@@ -1160,7 +1191,8 @@ void GameSnake::TrySpawnTetrisPiece()
 	{
 		return;
 	}
-	if(death_animation_end_tick_ != std::nullopt || field_start_animation_end_tick_ != std::nullopt)
+	if(death_animation_end_tick_ != std::nullopt ||
+		field_start_animation_end_tick_ != std::nullopt || level_end_animation_end_tick_ != std::nullopt)
 	{
 		return;
 	}

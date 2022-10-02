@@ -49,7 +49,19 @@ void GameArkanoid::Tick(const std::vector<SDL_Event>& events, const std::vector<
 		}
 	}
 
-	if(tick_ >= level_start_animation_end_tick_)
+	if(tick_ == level_end_animation_end_tick_)
+	{
+		if(level_ < std::size(arkanoid_levels))
+		{
+			NextLevel();
+		}
+		else
+		{
+			next_game_ = std::make_unique<GameTetris>(sound_player_);
+		}
+	}
+
+	if(tick_ >= level_start_animation_end_tick_ && tick_ >= level_end_animation_end_tick_)
 	{
 		ProcessLogic(events, keyboard_state);
 	}
@@ -65,8 +77,9 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 	DrawArkanoidField(frame_buffer, field_);
 
 	const bool playing_level_start_animation = tick_ < level_start_animation_end_tick_;
+	const bool playing_level_end_animation = tick_ < level_end_animation_end_tick_;
 
-	if(ship_ != std::nullopt && !playing_level_start_animation)
+	if(ship_ != std::nullopt && !playing_level_start_animation && !playing_level_end_animation)
 	{
 		SpriteBMP sprite = Sprites::arkanoid_ship;
 		switch(ship_->state)
@@ -116,7 +129,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 		ship_life_x += sprite.GetWidth() + padding;
 	}
 
-	if(!playing_level_start_animation)
+	if(!playing_level_start_animation && !playing_level_end_animation)
 	{
 		for(const Ball& ball : balls_)
 		{
@@ -175,9 +188,19 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 
 	DrawArakoindStats(frame_buffer, level_, score_);
 
-	if(tick_ < level_start_animation_end_tick_)
+	if(playing_level_start_animation)
 	{
 		DrawArkanoidLevelStartSplash(frame_buffer, level_);
+	}
+
+	if(playing_level_end_animation)
+	{
+		DrawTextCentered(
+			frame_buffer,
+			g_cga_palette[9],
+			field_offset_x + c_block_width  * c_field_width  / 2,
+			field_offset_y + c_block_height * (c_field_height - 6),
+			Strings::arkanoid_level_completed);
 	}
 
 	if(game_over_)
@@ -349,14 +372,7 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 	if(next_level_exit_is_open_ &&
 		ship_ != std::nullopt && ship_->position[0] >= IntToFixed16(c_field_width * c_block_width))
 	{
-		if(level_ < std::size(arkanoid_levels))
-		{
-			NextLevel();
-		}
-		else
-		{
-			next_game_ = std::make_unique<GameTetris>(sound_player_);
-		}
+		EndLevel();
 	}
 }
 
@@ -395,6 +411,21 @@ void GameArkanoid::ProcessShootRequest()
 			ship_->next_shoot_tick = tick_ + g_min_shoot_interval;
 		}
 	}
+}
+
+void GameArkanoid::EndLevel()
+{
+	if(tick_ < level_end_animation_end_tick_)
+	{
+		return;
+	}
+
+	const MusicId music_id = MusicId::DuHastDenFarbfilmVergessen;
+	sound_player_.PlayMusic(music_id);
+
+	level_end_animation_end_tick_ =
+		tick_ +
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
 }
 
 void GameArkanoid::NextLevel()
