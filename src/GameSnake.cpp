@@ -113,11 +113,12 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 
 	TrySpawnTetrisPiece();
 
-	const uint32_t speed = GetSpeedForLevel(level_);
-	if(tick_ % speed == 0)
+	if(death_animation_end_tick_ == std::nullopt &&
+		field_start_animation_end_tick_ == std::nullopt &&
+		level_end_animation_end_tick_ == std::nullopt)
 	{
-		if(death_animation_end_tick_ == std::nullopt &&
-			field_start_animation_end_tick_ == std::nullopt && level_end_animation_end_tick_ == std::nullopt)
+		const uint32_t speed = GetSpeedForLevel(level_);
+		if(tick_ % speed == 0)
 		{
 			if(tick_ < g_transition_time_snake_visual_change)
 			{
@@ -128,28 +129,28 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 				MoveSnake();
 			}
 		}
-	}
-	if(tick_ % speed == speed / 2)
-	{
-		MoveTetrisPieceDown();
-	}
+		if(tick_ % speed == speed / 2)
+		{
+			MoveTetrisPieceDown();
+		}
 
-	for(size_t b = 0; b < arkanoid_balls_.size();)
-	{
-		if(UpdateArkanoidBall(arkanoid_balls_[b]))
+		for(size_t b = 0; b < arkanoid_balls_.size();)
 		{
-			// This ball is dead.
-			if(b + 1 < arkanoid_balls_.size())
+			if(UpdateArkanoidBall(arkanoid_balls_[b]))
 			{
-				arkanoid_balls_[b] = arkanoid_balls_.back();
+				// This ball is dead.
+				if(b + 1 < arkanoid_balls_.size())
+				{
+					arkanoid_balls_[b] = arkanoid_balls_.back();
+				}
+				arkanoid_balls_.pop_back();
 			}
-			arkanoid_balls_.pop_back();
-		}
-		else
-		{
-			++b;
-		}
-	} // for balls.
+			else
+			{
+				++b;
+			}
+		} // for balls.
+	}
 
 	if(field_start_animation_end_tick_ != std::nullopt && tick_ > *field_start_animation_end_tick_)
 	{
