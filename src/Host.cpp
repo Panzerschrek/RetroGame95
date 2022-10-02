@@ -1,6 +1,8 @@
 #include "Host.hpp"
+#include "Draw.hpp"
 #include "GameMainMenu.hpp"
 #include "SoundsGeneration.hpp"
+#include "Strings.hpp"
 #include <thread>
 
 Host::Host()
@@ -37,13 +39,24 @@ bool Host::Loop()
 			{
 				return true;
 			}
-			if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_LEFTBRACKET)
+			if(event.type == SDL_KEYDOWN)
 			{
-				sound_out_.DecreaseVolume();
-			}
-			if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_RIGHTBRACKET)
-			{
-				sound_out_.IncreaseVolume();
+				if(event.key.keysym.scancode == SDL_SCANCODE_LEFTBRACKET)
+				{
+					sound_out_.DecreaseVolume();
+				}
+				if(event.key.keysym.scancode == SDL_SCANCODE_RIGHTBRACKET)
+				{
+					sound_out_.IncreaseVolume();
+				}
+				if(event.key.keysym.scancode == SDL_SCANCODE_PAUSE)
+				{
+					paused_ = !paused_;
+				}
+				if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && paused_)
+				{
+					paused_ = false;
+				}
 			}
 		}
 
@@ -57,16 +70,39 @@ bool Host::Loop()
 			sound_out_.StopPlaying();
 		}
 
-		SDL_SetRelativeMouseMode(game_->NeedToCaptureMouse() ? SDL_TRUE : SDL_FALSE);
+		SDL_SetRelativeMouseMode((!paused_ && game_->NeedToCaptureMouse()) ? SDL_TRUE : SDL_FALSE);
 
-		game_->Tick(events, keyboard_state);
+		if(!paused_)
+		{
+			game_->Tick(events, keyboard_state);
+		}
 	} // For game logic iterations.
 
 	system_window_.BeginFrame();
 
+	const FrameBuffer frame_buffer = system_window_.GetFrameBuffer();
 	if(game_ != nullptr)
 	{
-		game_->Draw(system_window_.GetFrameBuffer());
+		game_->Draw(frame_buffer);
+	}
+
+	if(paused_)
+	{
+		const uint8_t colors[2] = {8, 15};
+		const uint32_t index = prev_tick_time_ / 300 % 2;
+		const Color32 color_main = g_cga_palette[colors[index]];
+		const Color32 color_outline = g_cga_palette[colors[index ^ 1]];
+		const uint32_t offset_x = frame_buffer.width  / 2;
+		const uint32_t offset_y = frame_buffer.height / 2;
+		const char* const text = Strings::paused;
+
+		for(uint32_t dx = 0; dx < 3; ++dx)
+		for(uint32_t dy = 0; dy < 3; ++dy)
+		{
+			DrawTextCentered(frame_buffer, color_outline, offset_x + dx - 1, offset_y + dy - 1, text);
+		}
+
+		DrawTextCentered(frame_buffer, color_main, offset_x, offset_y, text);
 	}
 
 	system_window_.EndFrame();

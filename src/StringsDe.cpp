@@ -9,6 +9,8 @@ namespace Strings
 
 DEFINE_STRING(window_title, "AltesSpiel95")
 
+DEFINE_STRING(paused, "angehalten")
+
 DEFINE_STRING(main_menu_new_game, "Neues Spiel")
 DEFINE_STRING(main_menu_continue_game, "Weiter spielen")
 DEFINE_STRING(main_menu_select_game, "Spiel auswählen")

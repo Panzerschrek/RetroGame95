@@ -25,6 +25,7 @@ Spielen Sie es bis zum Ende!
 * "=" - das Fenster vergrößern
 * "[" - leiser
 * "]" - lauter
+* "Pause" - Spiel anhalten
 
 
 ### Autor

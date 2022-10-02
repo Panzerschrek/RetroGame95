@@ -33,4 +33,5 @@ private:
 	TimePoint prev_tick_time_;
 
 	GameInterfacePtr game_ = nullptr;
+	bool paused_ = false;
 };
