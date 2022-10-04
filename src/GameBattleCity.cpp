@@ -10,7 +10,10 @@ namespace
 {
 
 const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
+const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
+
 const fixed16_t g_player_half_size = g_fixed16_one;
+const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
 } // namespace
 
@@ -28,6 +31,8 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 
 void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
 {
+	++tick_;
+
 	for(const SDL_Event& event : events)
 	{
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
@@ -40,6 +45,23 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 	{
 		ProcessPlayerInput(keyboard_state);
 	}
+
+	for(size_t p = 0; p < projectiles_.size();)
+	{
+		if(UpdateProjectile(projectiles_[p]))
+		{
+			// This projectile is dead.
+			if(p + 1 < projectiles_.size())
+			{
+				projectiles_[p] = projectiles_.back();
+			}
+			projectiles_.pop_back();
+		}
+		else
+		{
+			++p;
+		}
+	} // for projectilrs.
 }
 
 void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
@@ -119,15 +141,34 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + x - sprite.GetWidth () / 2,
 			field_offset_y + y - sprite.GetHeight() / 2);
+	}
 
-		// TODO - draw real projectiles.
-		const SpriteBMP sprite_projectile(Sprites::battle_city_projectile);
-		DrawSpriteWithAlpha(
+	for(const Projectile& projectile : projectiles_)
+	{
+		auto func = DrawSpriteWithAlpha;
+		switch(projectile.direction)
+		{
+		case GridDirection::XMinus:
+			func = DrawSpriteWithAlphaRotate270;
+			break;
+		case GridDirection::XPlus:
+			func = DrawSpriteWithAlphaRotate90;
+			break;
+		case GridDirection::YMinus:
+			func = DrawSpriteWithAlpha;
+			break;
+		case GridDirection::YPlus:
+			func = DrawSpriteWithAlphaRotate180;
+			break;
+		}
+
+		const SpriteBMP sprite(Sprites::battle_city_projectile);
+		func(
 			frame_buffer,
-			sprite_projectile,
+			sprite,
 			0,
-			field_offset_x + x - sprite_projectile.GetWidth () / 2,
-			field_offset_y + y - 10 - sprite_projectile.GetHeight() / 2);
+			field_offset_x + uint32_t(Fixed16FloorToInt(projectile.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(projectile.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
 	// Draw foliage after player and enemies.
@@ -220,6 +261,72 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	{
 		player_->position[1] = border_y_end;
 	}
+
+	// Shoot.
+	if(keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)])
+	{
+		// TODO - fix this - do not allow more than one active projectile.
+		if(tick_ >= player_->next_shot_tick)
+		{
+			player_->next_shot_tick = tick_ + 100;
+
+			Projectile projectile;
+			projectile.position = player_->position;
+			projectile.direction = player_->direction;
+
+			const fixed16_t offset = g_player_half_size + g_projectile_half_size;
+
+			switch (projectile.direction)
+			{
+			case GridDirection::XPlus:
+				projectile.position[0] += offset;
+				break;
+			case GridDirection::XMinus:
+				projectile.position[0] -= offset;
+				break;
+			case GridDirection::YPlus:
+				projectile.position[1] += offset;
+				break;
+			case GridDirection::YMinus:
+				projectile.position[1] -= offset;
+				break;
+			}
+
+			projectiles_.push_back(projectile);
+		}
+	}
+}
+
+bool GameBattleCity::UpdateProjectile(Projectile& projectile)
+{
+	switch (projectile.direction)
+	{
+	case GridDirection::XPlus:
+		projectile.position[0] += g_projectile_speed;
+		break;
+	case GridDirection::XMinus:
+		projectile.position[0] -= g_projectile_speed;
+		break;
+	case GridDirection::YPlus:
+		projectile.position[1] += g_projectile_speed;
+		break;
+	case GridDirection::YMinus:
+		projectile.position[1] -= g_projectile_speed;
+		break;
+	}
+
+	const fixed16_t border_x_start = 0 + g_projectile_half_size;
+	const fixed16_t border_x_end   = IntToFixed16(int32_t(c_field_width )) - g_projectile_half_size;
+	const fixed16_t border_y_start = 0 + g_projectile_half_size;
+	const fixed16_t border_y_end   = IntToFixed16(int32_t(c_field_height)) - g_projectile_half_size;
+
+	if( projectile.position[0] <= border_x_start || projectile.position[0] >= border_x_end ||
+		projectile.position[1] <= border_y_start || projectile.position[1] >= border_y_end)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 bool GameBattleCity::CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const
