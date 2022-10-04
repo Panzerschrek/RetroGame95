@@ -47,6 +47,8 @@ private:
 private:
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
 
+	bool CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const;
+
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
 

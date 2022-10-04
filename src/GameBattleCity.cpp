@@ -126,30 +126,38 @@ GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 
 void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 {
-	// TODO - do not allow to move towards walls.
+	fixed16vec2_t new_position = player_->position;
+
 	if(keyboard_state.size() > size_t(SDL_SCANCODE_LEFT) && keyboard_state[size_t(SDL_SCANCODE_LEFT)])
 	{
 		player_->direction = GridDirection::XMinus;
-		player_->position[0] -= g_player_speed;
-		player_->position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
+		new_position[0] -= g_player_speed;
+		new_position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
 	}
 	else if(keyboard_state.size() > size_t(SDL_SCANCODE_RIGHT) && keyboard_state[size_t(SDL_SCANCODE_RIGHT)])
 	{
 		player_->direction = GridDirection::XPlus;
-		player_->position[0] += g_player_speed;
-		player_->position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
+		new_position[0] += g_player_speed;
+		new_position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
 	}
 	else if(keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)])
 	{
 		player_->direction = GridDirection::YMinus;
-		player_->position[1] -= g_player_speed;
-		player_->position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
+		new_position[1] -= g_player_speed;
+		new_position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
 	}
 	else if(keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)])
 	{
 		player_->direction = GridDirection::YPlus;
-		player_->position[1] += g_player_speed;
-		player_->position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
+		new_position[1] += g_player_speed;
+		new_position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
+	}
+
+	if(CanMove(
+		{new_position[0] - g_player_half_size, new_position[1] - g_player_half_size},
+		{new_position[0] + g_player_half_size, new_position[1] + g_player_half_size}))
+	{
+		player_->position = new_position;
 	}
 
 	// Correct player position - do not allow to move outside field borders.
@@ -174,6 +182,33 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	{
 		player_->position[1] = border_y_end;
 	}
+}
+
+bool GameBattleCity::CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const
+{
+	const int32_t min_x = Fixed16FloorToInt(min[0]);
+	const int32_t min_y = Fixed16FloorToInt(min[1]);
+	const int32_t max_x = Fixed16CeilToInt(max[0]);
+	const int32_t max_y = Fixed16CeilToInt(max[1]);
+
+	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
+	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
+	{
+		const Block& block = field_[uint32_t(x) + uint32_t(y) * c_field_width];
+		if(block.type == BlockType::Empty || block.type == BlockType::Foliage)
+		{
+			continue;
+		}
+		if(block.destruction_mask == 0)
+		{
+			continue;
+		}
+
+		// Solid block - can't move.
+		return false;
+	}
+
+	return true;
 }
 
 void GameBattleCity::FillField(const char* field_data)
