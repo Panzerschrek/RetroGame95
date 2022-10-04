@@ -70,11 +70,12 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		Sprites::battle_city_block_water,
 	};
 
+	// Draw field except foliage.
 	for(uint32_t y = 0; y < c_field_height; ++y)
 	for(uint32_t x = 0; x < c_field_width ; ++x)
 	{
 		const Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty || block.destruction_mask == 0)
+		if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.destruction_mask == 0)
 		{
 			continue;
 		}
@@ -93,27 +94,44 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		switch(player_->direction)
 		{
 		case GridDirection::XMinus:
-			func = DrawSpriteWithAlphaRotate180;
-			break;
-		case GridDirection::XPlus:
-			func = DrawSpriteWithAlpha;
-			break;
-		case GridDirection::YMinus:
 			func = DrawSpriteWithAlphaRotate270;
 			break;
-		case GridDirection::YPlus:
+		case GridDirection::XPlus:
 			func = DrawSpriteWithAlphaRotate90;
+			break;
+		case GridDirection::YMinus:
+			func = DrawSpriteWithAlpha;
+			break;
+		case GridDirection::YPlus:
+			func = DrawSpriteWithAlphaRotate180;
 			break;
 		}
 
-		// TODO - use proper sprite.
-		const SpriteBMP sprite(Sprites::pacman_2);
+		const SpriteBMP sprite(Sprites::battle_city_player);
 		func(
 			frame_buffer,
 			sprite,
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
 			field_offset_y + uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+
+	// Draw foliage after player and enemies.
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	for(uint32_t x = 0; x < c_field_width ; ++x)
+	{
+		const Block& block = field_[x + y * c_field_width];
+		if(block.type != BlockType::Foliage || block.destruction_mask == 0)
+		{
+			continue;
+		}
+
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			block_sprites[size_t(BlockType::Foliage)],
+			0,
+			field_offset_x + x * c_block_size,
+			field_offset_y + y * c_block_size);
 	}
 
 	// Base.
