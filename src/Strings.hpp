@@ -18,6 +18,7 @@ DECLARE_STRING(game_name_arkanoid)
 DECLARE_STRING(game_name_tetris)
 DECLARE_STRING(game_name_snake)
 DECLARE_STRING(game_name_pacman)
+DECLARE_STRING(game_name_battle_city)
 DECLARE_STRING(game_name_end_screen)
 
 DECLARE_STRING(arkanoid_round)

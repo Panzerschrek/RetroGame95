@@ -18,6 +18,7 @@ DEFINE_STRING(game_name_arkanoid, "Arkanoid")
 DEFINE_STRING(game_name_tetris, "Tetris")
 DEFINE_STRING(game_name_snake, "Snake")
 DEFINE_STRING(game_name_pacman, "Pacman")
+DEFINE_STRING(game_name_battle_city, "Battle City")
 DEFINE_STRING(game_name_end_screen, "the End")
 
 DEFINE_STRING(arkanoid_round, "Round")

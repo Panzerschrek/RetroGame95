@@ -1,6 +1,7 @@
 #include "GameMainMenu.hpp"
 #include "Draw.hpp"
 #include "GameArkanoid.hpp"
+#include "GameBattleCity.hpp"
 #include "GameEndScreen.hpp"
 #include "GamePacman.hpp"
 #include "GameSnake.hpp"
@@ -22,6 +23,7 @@ GameInterfacePtr CreateGameById(const GameId id, SoundPlayer& sound_player)
 	case GameId::Tetris: return std::make_unique<GameTetris>(sound_player);
 	case GameId::Snake: return std::make_unique<GameSnake>(sound_player);
 	case GameId::Pacman: return std::make_unique<GamePacman>(sound_player);
+	case GameId::BattleCity: return std::make_unique<GameBattleCity>(sound_player);
 	case GameId::EndScreen: return std::make_unique<GameEndScreen>(sound_player);
 	case GameId::NumGames: break;
 	}
@@ -201,6 +203,7 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 			Strings::game_name_tetris,
 			Strings::game_name_snake,
 			Strings::game_name_pacman,
+			Strings::game_name_battle_city,
 			Strings::game_name_end_screen,
 		};
 		for(uint32_t i = 0; i < uint32_t(SelectGameMenuRow::NumGames); ++i)
