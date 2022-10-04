@@ -20,7 +20,7 @@ private:
 	enum class BlockType
 	{
 		Empty,
-		Brick,
+		Bricks,
 		Concrete,
 		Foliage,
 		Water,

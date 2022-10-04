@@ -61,15 +61,13 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	FillRect(frame_buffer, border_color, 0, field_offset_y, field_offset_x, field_height);
 	FillRect(frame_buffer, border_color, field_x_end, field_offset_y, frame_buffer.width - field_x_end, field_height);
 
-	// TODO - use proper sprites.
 	const SpriteBMP block_sprites[]
 	{
-		Sprites::tetris_block_small_4,
-		Sprites::tetris_block_small_7,
-		Sprites::tetris_block_small_5,
-		Sprites::tetris_block_small_1,
-		Sprites::tetris_block_small_2,
-		Sprites::tetris_block_small_6,
+		Sprites::battle_city_block_bricks,
+		Sprites::battle_city_block_bricks,
+		Sprites::battle_city_block_concrete,
+		Sprites::battle_city_block_foliage,
+		Sprites::battle_city_block_water,
 	};
 
 	for(uint32_t y = 0; y < c_field_height; ++y)
@@ -117,6 +115,14 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_x + uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
 			field_offset_y + uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
+
+	// Base.
+	DrawSpriteWithAlpha(
+		frame_buffer,
+		Sprites::battle_city_eagle,
+		0,
+		field_offset_x + c_block_size * (c_field_width / 2 - 1),
+		field_offset_y + c_block_size * (c_field_height - 2));
 }
 
 GameInterfacePtr GameBattleCity::AskForNextGameTransition()
@@ -234,7 +240,7 @@ GameBattleCity::BlockType GameBattleCity::GetBlockTypeForLevelDataByte(const cha
 {
 	switch(b)
 	{
-	case '=': return BlockType::Brick;
+	case '=': return BlockType::Bricks;
 	case '#': return BlockType::Concrete;
 	case '%': return BlockType::Foliage;
 	case '~': return BlockType::Water;
