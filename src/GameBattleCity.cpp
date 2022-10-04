@@ -119,6 +119,15 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + x - sprite.GetWidth () / 2,
 			field_offset_y + y - sprite.GetHeight() / 2);
+
+		// TODO - draw real projectiles.
+		const SpriteBMP sprite_projectile(Sprites::battle_city_projectile);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite_projectile,
+			0,
+			field_offset_x + x - sprite_projectile.GetWidth () / 2,
+			field_offset_y + y - 10 - sprite_projectile.GetHeight() / 2);
 	}
 
 	// Draw foliage after player and enemies.
