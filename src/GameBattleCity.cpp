@@ -107,13 +107,18 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			break;
 		}
 
-		const SpriteBMP sprite(Sprites::battle_city_player);
+		const uint32_t x = uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size)));
+		const uint32_t y = uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size)));
+
+		const bool use_a = ((x ^ y) & 1) != 0;
+
+		const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
 		func(
 			frame_buffer,
 			sprite,
 			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
-			field_offset_y + uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+			field_offset_x + x - sprite.GetWidth () / 2,
+			field_offset_y + y - sprite.GetHeight() / 2);
 	}
 
 	// Draw foliage after player and enemies.
