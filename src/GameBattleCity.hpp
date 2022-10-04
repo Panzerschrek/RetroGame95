@@ -22,7 +22,7 @@ private:
 		Empty,
 		Brick,
 		Concrete,
-		Trees,
+		Foliage,
 		Water,
 	};
 
@@ -46,6 +46,9 @@ private:
 
 private:
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
+
+	void FillField(const char* field_data);
+	static BlockType GetBlockTypeForLevelDataByte(char b);
 
 private:
 	SoundPlayer& sound_player_;

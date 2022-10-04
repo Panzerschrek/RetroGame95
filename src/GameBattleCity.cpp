@@ -1,8 +1,10 @@
 #include "GameBattleCity.hpp"
+#include "BattleCityLevels.hpp"
 #include "GameMainMenu.hpp"
 #include "Draw.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
+#include <cassert>
 
 namespace
 {
@@ -15,16 +17,10 @@ const fixed16_t g_player_half_size = g_fixed16_one;
 GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 {
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
-	{
-		Block& block = field_[x + y * c_field_width];
-		block.type = BlockType((y + x) % 5);
-		block.destruction_mask = 0xF;
-	}
+	FillField(battle_city_level_0);
 
 	Player player;
-	player.position = {IntToFixed16(int32_t(c_field_width / 2 - 2)), IntToFixed16(int32_t(c_field_height - 1))};
+	player.position = {IntToFixed16(int32_t(c_field_width / 2 - 4)), IntToFixed16(int32_t(c_field_height - 1))};
 	player.direction = GridDirection::YMinus;
 
 	player_ = player;
@@ -178,4 +174,35 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	{
 		player_->position[1] = border_y_end;
 	}
+}
+
+void GameBattleCity::FillField(const char* field_data)
+{
+	for(uint32_t y = 0; y < c_field_height; ++y)
+	{
+		for(uint32_t x = 0; x < c_field_width; ++x, ++field_data)
+		{
+			Block& block = field_[x + y * c_field_width];
+			block.type = GetBlockTypeForLevelDataByte(*field_data);
+
+			if(block.type != BlockType::Empty)
+			{
+				block.destruction_mask = 0xF;
+			}
+		}
+		assert(*field_data == '\n');
+		++field_data;
+	}
+}
+
+GameBattleCity::BlockType GameBattleCity::GetBlockTypeForLevelDataByte(const char b)
+{
+	switch(b)
+	{
+	case '=': return BlockType::Brick;
+	case '#': return BlockType::Concrete;
+	case '%': return BlockType::Foliage;
+	case '~': return BlockType::Water;
+	default: return BlockType::Empty;
+	};
 }
