@@ -14,7 +14,7 @@
 namespace
 {
 
-const uint32_t g_max_lifes = 6;
+const uint32_t g_max_lives = 6;
 const uint32_t g_max_level = 3;
 
 const uint32_t g_min_snake_len = 3;
@@ -160,9 +160,9 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 	if(death_animation_end_tick_ != std::nullopt && tick_ >= *death_animation_end_tick_)
 	{
 		death_animation_end_tick_ = std::nullopt;
-		if(lifes_ > 0)
+		if(lives_ > 0)
 		{
-			--lifes_;
+			--lives_;
 			NewField();
 		}
 		else
@@ -511,7 +511,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		DrawSnakeStats(
 			frame_buffer,
 			uint32_t(snake_ == std::nullopt ? 0 : snake_->segments.size()),
-			lifes_,
+			lives_,
 			level_,
 			score_);
 	}
@@ -689,7 +689,7 @@ void GameSnake::MoveSnake()
 				snake_->grow_points_ += g_grow_points_per_food_piece_large;
 				break;
 			case BonusType::ExtraLife:
-				lifes_ = std::min(lifes_ + 1, g_max_lifes);
+				lives_ = std::min(lives_ + 1, g_max_lives);
 				break;
 			case BonusType::NumTypes:
 				assert(false);

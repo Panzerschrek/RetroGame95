@@ -18,7 +18,7 @@ const fixed16_t g_bonus_drop_speed = g_fixed16_one / 2;
 const fixed16_t g_laser_beam_speed = g_fixed16_one * 2;
 
 const uint32_t g_bonus_drop_inv_chance = 7;
-const uint32_t g_max_lifes = 6;
+const uint32_t g_max_lives = 6;
 const uint32_t g_ship_modifier_bonus_duration = 500;
 const uint32_t g_slow_down_bonus_duration = 960;
 const uint32_t g_death_animation_duration = 120;
@@ -116,7 +116,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	for(uint32_t i = 0, ship_life_x = 0; i < lifes_; ++i)
+	for(uint32_t i = 0, ship_life_x = 0; i < lives_; ++i)
 	{
 		const uint32_t padding = 3;
 		const SpriteBMP sprite(Sprites::arkanoid_ship_life);
@@ -334,9 +334,9 @@ void GameArkanoid::ProcessLogic(const std::vector<SDL_Event>& events, const std:
 	{
 		if(death_animation_->end_tick <= tick_)
 		{
-			if(lifes_ > 0)
+			if(lives_ > 0)
 			{
-				--lifes_;
+				--lives_;
 				SpawnShip();
 			}
 			else
@@ -432,9 +432,9 @@ void GameArkanoid::NextLevel()
 {
 	++level_;
 
-	if(lifes_ < 3)
+	if(lives_ < 3)
 	{
-		lifes_ += 1;
+		lives_ += 1;
 	}
 
 	balls_.clear();
@@ -657,7 +657,7 @@ bool GameArkanoid::UpdateBonus(Bonus& bonus)
 				break;
 
 			case BonusType::ExtraLife:
-				lifes_ = std::min(lifes_ + 1, g_max_lifes);
+				lives_ = std::min(lives_ + 1, g_max_lives);
 				break;
 
 			case BonusType::SlowDown:

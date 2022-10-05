@@ -33,7 +33,7 @@ DEFINE_STRING(tetris_level_completed, "Level completed!")
 
 DEFINE_STRING(snake_level, "level")
 DEFINE_STRING(snake_length, "length")
-DEFINE_STRING(snake_lives, "lifes")
+DEFINE_STRING(snake_lives, "lives")
 DEFINE_STRING(snake_score, "score")
 DEFINE_STRING(snake_game_over, "game over")
 DEFINE_STRING(snake_level_completed, "level completed!")

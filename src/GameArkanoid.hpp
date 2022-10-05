@@ -144,7 +144,7 @@ private:
 	uint32_t level_end_animation_end_tick_ = 0;
 
 	uint32_t level_ = 0;
-	uint32_t lifes_ = 3;
+	uint32_t lives_ = 3;
 	uint32_t score_ = 0;
 
 	uint32_t slow_down_end_tick_ = 0;

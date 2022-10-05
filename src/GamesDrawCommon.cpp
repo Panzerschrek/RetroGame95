@@ -381,7 +381,7 @@ void DrawTetrisField(
 void DrawSnakeStats(
 	const FrameBuffer frame_buffer,
 	const uint32_t length,
-	const uint32_t lifes,
+	const uint32_t lives,
 	const uint32_t level,
 	const uint32_t score)
 {
@@ -389,7 +389,7 @@ void DrawSnakeStats(
 
 	const char* const stats_names[]
 		{Strings::snake_length, Strings::snake_lives, Strings::snake_level, Strings::snake_score};
-	const uint32_t stats[]{length, lifes, level, score};
+	const uint32_t stats[]{length, lives, level, score};
 	const uint8_t stats_colors[]{6, 4, 1, 2};
 	for(uint32_t i = 0; i < 4; ++i)
 	{

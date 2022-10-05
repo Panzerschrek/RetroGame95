@@ -99,7 +99,7 @@ private:
 	std::optional<uint32_t> death_animation_end_tick_; // Non-empty if is dead.
 	std::optional<uint32_t> field_start_animation_end_tick_; // Non-empty if just started and show game field.
 	std::optional<uint32_t> level_end_animation_end_tick_; // Non-empty if playing level end animation.
-	uint32_t lifes_ = 2;
+	uint32_t lives_ = 2;
 	uint32_t level_ = 0;
 	uint32_t score_ = 0;
 	bool game_over_ = false;

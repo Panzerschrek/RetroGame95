@@ -76,7 +76,7 @@ const uint32_t g_bonuses_eaten_for_pinky_release = 0;
 const uint32_t g_bonuses_eaten_for_inky_release = g_bonuses_eaten_for_pinky_release + 30;
 const uint32_t g_bonuses_eaten_for_clyde_release = g_bonuses_eaten_for_inky_release + 45;
 
-const uint32_t g_max_lifes = 8;
+const uint32_t g_max_lives = 8;
 
 const uint32_t g_score_for_food = 10;
 const uint32_t g_score_for_deadly_bonus = 30;
@@ -211,9 +211,9 @@ void GamePacman::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 	if(!game_over_ && pacman_.dead_animation_end_tick != std::nullopt && tick_ > *pacman_.dead_animation_end_tick)
 	{
-		if(lifes_ > 0)
+		if(lives_ > 0)
 		{
-			--lifes_;
+			--lives_;
 			SpawnPacmanAndGhosts();
 		}
 		else
@@ -240,7 +240,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 	if(tick_ < g_transition_time_hide_snake_stats)
 	{
-		DrawSnakeStats(frame_buffer, 4, lifes_, level_, score_);
+		DrawSnakeStats(frame_buffer, 4, lives_, level_, score_);
 	}
 
 	const SpriteBMP snake_border_sprite( Sprites::snake_field_border);
@@ -396,7 +396,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 	if(tick_ >= g_transition_time_show_pacman_stats)
 	{
 		const SpriteBMP life_spirte(Sprites::pacman_life);
-		for(uint32_t i = 0; i < lifes_; ++i)
+		for(uint32_t i = 0; i < lives_; ++i)
 		{
 			DrawSpriteWithAlpha(
 				frame_buffer,
@@ -875,7 +875,7 @@ void GamePacman::NextLevel()
 
 	++level_;
 
-	lifes_ = std::min(lifes_ + 2, g_max_lifes);
+	lives_ = std::min(lives_ + 2, g_max_lives);
 
 	bonuses_left_ = 0;
 	for(uint32_t y = 0; y < c_field_height; ++y)
@@ -1732,7 +1732,7 @@ void GamePacman::PickUpBonus(Bonus& bonus)
 	}
 	if(bonus == Bonus::SnakeExtraLife)
 	{
-		lifes_ = std::min(lifes_ + 1, g_max_lifes);
+		lives_ = std::min(lives_ + 1, g_max_lives);
 		sound_player_.PlaySound(SoundId::TetrisFigureStep);
 	}
 
