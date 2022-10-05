@@ -12,8 +12,10 @@ namespace
 const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
 
-const fixed16_t g_player_half_size = g_fixed16_one;
+const fixed16_t g_tank_half_size = g_fixed16_one;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
+
+const size_t g_max_alive_enemies = 3;
 
 uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
 {
@@ -22,10 +24,29 @@ uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
 	return 1 << (x | (y << 1));
 }
 
+using DrawFunc = void(*)(FrameBuffer, SpriteBMP, uint8_t, uint32_t, uint32_t);
+DrawFunc GetDrawFuncForDirection(const GridDirection direction)
+{
+	switch(direction)
+	{
+	case GridDirection::XMinus:
+		return DrawSpriteWithAlphaRotate270;
+	case GridDirection::XPlus:
+		return DrawSpriteWithAlphaRotate90;
+	case GridDirection::YMinus:
+		return DrawSpriteWithAlpha;
+	case GridDirection::YPlus:
+		return DrawSpriteWithAlphaRotate180;
+	}
+	assert(false);
+	return DrawSpriteWithAlpha;
+}
+
 } // namespace
 
 GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
+	, rand_(Rand::CreateWithRandomSeed())
 {
 	FillField(battle_city_level_0);
 
@@ -68,7 +89,12 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		{
 			++p;
 		}
-	} // for projectilrs.
+	} // for projectiles.
+
+	if(enemies_.size() < g_max_alive_enemies && (tick_ % GameInterface::c_update_frequency) == 0)
+	{
+		SpawnNewEnemy();
+	}
 }
 
 void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
@@ -141,30 +167,13 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	if(player_ != std::nullopt)
 	{
-		auto func = DrawSpriteWithAlpha;
-		switch(player_->direction)
-		{
-		case GridDirection::XMinus:
-			func = DrawSpriteWithAlphaRotate270;
-			break;
-		case GridDirection::XPlus:
-			func = DrawSpriteWithAlphaRotate90;
-			break;
-		case GridDirection::YMinus:
-			func = DrawSpriteWithAlpha;
-			break;
-		case GridDirection::YPlus:
-			func = DrawSpriteWithAlphaRotate180;
-			break;
-		}
-
 		const uint32_t x = uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size)));
 		const uint32_t y = uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size)));
 
 		const bool use_a = ((x ^ y) & 1) != 0;
 
 		const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
-		func(
+		GetDrawFuncForDirection(player_->direction)(
 			frame_buffer,
 			sprite,
 			0,
@@ -172,27 +181,21 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + y - sprite.GetHeight() / 2);
 	}
 
+	for(const Enemy& enemy : enemies_)
+	{
+		const SpriteBMP sprite(Sprites::battle_city_enemy_tank);
+		GetDrawFuncForDirection(enemy.direction)(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(enemy.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(enemy.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+
 	for(const Projectile& projectile : projectiles_)
 	{
-		auto func = DrawSpriteWithAlpha;
-		switch(projectile.direction)
-		{
-		case GridDirection::XMinus:
-			func = DrawSpriteWithAlphaRotate270;
-			break;
-		case GridDirection::XPlus:
-			func = DrawSpriteWithAlphaRotate90;
-			break;
-		case GridDirection::YMinus:
-			func = DrawSpriteWithAlpha;
-			break;
-		case GridDirection::YPlus:
-			func = DrawSpriteWithAlphaRotate180;
-			break;
-		}
-
 		const SpriteBMP sprite(Sprites::battle_city_projectile);
-		func(
+		GetDrawFuncForDirection(projectile.direction)(
 			frame_buffer,
 			sprite,
 			0,
@@ -283,17 +286,17 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	}
 
 	if(CanMove(
-		{new_position[0] - g_player_half_size, new_position[1] - g_player_half_size},
-		{new_position[0] + g_player_half_size, new_position[1] + g_player_half_size}))
+		{new_position[0] - g_tank_half_size, new_position[1] - g_tank_half_size},
+		{new_position[0] + g_tank_half_size, new_position[1] + g_tank_half_size}))
 	{
 		player_->position = new_position;
 	}
 
 	// Correct player position - do not allow to move outside field borders.
-	const fixed16_t border_x_start = 0 + g_player_half_size;
-	const fixed16_t border_x_end   = IntToFixed16(int32_t(c_field_width )) - g_player_half_size;
-	const fixed16_t border_y_start = 0 + g_player_half_size;
-	const fixed16_t border_y_end   = IntToFixed16(int32_t(c_field_height)) - g_player_half_size;
+	const fixed16_t border_x_start = 0 + g_tank_half_size;
+	const fixed16_t border_x_end   = IntToFixed16(int32_t(c_field_width )) - g_tank_half_size;
+	const fixed16_t border_y_start = 0 + g_tank_half_size;
+	const fixed16_t border_y_end   = IntToFixed16(int32_t(c_field_height)) - g_tank_half_size;
 
 	if(player_->position[0] < border_x_start)
 	{
@@ -324,7 +327,7 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 			projectile.position = player_->position;
 			projectile.direction = player_->direction;
 
-			const fixed16_t offset = g_player_half_size + g_projectile_half_size;
+			const fixed16_t offset = g_tank_half_size + g_projectile_half_size;
 
 			switch (projectile.direction)
 			{
@@ -457,6 +460,31 @@ bool GameBattleCity::CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max)
 	}
 
 	return true;
+}
+
+void GameBattleCity::SpawnNewEnemy()
+{
+	// Try to spawn it at random position, but avoid obstacles.
+	for(uint32_t i = 0; i < 64; ++i)
+	{
+		const uint32_t x = 1 + (rand_.Next() % (c_field_width - 2));
+		const uint32_t y = 1;
+
+		const fixed16vec2_t position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
+
+		if(!CanMove(
+			{position[0] - g_tank_half_size, position[1] - g_tank_half_size},
+			{position[0] + g_tank_half_size, position[1] + g_tank_half_size}))
+		{
+			continue;
+		}
+
+		Enemy enemy;
+		enemy.position = position;
+		enemy.direction = GridDirection::YPlus;
+		enemies_.push_back(enemy);
+		return;
+	}
 }
 
 void GameBattleCity::FillField(const char* field_data)

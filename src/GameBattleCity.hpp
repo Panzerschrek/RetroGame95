@@ -1,6 +1,7 @@
 #pragma once
 #include "GameInterface.hpp"
 #include "GamesCommon.hpp"
+#include "Rand.hpp"
 #include "SoundPlayer.hpp"
 #include <optional>
 
@@ -40,6 +41,12 @@ private:
 		uint32_t next_shot_tick = 0;
 	};
 
+	struct Enemy
+	{
+		fixed16vec2_t position{};
+		GridDirection direction = GridDirection::YPlus;
+	};
+
 	struct Projectile
 	{
 		fixed16vec2_t position{};
@@ -59,18 +66,24 @@ private:
 
 	bool CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const;
 
+	void SpawnNewEnemy();
+
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
 
 private:
 	SoundPlayer& sound_player_;
+
+	Rand rand_;
+	uint32_t tick_ = 0;
+
 	GameInterfacePtr next_game_;
 
-	uint32_t tick_ = 0;
 
 	Block field_[c_field_width * c_field_height];
 
 	std::optional<Player> player_;
 
+	std::vector<Enemy> enemies_;
 	std::vector<Projectile> projectiles_;
 };
