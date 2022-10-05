@@ -13,7 +13,7 @@ const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_fre
 const fixed16_t g_enemy_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
 
-const fixed16_t g_tank_half_size = g_fixed16_one;
+const fixed16_t g_tank_half_size = g_fixed16_one - 1;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
 const size_t g_max_alive_enemies = 3;
@@ -26,8 +26,8 @@ bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
 	const fixed16vec2_t box_max_1 = {pos1[0] + g_tank_half_size, pos1[1] + g_tank_half_size};
 
 	return !(
-		box_min_0[0] >= box_max_1[0] || box_max_0[0] < box_min_1[0] ||
-		box_min_0[1] >= box_max_1[1] || box_max_0[1] < box_min_1[1]);
+		box_min_0[0] >= box_max_1[0] || box_max_0[0] <= box_min_1[0] ||
+		box_min_0[1] >= box_max_1[1] || box_max_0[1] <= box_min_1[1]);
 }
 
 uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
@@ -530,27 +530,49 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		// TODO - try to move towards target.
 
 		// Do not allow to preserve direction.
+		GridDirection new_direction  = enemy.direction;
 		for(uint32_t i = 0; i < 64; ++i)
 		{
-			const GridDirection new_direction = GridDirection(rand_.Next() % 4);
+			new_direction = GridDirection(rand_.Next() % 4);
 			if(enemy.direction != new_direction)
 			{
-				enemy.direction = new_direction;
 				break;
 			}
 		}
 
 		// Align enemy to grid.
-		switch(enemy.direction)
+		new_position = enemy.position;
+		switch(new_direction)
 		{
 		case GridDirection::XPlus:
 		case GridDirection::XMinus:
-			enemy.position[1] = IntToFixed16(Fixed16RoundToInt(enemy.position[1]));
+			new_position[1] = IntToFixed16(Fixed16RoundToInt(new_position[1]));
 			break;
 		case GridDirection::YPlus:
 		case GridDirection::YMinus:
-			enemy.position[0] = IntToFixed16(Fixed16RoundToInt(enemy.position[0]));
+			new_position[0] = IntToFixed16(Fixed16RoundToInt(new_position[0]));
 			break;
+		}
+
+		// Make sure we still do not move towards other tank even after alignemnt to grid.
+		moves_towards_other_tank = false;
+		for(const Enemy& other_enemy : enemies_)
+		{
+			if(&enemy != &other_enemy && TanksIntersects(new_position, other_enemy.position))
+			{
+				moves_towards_other_tank = true;
+				break;
+			}
+		}
+		if(player_ != std::nullopt)
+		{
+			moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
+		}
+
+		if(!moves_towards_other_tank)
+		{
+			enemy.position = new_position;
+			enemy.direction = new_direction;
 		}
 	}
 
@@ -617,6 +639,11 @@ void GameBattleCity::SpawnNewEnemy()
 		if(player_ != std::nullopt)
 		{
 			intersects_other_tank |= TanksIntersects(position, player_->position);
+		}
+
+		if(intersects_other_tank)
+		{
+			continue;
 		}
 
 		Enemy enemy;
