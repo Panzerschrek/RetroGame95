@@ -373,14 +373,39 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile)
 		break;
 	}
 
-	const int32_t min_x = Fixed16FloorToInt(projectile.position[0] - g_projectile_half_size);
-	const int32_t min_y = Fixed16FloorToInt(projectile.position[1] - g_projectile_half_size);
-	const int32_t max_x = Fixed16CeilToInt(projectile.position[0] + g_projectile_half_size);
-	const int32_t max_y = Fixed16CeilToInt(projectile.position[1] + g_projectile_half_size);
+	const fixed16_t min_x_f = projectile.position[0] - g_projectile_half_size;
+	const fixed16_t min_y_f = projectile.position[1] - g_projectile_half_size;
+	const fixed16_t max_x_f = projectile.position[0] + g_projectile_half_size;
+	const fixed16_t max_y_f = projectile.position[1] + g_projectile_half_size;
+	const int32_t min_x = Fixed16FloorToInt(min_x_f);
+	const int32_t min_y = Fixed16FloorToInt(min_y_f);
+	const int32_t max_x = Fixed16CeilToInt(max_x_f);
+	const int32_t max_y = Fixed16CeilToInt(max_y_f);
 
-	if( min_x < 0 || max_x > int32_t(c_field_width ) ||
-		min_y < 0 || max_y > int32_t(c_field_height))
+	if(min_x < 0 || max_x > int32_t(c_field_width ) || min_y < 0 || max_y > int32_t(c_field_height))
 	{
+		return true;
+	}
+
+	for(size_t i = 0; i < enemies_.size(); ++i)
+	{
+		Enemy& enemy = enemies_[i];
+
+		const fixed16vec2_t min = {enemy.position[0] - g_tank_half_size, enemy.position[1] - g_tank_half_size};
+		const fixed16vec2_t max = {enemy.position[0] + g_tank_half_size, enemy.position[1] + g_tank_half_size};
+
+		if(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f)
+		{
+			continue;
+		}
+
+		// Hit this enemy.
+
+		if(i + 1 < enemies_.size())
+		{
+			enemy = enemies_.back();
+		}
+		enemies_.pop_back();
 		return true;
 	}
 
@@ -433,7 +458,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile)
 		hit = true;
 	}
 
-	// TODO - process collisions against player and enemies.
+	// TODO - process collisions against player.
 	// TODO - process collisions against the base.
 	// TODO - make visual/sound effects on collision.
 
