@@ -315,18 +315,45 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile)
 		break;
 	}
 
-	const fixed16_t border_x_start = 0 + g_projectile_half_size;
-	const fixed16_t border_x_end   = IntToFixed16(int32_t(c_field_width )) - g_projectile_half_size;
-	const fixed16_t border_y_start = 0 + g_projectile_half_size;
-	const fixed16_t border_y_end   = IntToFixed16(int32_t(c_field_height)) - g_projectile_half_size;
+	const int32_t min_x = Fixed16FloorToInt(projectile.position[0] - g_projectile_half_size);
+	const int32_t min_y = Fixed16FloorToInt(projectile.position[1] - g_projectile_half_size);
+	const int32_t max_x = Fixed16CeilToInt(projectile.position[0] + g_projectile_half_size);
+	const int32_t max_y = Fixed16CeilToInt(projectile.position[1] + g_projectile_half_size);
 
-	if( projectile.position[0] <= border_x_start || projectile.position[0] >= border_x_end ||
-		projectile.position[1] <= border_y_start || projectile.position[1] >= border_y_end)
+	if( min_x < 0 || max_x > int32_t(c_field_width ) ||
+		min_y < 0 || max_y > int32_t(c_field_height))
 	{
 		return true;
 	}
 
-	return false;
+	bool hit = false;
+	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
+	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
+	{
+		Block& block = field_[uint32_t(x) + uint32_t(y) * c_field_width];
+		if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.type == BlockType::Water)
+		{
+			continue;
+		}
+		if(block.destruction_mask == 0)
+		{
+			continue;
+		}
+
+		if(block.type == BlockType::Bricks)
+		{
+			// TODO - destroy block partially.
+			block.destruction_mask = 0;
+		}
+		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
+		hit = true;
+	}
+
+	// TODO - process collisions against player and enemies.
+	// TODO - process collisions against the base.
+	// TODO - make visual/sound effects on collision.
+
+	return hit;
 }
 
 bool GameBattleCity::CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const
