@@ -234,31 +234,52 @@ GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 
 void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 {
-	fixed16vec2_t new_position = player_->position;
 
-	if(keyboard_state.size() > size_t(SDL_SCANCODE_LEFT) && keyboard_state[size_t(SDL_SCANCODE_LEFT)])
+	const bool left_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_LEFT) && keyboard_state[size_t(SDL_SCANCODE_LEFT)];
+	const bool right_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_RIGHT) && keyboard_state[size_t(SDL_SCANCODE_RIGHT)];
+	const bool up_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)];
+	const bool down_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)];
+
+	// Rotate player.
+	// Align player position to grid to simplify navigation.
+	if(left_pressed)
 	{
 		player_->direction = GridDirection::XMinus;
-		new_position[0] -= g_player_speed;
-		new_position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
+		player_->position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
 	}
-	else if(keyboard_state.size() > size_t(SDL_SCANCODE_RIGHT) && keyboard_state[size_t(SDL_SCANCODE_RIGHT)])
+	else if(right_pressed)
 	{
 		player_->direction = GridDirection::XPlus;
-		new_position[0] += g_player_speed;
-		new_position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
+		player_->position[1] = IntToFixed16(Fixed16RoundToInt(player_->position[1]));
 	}
-	else if(keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)])
+	else if(up_pressed)
 	{
 		player_->direction = GridDirection::YMinus;
-		new_position[1] -= g_player_speed;
-		new_position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
+		player_->position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
 	}
-	else if(keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)])
+	else if(down_pressed)
 	{
 		player_->direction = GridDirection::YPlus;
+		player_->position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
+	}
+
+	// Move player.
+	fixed16vec2_t new_position = player_->position;
+	if(left_pressed)
+	{
+		new_position[0] -= g_player_speed;
+	}
+	else if(right_pressed)
+	{
+		new_position[0] += g_player_speed;
+	}
+	else if(up_pressed)
+	{
+		new_position[1] -= g_player_speed;
+	}
+	else if(down_pressed)
+	{
 		new_position[1] += g_player_speed;
-		new_position[0] = IntToFixed16(Fixed16RoundToInt(player_->position[0]));
 	}
 
 	if(CanMove(
