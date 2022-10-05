@@ -10,6 +10,7 @@ namespace
 {
 
 const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
+const fixed16_t g_enemy_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
 
 const fixed16_t g_tank_half_size = g_fixed16_one;
@@ -72,6 +73,11 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 	if(player_ != std::nullopt)
 	{
 		ProcessPlayerInput(keyboard_state);
+	}
+
+	for(Enemy& enemy : enemies_)
+	{
+		UpdateEnemy(enemy);
 	}
 
 	for(size_t p = 0; p < projectiles_.size();)
@@ -237,7 +243,6 @@ GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 
 void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 {
-
 	const bool left_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_LEFT) && keyboard_state[size_t(SDL_SCANCODE_LEFT)];
 	const bool right_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_RIGHT) && keyboard_state[size_t(SDL_SCANCODE_RIGHT)];
 	const bool up_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)];
@@ -435,12 +440,78 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile)
 	return hit;
 }
 
+void GameBattleCity::UpdateEnemy(Enemy& enemy)
+{
+	fixed16vec2_t new_position = enemy.position;
+
+	const fixed16_t speed = g_enemy_speed; // TODO - increase dpeed for fast tanks.
+	switch (enemy.direction)
+	{
+	case GridDirection::XPlus:
+		new_position[0] += speed;
+		break;
+	case GridDirection::XMinus:
+		new_position[0] -= speed;
+		break;
+	case GridDirection::YPlus:
+		new_position[1] += speed;
+		break;
+	case GridDirection::YMinus:
+		new_position[1] -= speed;
+		break;
+	}
+
+	if(CanMove(
+		{new_position[0] - g_tank_half_size, new_position[1] - g_tank_half_size},
+		{new_position[0] + g_tank_half_size, new_position[1] + g_tank_half_size}))
+	{
+		enemy.position = new_position;
+	}
+	else
+	{
+		// Change direction to random.
+		// TODO - try to move towards target.
+
+		// Do not allow to preserve direction.
+		for(uint32_t i = 0; i < 64; ++i)
+		{
+			const GridDirection new_direction = GridDirection(rand_.Next() % 4);
+			if(enemy.direction != new_direction)
+			{
+				enemy.direction = new_direction;
+				break;
+			}
+		}
+
+		// Align enemy to grid.
+		switch(enemy.direction)
+		{
+		case GridDirection::XPlus:
+		case GridDirection::XMinus:
+			enemy.position[1] = IntToFixed16(Fixed16RoundToInt(enemy.position[1]));
+			break;
+		case GridDirection::YPlus:
+		case GridDirection::YMinus:
+			enemy.position[0] = IntToFixed16(Fixed16RoundToInt(enemy.position[0]));
+			break;
+		}
+	}
+
+	// TODO - shoot.
+}
+
 bool GameBattleCity::CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const
 {
 	const int32_t min_x = Fixed16FloorToInt(min[0]);
 	const int32_t min_y = Fixed16FloorToInt(min[1]);
 	const int32_t max_x = Fixed16CeilToInt(max[0]);
 	const int32_t max_y = Fixed16CeilToInt(max[1]);
+
+	if( min_x < 0 || max_x > int32_t(c_field_width ) ||
+		min_y < 0 || max_y > int32_t(c_field_height))
+	{
+		return false;
+	}
 
 	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
 	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)

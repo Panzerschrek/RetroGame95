@@ -61,6 +61,8 @@ private:
 private:
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
 
+	void UpdateEnemy(Enemy& enemy);
+
 	// Returns true if need to kill it.
 	bool UpdateProjectile(Projectile& projectile);
 
