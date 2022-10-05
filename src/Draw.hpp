@@ -24,6 +24,16 @@ void DrawSprite(
 	uint32_t start_x,
 	uint32_t start_y);
 
+void DrawSpriteRect(
+	FrameBuffer frame_buffer,
+	SpriteBMP sprite,
+	uint32_t start_x,
+	uint32_t start_y,
+	uint32_t sprite_start_x,
+	uint32_t sprite_start_y,
+	uint32_t sprite_rect_width,
+	uint32_t sprite_rect_height);
+
 // Draw whole sprite without borders check. Reject texels with transparent color.
 void DrawSpriteWithAlpha(
 	FrameBuffer frame_buffer,

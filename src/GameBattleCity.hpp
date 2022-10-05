@@ -29,7 +29,7 @@ private:
 	struct Block
 	{
 		BlockType type : 4;
-		// 0 if totally destroyed.
+		// Bit mask of 4 blocks parts. 1 - part is alive, 0 - destroyed.
 		uint8_t destruction_mask : 4;
 	};
 

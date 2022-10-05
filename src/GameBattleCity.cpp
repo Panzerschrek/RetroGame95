@@ -15,6 +15,13 @@ const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_updat
 const fixed16_t g_player_half_size = g_fixed16_one;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
+uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
+{
+	assert(x <= 1);
+	assert(y <= 1);
+	return 1 << (x | (y << 1));
+}
+
 } // namespace
 
 GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
@@ -102,12 +109,34 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			continue;
 		}
 
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			block_sprites[size_t(block.type)],
-			0,
-			field_offset_x + x * c_block_size,
-			field_offset_y + y * c_block_size);
+		const uint32_t sprite_x = field_offset_x + x * c_block_size;
+		const uint32_t sprite_y = field_offset_y + y * c_block_size;
+		const SpriteBMP sprite = block_sprites[size_t(block.type)];
+
+		if(block.destruction_mask == 0xF)
+		{
+			DrawSprite(frame_buffer, sprite, sprite_x, sprite_y);
+		}
+		else
+		{
+			const uint32_t segment_size = c_block_size / 2;
+			for(uint32_t dy = 0; dy < 2; ++dy)
+			for(uint32_t dx = 0; dx < 2; ++dx)
+			{
+				if((block.destruction_mask & BlockMaskForCoord(dx, dy)) != 0)
+				{
+					DrawSpriteRect(
+						frame_buffer,
+						sprite,
+						sprite_x + dx * segment_size,
+						sprite_y + dy * segment_size,
+						dx * segment_size,
+						dy * segment_size,
+						segment_size,
+						segment_size);
+				}
+			}
+		}
 	}
 
 	if(player_ != std::nullopt)
@@ -342,9 +371,35 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile)
 
 		if(block.type == BlockType::Bricks)
 		{
-			// TODO - destroy block partially.
-			block.destruction_mask = 0;
+			uint32_t mask = 0;
+			switch(projectile.direction)
+			{
+			case GridDirection::XPlus:
+				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
+				break;
+			case GridDirection::XMinus:
+				mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
+				break;
+			case GridDirection::YPlus:
+				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
+				break;
+			case GridDirection::YMinus:
+				mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
+				break;
+			}
+
+			if((mask & block.destruction_mask) == 0)
+			{
+				// This side of block is already destroyed. Destroy another side.
+				block.destruction_mask = 0;
+			}
+			else
+			{
+				// Destroy only this side.
+				block.destruction_mask &= ~mask;
+			}
 		}
+
 		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
 		hit = true;
 	}

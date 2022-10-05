@@ -114,6 +114,39 @@ void DrawSprite(
 	}
 }
 
+void DrawSpriteRect(
+	const FrameBuffer frame_buffer,
+	const SpriteBMP sprite,
+	const uint32_t start_x,
+	const uint32_t start_y,
+	const uint32_t sprite_start_x,
+	const uint32_t sprite_start_y,
+	const uint32_t sprite_rect_width,
+	const uint32_t sprite_rect_height)
+{
+	const auto h = sprite.GetHeight();
+	const auto stride = sprite.GetRowStride();
+	const auto palette = sprite.GetPalette();
+	const auto data = sprite.GetImageData();
+
+	assert(start_x + sprite_rect_width  <= frame_buffer.width );
+	assert(start_y + sprite_rect_height <= frame_buffer.height);
+
+	assert(sprite_start_x + sprite_rect_width  <= sprite.GetWidth ());
+	assert(sprite_start_y + sprite_rect_height <= sprite.GetHeight());
+
+	for(uint32_t y = 0; y < sprite_rect_height; ++y)
+	{
+		const auto src_line = data + (h - 1 - (sprite_start_y + y)) * stride;
+		const auto dst_line = frame_buffer.data + (y + start_y) * frame_buffer.width;
+		for(uint32_t x = 0; x < sprite_rect_width ; ++x)
+		{
+			const auto color_index = src_line[sprite_start_x + x];
+			dst_line[start_x + x] = palette[color_index];
+		}
+	}
+}
+
 void DrawSpriteWithAlpha(
 	const FrameBuffer frame_buffer,
 	const SpriteBMP sprite,
