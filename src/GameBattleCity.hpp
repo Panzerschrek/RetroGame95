@@ -66,7 +66,7 @@ private:
 	// Returns true if need to kill it.
 	bool UpdateProjectile(Projectile& projectile);
 
-	bool CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const;
+	bool CanMove(const fixed16vec2_t& position) const;
 
 	void SpawnNewEnemy();
 

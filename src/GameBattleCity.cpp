@@ -18,6 +18,18 @@ const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
 const size_t g_max_alive_enemies = 3;
 
+bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
+{
+	const fixed16vec2_t box_min_0 = {pos0[0] - g_tank_half_size, pos0[1] - g_tank_half_size};
+	const fixed16vec2_t box_max_0 = {pos0[0] + g_tank_half_size, pos0[1] + g_tank_half_size};
+	const fixed16vec2_t box_min_1 = {pos1[0] - g_tank_half_size, pos1[1] - g_tank_half_size};
+	const fixed16vec2_t box_max_1 = {pos1[0] + g_tank_half_size, pos1[1] + g_tank_half_size};
+
+	return !(
+		box_min_0[0] >= box_max_1[0] || box_max_0[0] < box_min_1[0] ||
+		box_min_0[1] >= box_max_1[1] || box_max_0[1] < box_min_1[1]);
+}
+
 uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
 {
 	assert(x <= 1);
@@ -290,9 +302,17 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 		new_position[1] += g_player_speed;
 	}
 
-	if(CanMove(
-		{new_position[0] - g_tank_half_size, new_position[1] - g_tank_half_size},
-		{new_position[0] + g_tank_half_size, new_position[1] + g_tank_half_size}))
+	bool moves_towards_other_tank = false;
+	for(const Enemy& enemy : enemies_)
+	{
+		if(TanksIntersects(new_position, enemy.position))
+		{
+			moves_towards_other_tank = true;
+			break;
+		}
+	}
+
+	if(!moves_towards_other_tank && CanMove(new_position))
 	{
 		player_->position = new_position;
 	}
@@ -486,9 +506,21 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		break;
 	}
 
-	if(CanMove(
-		{new_position[0] - g_tank_half_size, new_position[1] - g_tank_half_size},
-		{new_position[0] + g_tank_half_size, new_position[1] + g_tank_half_size}))
+	bool moves_towards_other_tank = false;
+	for(const Enemy& other_enemy : enemies_)
+	{
+		if(&enemy != &other_enemy && TanksIntersects(new_position, other_enemy.position))
+		{
+			moves_towards_other_tank = true;
+			break;
+		}
+	}
+	if(player_ != std::nullopt)
+	{
+		moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
+	}
+
+	if(!moves_towards_other_tank && CanMove(new_position))
 	{
 		enemy.position = new_position;
 	}
@@ -525,12 +557,12 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 	// TODO - shoot.
 }
 
-bool GameBattleCity::CanMove(const fixed16vec2_t& min, const fixed16vec2_t& max) const
+bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
 {
-	const int32_t min_x = Fixed16FloorToInt(min[0]);
-	const int32_t min_y = Fixed16FloorToInt(min[1]);
-	const int32_t max_x = Fixed16CeilToInt(max[0]);
-	const int32_t max_y = Fixed16CeilToInt(max[1]);
+	const int32_t min_x = Fixed16FloorToInt(position[0] - g_tank_half_size);
+	const int32_t min_y = Fixed16FloorToInt(position[1] - g_tank_half_size);
+	const int32_t max_x = Fixed16CeilToInt(position[0] + g_tank_half_size);
+	const int32_t max_y = Fixed16CeilToInt(position[1] + g_tank_half_size);
 
 	if( min_x < 0 || max_x > int32_t(c_field_width ) ||
 		min_y < 0 || max_y > int32_t(c_field_height))
@@ -568,11 +600,23 @@ void GameBattleCity::SpawnNewEnemy()
 
 		const fixed16vec2_t position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
 
-		if(!CanMove(
-			{position[0] - g_tank_half_size, position[1] - g_tank_half_size},
-			{position[0] + g_tank_half_size, position[1] + g_tank_half_size}))
+		if(!CanMove(position))
 		{
 			continue;
+		}
+
+		bool intersects_other_tank = false;
+		for(const Enemy& enemy : enemies_)
+		{
+			if(TanksIntersects(position, enemy.position))
+			{
+				intersects_other_tank = true;
+				break;
+			}
+		}
+		if(player_ != std::nullopt)
+		{
+			intersects_other_tank |= TanksIntersects(position, player_->position);
 		}
 
 		Enemy enemy;
