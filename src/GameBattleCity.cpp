@@ -242,13 +242,19 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	for(const Enemy& enemy : enemies_)
 	{
-		const SpriteBMP sprite(Sprites::battle_city_enemy_tank);
+		const uint32_t x = uint32_t(Fixed16FloorToInt(enemy.position[0] * int32_t(c_block_size)));
+		const uint32_t y = uint32_t(Fixed16FloorToInt(enemy.position[1] * int32_t(c_block_size)));
+
+		const bool use_a = ((x ^ y) & 1) != 0;
+
+		const SpriteBMP sprite(use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b);
+
 		GetDrawFuncForDirection(enemy.direction)(
 			frame_buffer,
 			sprite,
 			0,
-			field_offset_x + uint32_t(Fixed16FloorToInt(enemy.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
-			field_offset_y + uint32_t(Fixed16FloorToInt(enemy.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+			field_offset_x + x - sprite.GetWidth () / 2,
+			field_offset_y + y - sprite.GetHeight() / 2);
 	}
 
 	const auto draw_projectile =
