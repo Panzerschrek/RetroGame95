@@ -34,23 +34,25 @@ private:
 		uint8_t destruction_mask : 4;
 	};
 
+	struct Projectile
+	{
+		fixed16vec2_t position{};
+		GridDirection direction = GridDirection::YMinus;
+	};
+
 	struct Player
 	{
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YMinus;
 		uint32_t next_shot_tick = 0;
+		std::vector<Projectile> projectiles;
 	};
 
 	struct Enemy
 	{
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YPlus;
-	};
-
-	struct Projectile
-	{
-		fixed16vec2_t position{};
-		GridDirection direction = GridDirection::YMinus;
+		std::optional<Projectile> projectile;
 	};
 
 	static const constexpr uint32_t c_field_width  = 32;
@@ -64,7 +66,7 @@ private:
 	void UpdateEnemy(Enemy& enemy);
 
 	// Returns true if need to kill it.
-	bool UpdateProjectile(Projectile& projectile);
+	bool UpdateProjectile(Projectile& projectile, bool is_player_projectile);
 
 	bool CanMove(const fixed16vec2_t& position) const;
 
@@ -72,6 +74,8 @@ private:
 
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
+
+	static Projectile MakeProjectile(const fixed16vec2_t& tank_position, GridDirection tank_direction);
 
 private:
 	SoundPlayer& sound_player_;
@@ -87,5 +91,4 @@ private:
 	std::optional<Player> player_;
 
 	std::vector<Enemy> enemies_;
-	std::vector<Projectile> projectiles_;
 };

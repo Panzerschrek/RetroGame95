@@ -90,24 +90,34 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 	for(Enemy& enemy : enemies_)
 	{
 		UpdateEnemy(enemy);
+		if(enemy.projectile != std::nullopt)
+		{
+			if(UpdateProjectile(*enemy.projectile, false))
+			{
+				enemy.projectile = std::nullopt;
+			}
+		}
 	}
 
-	for(size_t p = 0; p < projectiles_.size();)
+	if(player_ != std::nullopt)
 	{
-		if(UpdateProjectile(projectiles_[p]))
+		for(size_t p = 0; p < player_->projectiles.size();)
 		{
-			// This projectile is dead.
-			if(p + 1 < projectiles_.size())
+			if(UpdateProjectile(player_->projectiles[p], true))
 			{
-				projectiles_[p] = projectiles_.back();
+				// This projectile is dead.
+				if(p + 1 < player_->projectiles.size())
+				{
+					player_->projectiles[p] = player_->projectiles.back();
+				}
+				player_->projectiles.pop_back();
 			}
-			projectiles_.pop_back();
-		}
-		else
-		{
-			++p;
-		}
-	} // for projectiles.
+			else
+			{
+				++p;
+			}
+		} // for projectiles.
+	}
 
 	if(enemies_.size() < g_max_alive_enemies && (tick_ % GameInterface::c_update_frequency) == 0)
 	{
@@ -210,7 +220,8 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(enemy.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
-	for(const Projectile& projectile : projectiles_)
+	const auto draw_projectile =
+	[&](const Projectile& projectile)
 	{
 		const SpriteBMP sprite(Sprites::battle_city_projectile);
 		GetDrawFuncForDirection(projectile.direction)(
@@ -219,6 +230,21 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + uint32_t(Fixed16FloorToInt(projectile.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
 			field_offset_y + uint32_t(Fixed16FloorToInt(projectile.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	};
+
+	if(player_ != std::nullopt)
+	{
+		for(const Projectile& projectile : player_->projectiles)
+		{
+			draw_projectile(projectile);
+		}
+	}
+	for(const Enemy& enemy : enemies_)
+	{
+		if(enemy.projectile != std::nullopt)
+		{
+			draw_projectile(*enemy.projectile);
+		}
 	}
 
 	// Draw foliage after player and enemies.
@@ -350,150 +376,9 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 		if(tick_ >= player_->next_shot_tick)
 		{
 			player_->next_shot_tick = tick_ + 100;
-
-			Projectile projectile;
-			projectile.position = player_->position;
-			projectile.direction = player_->direction;
-
-			const fixed16_t offset = g_tank_half_size + g_projectile_half_size;
-
-			switch (projectile.direction)
-			{
-			case GridDirection::XPlus:
-				projectile.position[0] += offset;
-				break;
-			case GridDirection::XMinus:
-				projectile.position[0] -= offset;
-				break;
-			case GridDirection::YPlus:
-				projectile.position[1] += offset;
-				break;
-			case GridDirection::YMinus:
-				projectile.position[1] -= offset;
-				break;
-			}
-
-			projectiles_.push_back(projectile);
+			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
 		}
 	}
-}
-
-bool GameBattleCity::UpdateProjectile(Projectile& projectile)
-{
-	switch (projectile.direction)
-	{
-	case GridDirection::XPlus:
-		projectile.position[0] += g_projectile_speed;
-		break;
-	case GridDirection::XMinus:
-		projectile.position[0] -= g_projectile_speed;
-		break;
-	case GridDirection::YPlus:
-		projectile.position[1] += g_projectile_speed;
-		break;
-	case GridDirection::YMinus:
-		projectile.position[1] -= g_projectile_speed;
-		break;
-	}
-
-	const fixed16_t min_x_f = projectile.position[0] - g_projectile_half_size;
-	const fixed16_t min_y_f = projectile.position[1] - g_projectile_half_size;
-	const fixed16_t max_x_f = projectile.position[0] + g_projectile_half_size;
-	const fixed16_t max_y_f = projectile.position[1] + g_projectile_half_size;
-	const int32_t min_x = Fixed16FloorToInt(min_x_f);
-	const int32_t min_y = Fixed16FloorToInt(min_y_f);
-	const int32_t max_x = Fixed16CeilToInt(max_x_f);
-	const int32_t max_y = Fixed16CeilToInt(max_y_f);
-
-	if(min_x < 0 || max_x > int32_t(c_field_width ) || min_y < 0 || max_y > int32_t(c_field_height))
-	{
-		return true;
-	}
-
-	for(size_t i = 0; i < enemies_.size(); ++i)
-	{
-		Enemy& enemy = enemies_[i];
-
-		const fixed16vec2_t min = {enemy.position[0] - g_tank_half_size, enemy.position[1] - g_tank_half_size};
-		const fixed16vec2_t max = {enemy.position[0] + g_tank_half_size, enemy.position[1] + g_tank_half_size};
-
-		if(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f)
-		{
-			continue;
-		}
-
-		// Hit this enemy.
-
-		if(i + 1 < enemies_.size())
-		{
-			enemy = enemies_.back();
-		}
-		enemies_.pop_back();
-		return true;
-	}
-
-	bool hit = false;
-	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
-	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
-	{
-		Block& block = field_[uint32_t(x) + uint32_t(y) * c_field_width];
-		if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.type == BlockType::Water)
-		{
-			continue;
-		}
-		if(block.destruction_mask == 0)
-		{
-			continue;
-		}
-
-		if(block.type == BlockType::Bricks)
-		{
-			uint32_t mask = 0;
-			switch(projectile.direction)
-			{
-			case GridDirection::XPlus:
-				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
-				break;
-			case GridDirection::XMinus:
-				mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
-				break;
-			case GridDirection::YPlus:
-				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
-				break;
-			case GridDirection::YMinus:
-				mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
-				break;
-			}
-
-			if((mask & block.destruction_mask) == 0)
-			{
-				// This side of block is already destroyed. Destroy another side.
-				block.destruction_mask = 0;
-			}
-			else
-			{
-				// Destroy only this side.
-				block.destruction_mask &= ~mask;
-			}
-		}
-
-		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
-		hit = true;
-	}
-
-	if( !hit && !base_is_destroyed_ &&
-		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
-		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
-	{
-		hit = true;
-		base_is_destroyed_ = true;
-	}
-
-	// TODO - process collisions against player.
-	// TODO - process collisions against the base.
-	// TODO - make visual/sound effects on collision.
-
-	return hit;
 }
 
 void GameBattleCity::UpdateEnemy(Enemy& enemy)
@@ -626,7 +511,128 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		}
 	}
 
-	// TODO - shoot.
+	if(enemy.projectile == std::nullopt && rand_.Next() % 147 == 5)
+	{
+		enemy.projectile = MakeProjectile(enemy.position, enemy.direction);
+	}
+}
+
+
+bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_player_projectile)
+{
+	switch (projectile.direction)
+	{
+	case GridDirection::XPlus:
+		projectile.position[0] += g_projectile_speed;
+		break;
+	case GridDirection::XMinus:
+		projectile.position[0] -= g_projectile_speed;
+		break;
+	case GridDirection::YPlus:
+		projectile.position[1] += g_projectile_speed;
+		break;
+	case GridDirection::YMinus:
+		projectile.position[1] -= g_projectile_speed;
+		break;
+	}
+
+	const fixed16_t min_x_f = projectile.position[0] - g_projectile_half_size;
+	const fixed16_t min_y_f = projectile.position[1] - g_projectile_half_size;
+	const fixed16_t max_x_f = projectile.position[0] + g_projectile_half_size;
+	const fixed16_t max_y_f = projectile.position[1] + g_projectile_half_size;
+	const int32_t min_x = Fixed16FloorToInt(min_x_f);
+	const int32_t min_y = Fixed16FloorToInt(min_y_f);
+	const int32_t max_x = Fixed16CeilToInt(max_x_f);
+	const int32_t max_y = Fixed16CeilToInt(max_y_f);
+
+	if(min_x < 0 || max_x > int32_t(c_field_width ) || min_y < 0 || max_y > int32_t(c_field_height))
+	{
+		return true;
+	}
+
+	for(size_t i = 0; i < enemies_.size() && is_player_projectile; ++i)
+	{
+		Enemy& enemy = enemies_[i];
+
+		const fixed16vec2_t min = {enemy.position[0] - g_tank_half_size, enemy.position[1] - g_tank_half_size};
+		const fixed16vec2_t max = {enemy.position[0] + g_tank_half_size, enemy.position[1] + g_tank_half_size};
+
+		if(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f)
+		{
+			continue;
+		}
+
+		// Hit this enemy.
+		if(i + 1 < enemies_.size())
+		{
+			enemy = enemies_.back();
+		}
+		enemies_.pop_back();
+		return true;
+	}
+
+	// TODO - process collisions against player.
+
+	bool hit = false;
+	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
+	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
+	{
+		Block& block = field_[uint32_t(x) + uint32_t(y) * c_field_width];
+		if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.type == BlockType::Water)
+		{
+			continue;
+		}
+		if(block.destruction_mask == 0)
+		{
+			continue;
+		}
+
+		if(block.type == BlockType::Bricks)
+		{
+			uint32_t mask = 0;
+			switch(projectile.direction)
+			{
+			case GridDirection::XPlus:
+				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
+				break;
+			case GridDirection::XMinus:
+				mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
+				break;
+			case GridDirection::YPlus:
+				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
+				break;
+			case GridDirection::YMinus:
+				mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
+				break;
+			}
+
+			if((mask & block.destruction_mask) == 0)
+			{
+				// This side of block is already destroyed. Destroy another side.
+				block.destruction_mask = 0;
+			}
+			else
+			{
+				// Destroy only this side.
+				block.destruction_mask &= ~mask;
+			}
+		}
+
+		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
+		hit = true;
+	}
+
+	if( !hit && !base_is_destroyed_ &&
+		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
+		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
+	{
+		hit = true;
+		base_is_destroyed_ = true;
+	}
+
+	// TODO - make visual/sound effects on collision.
+
+	return hit;
 }
 
 bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
@@ -733,4 +739,33 @@ GameBattleCity::BlockType GameBattleCity::GetBlockTypeForLevelDataByte(const cha
 	case '~': return BlockType::Water;
 	default: return BlockType::Empty;
 	};
+}
+
+GameBattleCity::Projectile GameBattleCity::MakeProjectile(
+	const fixed16vec2_t& tank_position,
+	const GridDirection tank_direction)
+{
+	Projectile projectile;
+	projectile.position = tank_position;
+	projectile.direction = tank_direction;
+
+	const fixed16_t offset = g_tank_half_size + g_projectile_half_size;
+
+	switch (projectile.direction)
+	{
+	case GridDirection::XPlus:
+		projectile.position[0] += offset;
+		break;
+	case GridDirection::XMinus:
+		projectile.position[0] -= offset;
+		break;
+	case GridDirection::YPlus:
+		projectile.position[1] += offset;
+		break;
+	case GridDirection::YMinus:
+		projectile.position[1] -= offset;
+		break;
+	}
+
+	return projectile;
 }
