@@ -94,5 +94,6 @@ private:
 	std::vector<Enemy> enemies_;
 
 	uint32_t lives_ = 3;
+	uint32_t level_ = 0;
 	bool game_over_ = false;
 };

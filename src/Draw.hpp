@@ -119,7 +119,7 @@ void DrawTextWithFullShadow(
 void DrawTextWithOutline(
 	FrameBuffer frame_buffer,
 	Color32 color,
-	Color32 shadow_color,
+	Color32 outline_color,
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
@@ -127,6 +127,14 @@ void DrawTextWithOutline(
 void DrawTextCentered(
 	FrameBuffer frame_buffer,
 	Color32 color,
+	uint32_t center_x,
+	uint32_t center_y,
+	const char* text);
+
+void DrawTextCenteredWithOutline(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	Color32 outline_color,
 	uint32_t center_x,
 	uint32_t center_y,
 	const char* text);

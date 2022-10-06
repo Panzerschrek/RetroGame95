@@ -400,19 +400,19 @@ void DrawTextWithFullShadow(
 void DrawTextWithOutline(
 	const FrameBuffer frame_buffer,
 	const Color32 color,
-	const Color32 shadow_color,
+	const Color32 outline_color,
 	const uint32_t start_x,
 	const uint32_t start_y,
 	const char* const text)
 {
-	DrawText(frame_buffer, shadow_color, start_x + 1, start_y, text);
-	DrawText(frame_buffer, shadow_color, start_x - 1, start_y, text);
-	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
-	DrawText(frame_buffer, shadow_color, start_x, start_y - 1, text);
-	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
-	DrawText(frame_buffer, shadow_color, start_x + 1, start_y - 1, text);
-	DrawText(frame_buffer, shadow_color, start_x - 1, start_y + 1, text);
-	DrawText(frame_buffer, shadow_color, start_x - 1, start_y - 1, text);
+	DrawText(frame_buffer, outline_color, start_x + 1, start_y, text);
+	DrawText(frame_buffer, outline_color, start_x - 1, start_y, text);
+	DrawText(frame_buffer, outline_color, start_x, start_y + 1, text);
+	DrawText(frame_buffer, outline_color, start_x, start_y - 1, text);
+	DrawText(frame_buffer, outline_color, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, outline_color, start_x + 1, start_y - 1, text);
+	DrawText(frame_buffer, outline_color, start_x - 1, start_y + 1, text);
+	DrawText(frame_buffer, outline_color, start_x - 1, start_y - 1, text);
 	DrawText(frame_buffer, color, start_x, start_y, text);
 }
 
@@ -437,6 +437,7 @@ void DrawTextCentered(
 			{
 				++num_lines;
 			}
+			symbols_in_current_line = 0;
 			continue;
 		}
 
@@ -451,4 +452,21 @@ void DrawTextCentered(
 		center_x - max_symbols_in_line * g_glyph_width / 2,
 		center_y - num_lines * g_glyph_height / 2,
 		text);
+}
+
+void DrawTextCenteredWithOutline(
+	const FrameBuffer frame_buffer,
+	const Color32 color,
+	const Color32 outline_color,
+	const uint32_t center_x,
+	const uint32_t center_y,
+	const char* const text)
+{
+	for(uint32_t dx = 0; dx < 3; ++dx)
+	for(uint32_t dy = 0; dy < 3; ++dy)
+	{
+		DrawTextCentered(frame_buffer, outline_color, center_x + dx - 1, center_y + dy - 1, text);
+	}
+
+	DrawTextCentered(frame_buffer, color, center_x, center_y, text);
 }

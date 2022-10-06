@@ -45,6 +45,8 @@ DEFINE_STRING(pacman_ready, "Ready!")
 DEFINE_STRING(pacman_game_over, "Game Over")
 DEFINE_STRING(pacman_level_completed, "level completed!")
 
+DEFINE_STRING(battle_city_game_over, "GAME\n\nOVER!")
+
 DEFINE_STRING(end_screen_congratulations,
 R"(
 Congratulations, you have won the game!

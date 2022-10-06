@@ -4,6 +4,8 @@
 #include "Draw.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
+#include "String.hpp"
+#include "Strings.hpp"
 #include <cassert>
 
 namespace
@@ -286,6 +288,28 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + c_block_size * (c_field_width / 2 - 1),
 			field_offset_y + c_block_size * (c_field_height - 2));
+	}
+
+	const uint32_t texts_offset_x = frame_buffer.width - 32;
+	const uint32_t texts_offset_y = frame_buffer.height / 2 + g_glyph_height;
+	char text[16];
+
+	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y, "IP");
+	NumToString(text, sizeof(text), lives_, 2);
+	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height, text);
+
+	NumToString(text, sizeof(text), level_, 2);
+	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height * 8, text);
+
+	if(game_over_)
+	{
+		DrawTextCenteredWithOutline(
+			frame_buffer,
+			g_cga_palette[4],
+			g_cga_palette[15],
+			field_offset_x + c_field_width  * c_block_size / 2,
+			field_offset_y + c_field_height * c_block_size / 2,
+			Strings::battle_city_game_over);
 	}
 }
 
