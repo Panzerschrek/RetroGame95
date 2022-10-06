@@ -70,6 +70,7 @@ private:
 
 	bool CanMove(const fixed16vec2_t& position) const;
 
+	void SpawnPlayer();
 	void SpawnNewEnemy();
 
 	void FillField(const char* field_data);
@@ -91,4 +92,7 @@ private:
 	std::optional<Player> player_;
 
 	std::vector<Enemy> enemies_;
+
+	uint32_t lives_ = 3;
+	bool game_over_ = false;
 };

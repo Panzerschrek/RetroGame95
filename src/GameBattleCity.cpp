@@ -65,11 +65,7 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 {
 	FillField(battle_city_level_0);
 
-	Player player;
-	player.position = {IntToFixed16(int32_t(c_field_width / 2 - 4)), IntToFixed16(int32_t(c_field_height - 1))};
-	player.direction = GridDirection::YMinus;
-
-	player_ = player;
+	SpawnPlayer();
 }
 
 void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -81,6 +77,20 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
+		}
+	}
+
+	if(player_ == std::nullopt)
+	{
+		// Respawn player.
+		if(lives_ == 0)
+		{
+			game_over_ = true;
+		}
+		else
+		{
+			--lives_;
+			SpawnPlayer();
 		}
 	}
 
@@ -597,6 +607,15 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 			return true;
 		}
+
+		// Try to kill player.
+		const fixed16vec2_t min = {player_->position[0] - g_tank_half_size, player_->position[1] - g_tank_half_size};
+		const fixed16vec2_t max = {player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size};
+		if(!(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f))
+		{
+			player_ = std::nullopt;
+			return true;
+		}
 	}
 
 	// TODO - process collisions against player.
@@ -656,6 +675,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	{
 		hit = true;
 		base_is_destroyed_ = true;
+		game_over_ = true;
 	}
 
 	// TODO - make visual/sound effects on collision.
@@ -694,6 +714,15 @@ bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
 	}
 
 	return true;
+}
+
+void GameBattleCity::SpawnPlayer()
+{
+	Player player;
+	player.position = {IntToFixed16(int32_t(c_field_width / 2 - 4)), IntToFixed16(int32_t(c_field_height - 1))};
+	player.direction = GridDirection::YMinus;
+
+	player_ = player;
 }
 
 void GameBattleCity::SpawnNewEnemy()
