@@ -531,7 +531,13 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
 	}
 
-	if(!moves_towards_other_tank && CanMove(new_position))
+	// Move straight, but after tile change try to change direction with small probability even if still can move straight.
+	const bool tile_changed =
+		Fixed16FloorToInt(new_position[0]) != Fixed16FloorToInt(enemy.position[0]) ||
+		Fixed16FloorToInt(new_position[1]) != Fixed16FloorToInt(enemy.position[1]);
+	const bool want_to_change_direction = tile_changed && rand_.Next() % 16 == 0;
+
+	if(CanMove(new_position) && !moves_towards_other_tank && !want_to_change_direction)
 	{
 		enemy.position = new_position;
 	}
