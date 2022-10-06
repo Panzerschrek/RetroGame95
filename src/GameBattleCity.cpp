@@ -16,6 +16,8 @@ const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_updat
 const fixed16_t g_tank_half_size = g_fixed16_one - 1;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
+const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
+
 const size_t g_max_alive_enemies = 3;
 
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
@@ -372,10 +374,10 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	// Shoot.
 	if(keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)])
 	{
-		// TODO - fix this - do not allow more than one active projectile.
-		if(tick_ >= player_->next_shot_tick)
+		const size_t max_active_projectiles = 1; // TODO - use more for upgraded tank.
+		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
 		{
-			player_->next_shot_tick = tick_ + 100;
+			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
 			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
 		}
 	}
