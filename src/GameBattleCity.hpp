@@ -81,8 +81,8 @@ private:
 
 	GameInterfacePtr next_game_;
 
-
 	Block field_[c_field_width * c_field_height];
+	bool base_is_destroyed_ = false;
 
 	std::optional<Player> player_;
 

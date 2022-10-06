@@ -240,12 +240,15 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	}
 
 	// Base.
-	DrawSpriteWithAlpha(
-		frame_buffer,
-		Sprites::battle_city_eagle,
-		0,
-		field_offset_x + c_block_size * (c_field_width / 2 - 1),
-		field_offset_y + c_block_size * (c_field_height - 2));
+	if(!base_is_destroyed_)
+	{
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			Sprites::battle_city_eagle,
+			0,
+			field_offset_x + c_block_size * (c_field_width / 2 - 1),
+			field_offset_y + c_block_size * (c_field_height - 2));
+	}
 }
 
 GameInterfacePtr GameBattleCity::AskForNextGameTransition()
@@ -476,6 +479,14 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile)
 
 		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
 		hit = true;
+	}
+
+	if( !hit && !base_is_destroyed_ &&
+		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
+		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
+	{
+		hit = true;
+		base_is_destroyed_ = true;
 	}
 
 	// TODO - process collisions against player.
