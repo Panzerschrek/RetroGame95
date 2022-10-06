@@ -517,7 +517,6 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 	}
 }
 
-
 bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_player_projectile)
 {
 	switch (projectile.direction)
@@ -569,6 +568,33 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		}
 		enemies_.pop_back();
 		return true;
+	}
+
+	if(!is_player_projectile && player_ != std::nullopt)
+	{
+		for(size_t i = 0; i < player_->projectiles.size(); ++i)
+		{
+			Projectile& player_projectile =  player_->projectiles[i];
+			const fixed16_t other_min_x_f = player_projectile.position[0] - g_projectile_half_size;
+			const fixed16_t other_min_y_f = player_projectile.position[1] - g_projectile_half_size;
+			const fixed16_t other_max_x_f = player_projectile.position[0] + g_projectile_half_size;
+			const fixed16_t other_max_y_f = player_projectile.position[1] + g_projectile_half_size;
+			if( other_min_x_f >= max_x_f || other_max_x_f <= min_x_f ||
+				other_min_y_f >= max_y_f || other_max_y_f <= min_y_f)
+			{
+				continue;
+			}
+
+			// Hit player projectile.
+			// Deestroy both this projectile and player projectile.
+			if(i + 1 < player_->projectiles.size())
+			{
+				player_projectile = player_->projectiles.back();
+			}
+			player_->projectiles.pop_back();
+
+			return true;
+		}
 	}
 
 	// TODO - process collisions against player.
