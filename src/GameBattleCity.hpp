@@ -55,6 +55,12 @@ private:
 		std::optional<Projectile> projectile;
 	};
 
+	struct Explosion
+	{
+		fixed16vec2_t position{};
+		uint32_t end_tick = 0;
+	};
+
 	static const constexpr uint32_t c_field_width  = 32;
 	static const constexpr uint32_t c_field_height = 26;
 
@@ -72,6 +78,7 @@ private:
 
 	void SpawnPlayer();
 	void SpawnNewEnemy();
+	void MakeExplosion(const fixed16vec2_t& position);
 
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
@@ -90,8 +97,8 @@ private:
 	bool base_is_destroyed_ = false;
 
 	std::optional<Player> player_;
-
 	std::vector<Enemy> enemies_;
+	std::vector<Explosion> explosions_;
 
 	uint32_t lives_ = 3;
 	uint32_t level_ = 0;

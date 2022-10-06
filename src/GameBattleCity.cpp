@@ -133,6 +133,23 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		} // for projectiles.
 	}
 
+	for(size_t e = 0; e < explosions_.size();)
+	{
+		if(explosions_[e].end_tick <= tick_)
+		{
+			// This explosion is dead.
+			if(e + 1 < explosions_.size())
+			{
+				explosions_[e] = explosions_.back();
+			}
+			explosions_.pop_back();
+		}
+		else
+		{
+			++e;
+		}
+	} // for explosions.
+
 	if(enemies_.size() < g_max_alive_enemies && (tick_ % GameInterface::c_update_frequency) == 0)
 	{
 		SpawnNewEnemy();
@@ -259,6 +276,18 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		{
 			draw_projectile(*enemy.projectile);
 		}
+	}
+
+	for(const Explosion& explosion : explosions_)
+	{
+		// TODo - use proper animated sprite.
+		const SpriteBMP sprite(Sprites::tetris_block_1);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(explosion.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(explosion.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
 	// Draw foliage after player and enemies.
@@ -582,6 +611,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 	if(min_x < 0 || max_x > int32_t(c_field_width ) || min_y < 0 || max_y > int32_t(c_field_height))
 	{
+		MakeExplosion(projectile.position);
 		return true;
 	}
 
@@ -598,6 +628,9 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		}
 
 		// Hit this enemy.
+		MakeExplosion(projectile.position);
+		MakeExplosion(enemy.position);
+
 		if(i + 1 < enemies_.size())
 		{
 			enemy = enemies_.back();
@@ -637,6 +670,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		const fixed16vec2_t max = {player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size};
 		if(!(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f))
 		{
+			MakeExplosion(projectile.position);
+			MakeExplosion(player_->position);
 			player_ = std::nullopt;
 			return true;
 		}
@@ -693,18 +728,26 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		hit = true;
 	}
 
+	if(hit)
+	{
+		MakeExplosion(projectile.position);
+		return true;
+	}
+
 	if( !hit && !base_is_destroyed_ &&
 		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
 		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
 	{
-		hit = true;
+		MakeExplosion(projectile.position);
+		MakeExplosion({IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(int32_t(c_field_height - 1))});
 		base_is_destroyed_ = true;
 		game_over_ = true;
+		return true;
 	}
 
-	// TODO - make visual/sound effects on collision.
+	// TODO - make sound effects on collision.
 
-	return hit;
+	return false;
 }
 
 bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
@@ -789,6 +832,15 @@ void GameBattleCity::SpawnNewEnemy()
 		enemies_.push_back(enemy);
 		return;
 	}
+}
+
+void GameBattleCity::MakeExplosion(const fixed16vec2_t& position)
+{
+	Explosion explosion;
+	explosion.position = position;
+	explosion.end_tick = tick_ + GameInterface::c_update_frequency / 2;
+
+	explosions_.push_back(explosion);
 }
 
 void GameBattleCity::FillField(const char* field_data)
