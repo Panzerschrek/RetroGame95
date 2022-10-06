@@ -543,18 +543,51 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 	}
 	else
 	{
-		// Change direction to random.
-		// TODO - try to move towards target.
 
-		// Do not allow to preserve direction.
 		GridDirection new_direction  = enemy.direction;
-		for(uint32_t i = 0; i < 64; ++i)
+
+		if(rand_.Next() % 2 != 0)
 		{
-			new_direction = GridDirection(rand_.Next() % 4);
-			if(enemy.direction != new_direction)
+			// Try to move towards target.
+			// Choose closest target - base or player.
+
+			fixed16vec2_t target_pos = {IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(c_field_height - 1)};
+			const fixed16_t target_pseudo_dist =
+				Fixed16Abs(target_pos[0] - enemy.position[0]) + Fixed16Abs(target_pos[1] - enemy.position[1]);
+
+			if(player_ != std::nullopt)
 			{
-				break;
+				const fixed16_t player_pseudo_dist =
+					Fixed16Abs(player_->position[0] - enemy.position[0]) + Fixed16Abs(player_->position[1] - enemy.position[1]);
+				if(player_pseudo_dist < target_pseudo_dist)
+				{
+					target_pos = player_->position;
+				}
 			}
+
+			const fixed16vec2_t vec_to_target = {target_pos[0] - enemy.position[0], target_pos[1] - enemy.position[1]};
+			if(Fixed16Abs(vec_to_target[0]) >= Fixed16Abs(vec_to_target[1]))
+			{
+				new_direction = vec_to_target[0] > 0 ? GridDirection::XPlus : GridDirection::XMinus;
+			}
+			else
+			{
+				new_direction = vec_to_target[1] > 0 ? GridDirection::YPlus : GridDirection::YMinus;
+			}
+		}
+		else
+		{
+			// Change direction to random.
+			// Do not allow to preserve direction.
+			for(uint32_t i = 0; i < 64; ++i)
+			{
+				new_direction = GridDirection(rand_.Next() % 4);
+				if(enemy.direction != new_direction)
+				{
+					break;
+				}
+			}
+
 		}
 
 		// Align enemy to grid.
