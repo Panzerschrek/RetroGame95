@@ -21,6 +21,7 @@ const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
 
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
+const uint32_t g_spawn_shield_duration = GameInterface::c_update_frequency * 3;
 
 const size_t g_max_alive_enemies = 3;
 const uint32_t g_enemies_per_level = 15;
@@ -236,15 +237,28 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t x = uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size)));
 		const uint32_t y = uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size)));
 
-		const bool use_a = ((x ^ y) & 1) != 0;
+		{
+			const bool use_a = ((x ^ y) & 1) != 0;
 
-		const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
-		GetDrawFuncForDirection(player_->direction)(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x + x - sprite.GetWidth () / 2,
-			field_offset_y + y - sprite.GetHeight() / 2);
+			const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
+			GetDrawFuncForDirection(player_->direction)(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + x - sprite.GetWidth () / 2,
+				field_offset_y + y - sprite.GetHeight() / 2);
+		}
+
+		if(tick_ < player_->shield_end_tick)
+		{
+			const SpriteBMP sprite(tick_ / 6 % 2 != 0 ? Sprites::battle_city_player_shield_a : Sprites::battle_city_player_shield_b);
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + x - sprite.GetWidth () / 2,
+				field_offset_y + y - sprite.GetHeight() / 2);
+		}
 	}
 
 	for(const Enemy& enemy : enemies_)
@@ -706,9 +720,12 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		const fixed16vec2_t max = {player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size};
 		if(!(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f))
 		{
-			MakeExplosion(projectile.position);
-			MakeExplosion(player_->position);
-			player_ = std::nullopt;
+			if(tick_ >= player_->shield_end_tick)
+			{
+				MakeExplosion(projectile.position);
+				MakeExplosion(player_->position);
+				player_ = std::nullopt;
+			}
 			return true;
 		}
 	}
@@ -824,6 +841,7 @@ void GameBattleCity::SpawnPlayer()
 	Player player;
 	player.position = {IntToFixed16(int32_t(c_field_width / 2 - 4)), IntToFixed16(int32_t(c_field_height - 1))};
 	player.direction = GridDirection::YMinus;
+	player.shield_end_tick = tick_ + g_spawn_shield_duration;
 
 	player_ = player;
 }

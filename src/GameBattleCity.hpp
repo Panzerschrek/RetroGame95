@@ -45,6 +45,7 @@ private:
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YMinus;
 		uint32_t next_shot_tick = 0;
+		uint32_t shield_end_tick = 0;
 		std::vector<Projectile> projectiles;
 	};
 
