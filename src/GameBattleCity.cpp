@@ -920,6 +920,13 @@ bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
 		return false;
 	}
 
+	if(!base_is_destroyed_ &&
+		!(max_x < int32_t(c_field_width / 2) || min_x > int32_t(c_field_width / 2) ||
+		 max_y < int32_t(c_field_height - 1) || min_y > int32_t(c_field_height)))
+	{
+		return false;
+	}
+
 	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
 	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
 	{
