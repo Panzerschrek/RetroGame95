@@ -80,6 +80,7 @@ private:
 	static const constexpr uint32_t c_block_size = 8; // In pixels.
 
 private:
+	void NextLevel();
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
 
 	void UpdateEnemy(Enemy& enemy);

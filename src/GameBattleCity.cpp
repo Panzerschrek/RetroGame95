@@ -71,11 +71,7 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
-	enemies_left_ = g_enemies_per_level;
-
-	FillField(battle_city_level_0);
-
-	SpawnPlayer();
+	NextLevel();
 }
 
 void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -163,6 +159,11 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		(tick_ % GameInterface::c_update_frequency) == 0)
 	{
 		SpawnNewEnemy();
+	}
+
+	if(enemies_.empty() && enemies_left_ == 0 && !base_is_destroyed_ && player_ != std::nullopt && !game_over_)
+	{
+		NextLevel();
 	}
 }
 
@@ -444,6 +445,19 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 {
 	return std::move(next_game_);
+}
+
+void GameBattleCity::NextLevel()
+{
+	++level_;
+
+	enemies_.clear();
+	enemies_left_ = g_enemies_per_level;
+	explosions_.clear();
+
+	FillField(battle_city_level_0);
+
+	SpawnPlayer();
 }
 
 void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
