@@ -20,6 +20,8 @@ const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
 const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
 
+const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
+
 const size_t g_max_alive_enemies = 3;
 
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
@@ -135,7 +137,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 	for(size_t e = 0; e < explosions_.size();)
 	{
-		if(explosions_[e].end_tick <= tick_)
+		if(tick_ >= explosions_[e].start_tick + g_explosion_duration)
 		{
 			// This explosion is dead.
 			if(e + 1 < explosions_.size())
@@ -284,11 +286,24 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	const SpriteBMP explosion_sprites[]
+	{
+		Sprites::battle_city_explosion_0,
+		Sprites::battle_city_explosion_1,
+		Sprites::battle_city_explosion_2,
+		Sprites::battle_city_explosion_2,
+		Sprites::battle_city_explosion_1,
+		Sprites::battle_city_explosion_0
+	};
+	const auto num_explosion_sprites = uint32_t(std::size(explosion_sprites));
+
 	for(const Explosion& explosion : explosions_)
 	{
-		// TODo - use proper animated sprite.
-		const SpriteBMP sprite(Sprites::tetris_block_1);
-		DrawSpriteWithAlpha(
+		uint32_t i = std::min((tick_ - explosion.start_tick) * num_explosion_sprites / g_explosion_duration, num_explosion_sprites - 1);
+		const SpriteBMP sprite = explosion_sprites[i];
+
+		// Use pseudo-random rotation.
+		GetDrawFuncForDirection(GridDirection(explosion.start_tick % 4))(
 			frame_buffer,
 			sprite,
 			0,
@@ -844,7 +859,7 @@ void GameBattleCity::MakeExplosion(const fixed16vec2_t& position)
 {
 	Explosion explosion;
 	explosion.position = position;
-	explosion.end_tick = tick_ + GameInterface::c_update_frequency / 2;
+	explosion.start_tick = tick_;
 
 	explosions_.push_back(explosion);
 }

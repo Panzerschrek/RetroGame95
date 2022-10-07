@@ -58,7 +58,7 @@ private:
 	struct Explosion
 	{
 		fixed16vec2_t position{};
-		uint32_t end_tick = 0;
+		uint32_t start_tick = 0;
 	};
 
 	static const constexpr uint32_t c_field_width  = 32;
