@@ -296,7 +296,25 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		{
 			const bool use_a = ((x ^ y) & 1) != 0;
 
-			const SpriteBMP sprite(use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b);
+			SpriteBMP sprite(Sprites::battle_city_enemy_0_a);
+			switch(enemy.type)
+			{
+			case EnemyType::TargetKiller:
+				sprite = use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b;
+				break;
+			case EnemyType::EagleHunter:
+				sprite = use_a ? Sprites::battle_city_enemy_1_a : Sprites::battle_city_enemy_1_a; // TODO - fix this.
+				break;
+			case EnemyType::Fast:
+				sprite = use_a ? Sprites::battle_city_enemy_2_a : Sprites::battle_city_enemy_2_b;
+				break;
+			case EnemyType::Heavy:
+				sprite = use_a ? Sprites::battle_city_enemy_3_a : Sprites::battle_city_enemy_3_b;
+				break;
+			case EnemyType::NumTypes:
+				assert(false);
+				break;
+			};
 
 			GetDrawFuncForDirection(enemy.direction)(
 				frame_buffer,
@@ -922,6 +940,7 @@ void GameBattleCity::SpawnNewEnemy()
 		}
 
 		Enemy enemy;
+		enemy.type = EnemyType(rand_.Next() % uint32_t(EnemyType::NumTypes));
 		enemy.position = position;
 		enemy.direction = GridDirection::YPlus;
 		enemy.spawn_tick = tick_;

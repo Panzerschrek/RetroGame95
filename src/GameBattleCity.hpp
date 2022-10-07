@@ -49,8 +49,18 @@ private:
 		std::vector<Projectile> projectiles;
 	};
 
+	enum class EnemyType : uint8_t
+	{
+		TargetKiller,
+		EagleHunter,
+		Fast,
+		Heavy,
+		NumTypes,
+	};
+
 	struct Enemy
 	{
+		EnemyType type = EnemyType::TargetKiller;
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YPlus;
 		uint32_t spawn_tick = 0;
