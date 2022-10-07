@@ -306,7 +306,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 				sprite = use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b;
 				break;
 			case EnemyType::LessRandom:
-				sprite = use_a ? Sprites::battle_city_enemy_1_a : Sprites::battle_city_enemy_1_a; // TODO - fix this.
+				sprite = use_a ? Sprites::battle_city_enemy_1_a : Sprites::battle_city_enemy_1_b;
 				break;
 			case EnemyType::Fast:
 				sprite = use_a ? Sprites::battle_city_enemy_2_a : Sprites::battle_city_enemy_2_b;
