@@ -53,6 +53,7 @@ private:
 	{
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YPlus;
+		uint32_t spawn_tick = 0;
 		std::optional<Projectile> projectile;
 	};
 

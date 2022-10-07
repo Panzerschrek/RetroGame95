@@ -19,9 +19,9 @@ const fixed16_t g_tank_half_size = g_fixed16_one - 1;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 
 const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
-
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
 const uint32_t g_spawn_shield_duration = GameInterface::c_update_frequency * 3;
+const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_frequency;
 
 const size_t g_max_alive_enemies = 3;
 const uint32_t g_enemies_per_level = 15;
@@ -261,21 +261,50 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	const SpriteBMP spawn_glow_sprites[]
+	{
+		Sprites::battle_city_tank_spawn_glow_0,
+		Sprites::battle_city_tank_spawn_glow_1,
+		Sprites::battle_city_tank_spawn_glow_2,
+		Sprites::battle_city_tank_spawn_glow_1,
+		Sprites::battle_city_tank_spawn_glow_0,
+		Sprites::battle_city_tank_spawn_glow_1,
+		Sprites::battle_city_tank_spawn_glow_2,
+		Sprites::battle_city_tank_spawn_glow_1,
+		Sprites::battle_city_tank_spawn_glow_0,
+	};
+	const auto num_spawn_glow_sprites = uint32_t(std::size(spawn_glow_sprites));
+
 	for(const Enemy& enemy : enemies_)
 	{
 		const uint32_t x = uint32_t(Fixed16FloorToInt(enemy.position[0] * int32_t(c_block_size)));
 		const uint32_t y = uint32_t(Fixed16FloorToInt(enemy.position[1] * int32_t(c_block_size)));
 
-		const bool use_a = ((x ^ y) & 1) != 0;
+		if(tick_ < enemy.spawn_tick + g_enemy_spawn_animation_duration)
+		{
+			uint32_t i = std::min((tick_ - enemy.spawn_tick) * num_spawn_glow_sprites / g_enemy_spawn_animation_duration, num_spawn_glow_sprites - 1);
+			const SpriteBMP sprite = spawn_glow_sprites[i];
 
-		const SpriteBMP sprite(use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b);
+			GetDrawFuncForDirection(enemy.direction)(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + x - sprite.GetWidth () / 2,
+				field_offset_y + y - sprite.GetHeight() / 2);
+		}
+		else
+		{
+			const bool use_a = ((x ^ y) & 1) != 0;
 
-		GetDrawFuncForDirection(enemy.direction)(
-			frame_buffer,
-			sprite,
-			0,
-			field_offset_x + x - sprite.GetWidth () / 2,
-			field_offset_y + y - sprite.GetHeight() / 2);
+			const SpriteBMP sprite(use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b);
+
+			GetDrawFuncForDirection(enemy.direction)(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + x - sprite.GetWidth () / 2,
+				field_offset_y + y - sprite.GetHeight() / 2);
+		}
 	}
 
 	const auto draw_projectile =
@@ -498,6 +527,11 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 
 void GameBattleCity::UpdateEnemy(Enemy& enemy)
 {
+	if(tick_ < enemy.spawn_tick + g_enemy_spawn_animation_duration)
+	{
+		return;
+	}
+
 	fixed16vec2_t new_position = enemy.position;
 
 	const fixed16_t speed = g_enemy_speed; // TODO - increase dpeed for fast tanks.
@@ -668,6 +702,11 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	for(size_t i = 0; i < enemies_.size() && is_player_projectile; ++i)
 	{
 		Enemy& enemy = enemies_[i];
+
+		if(tick_ < enemy.spawn_tick + g_enemy_spawn_animation_duration)
+		{
+			continue;
+		}
 
 		const fixed16vec2_t min = {enemy.position[0] - g_tank_half_size, enemy.position[1] - g_tank_half_size};
 		const fixed16vec2_t max = {enemy.position[0] + g_tank_half_size, enemy.position[1] + g_tank_half_size};
@@ -885,6 +924,7 @@ void GameBattleCity::SpawnNewEnemy()
 		Enemy enemy;
 		enemy.position = position;
 		enemy.direction = GridDirection::YPlus;
+		enemy.spawn_tick = tick_;
 		enemies_.push_back(enemy);
 
 		--enemies_left_;
