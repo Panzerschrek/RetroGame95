@@ -98,6 +98,7 @@ private:
 
 	std::optional<Player> player_;
 	std::vector<Enemy> enemies_;
+	uint32_t enemies_left_ = 0;
 	std::vector<Explosion> explosions_;
 
 	uint32_t lives_ = 3;

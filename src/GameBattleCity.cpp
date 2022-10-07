@@ -23,6 +23,7 @@ const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency 
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
 
 const size_t g_max_alive_enemies = 3;
+const uint32_t g_enemies_per_level = 15;
 
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
 {
@@ -67,6 +68,8 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	enemies_left_ = g_enemies_per_level;
+
 	FillField(battle_city_level_0);
 
 	SpawnPlayer();
@@ -152,7 +155,9 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		}
 	} // for explosions.
 
-	if(enemies_.size() < g_max_alive_enemies && (tick_ % GameInterface::c_update_frequency) == 0)
+	if(enemies_left_ > 0 &&
+		enemies_.size() < g_max_alive_enemies &&
+		(tick_ % GameInterface::c_update_frequency) == 0)
 	{
 		SpawnNewEnemy();
 	}
@@ -338,6 +343,16 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			0,
 			field_offset_x + c_block_size * (c_field_width / 2 - 1),
 			field_offset_y + c_block_size * (c_field_height - 2));
+	}
+
+	for(uint32_t i = 0; i < enemies_left_; ++i)
+	{
+		const SpriteBMP sprite(Sprites::battle_city_remaining_enemy);
+		DrawSprite(
+			frame_buffer,
+			Sprites::battle_city_remaining_enemy,
+			frame_buffer.width - 32 + sprite.GetWidth() * (i % 2),
+			40 + (i / 2) * sprite.GetHeight());
 	}
 
 	const uint32_t texts_offset_x = frame_buffer.width - 32;
@@ -654,7 +669,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 		if(i + 1 < enemies_.size())
 		{
-			enemy = enemies_.back();
+			enemy = std::move(enemies_.back());
 		}
 		enemies_.pop_back();
 		return true;
@@ -815,6 +830,8 @@ void GameBattleCity::SpawnPlayer()
 
 void GameBattleCity::SpawnNewEnemy()
 {
+	assert(enemies_left_ > 0);
+
 	// Try to spawn it at random position, but avoid obstacles.
 	for(uint32_t i = 0; i < 64; ++i)
 	{
@@ -851,6 +868,8 @@ void GameBattleCity::SpawnNewEnemy()
 		enemy.position = position;
 		enemy.direction = GridDirection::YPlus;
 		enemies_.push_back(enemy);
+
+		--enemies_left_;
 		return;
 	}
 }
