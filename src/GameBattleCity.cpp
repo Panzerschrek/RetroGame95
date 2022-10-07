@@ -13,6 +13,8 @@ namespace
 
 const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_enemy_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
+const fixed16_t g_enemy_speed_fast = g_enemy_speed * 3 / 2;
+
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
 
 const fixed16_t g_tank_half_size = g_fixed16_one - 1;
@@ -299,10 +301,10 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			SpriteBMP sprite(Sprites::battle_city_enemy_0_a);
 			switch(enemy.type)
 			{
-			case EnemyType::TargetKiller:
+			case EnemyType::Basic:
 				sprite = use_a ? Sprites::battle_city_enemy_0_a : Sprites::battle_city_enemy_0_b;
 				break;
-			case EnemyType::EagleHunter:
+			case EnemyType::LessRandom:
 				sprite = use_a ? Sprites::battle_city_enemy_1_a : Sprites::battle_city_enemy_1_a; // TODO - fix this.
 				break;
 			case EnemyType::Fast:
@@ -545,6 +547,8 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 
 void GameBattleCity::UpdateEnemy(Enemy& enemy)
 {
+	const fixed16vec2_t base_pos = {IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(c_field_height - 1)};
+
 	if(tick_ < enemy.spawn_tick + g_enemy_spawn_animation_duration)
 	{
 		return;
@@ -552,7 +556,7 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 
 	fixed16vec2_t new_position = enemy.position;
 
-	const fixed16_t speed = g_enemy_speed; // TODO - increase dpeed for fast tanks.
+	const fixed16_t speed = enemy.type == EnemyType::Fast ? g_enemy_speed_fast : g_enemy_speed;
 	switch (enemy.direction)
 	{
 	case GridDirection::XPlus:
@@ -595,19 +599,22 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 	}
 	else
 	{
+		GridDirection new_direction = enemy.direction;
 
-		GridDirection new_direction  = enemy.direction;
+		// LessRandom enemy chooses to move towards target with 80% chance. Other enemies - with only 50%.
+		const uint32_t target_move_chance = enemy.type == EnemyType::LessRandom ? 80 : 50;
 
-		if(rand_.Next() % 2 != 0)
+		if(rand_.Next() % 100 < target_move_chance)
 		{
 			// Try to move towards target.
 			// Choose closest target - base or player.
 
-			fixed16vec2_t target_pos = {IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(c_field_height - 1)};
+			fixed16vec2_t target_pos = base_pos;
 			const fixed16_t target_pseudo_dist =
 				Fixed16Abs(target_pos[0] - enemy.position[0]) + Fixed16Abs(target_pos[1] - enemy.position[1]);
 
-			if(player_ != std::nullopt)
+			// Fast and Basic enemies do not use player as target.
+			if(player_ != std::nullopt && enemy.type != EnemyType::Fast && enemy.type != EnemyType::Basic)
 			{
 				const fixed16_t player_pseudo_dist =
 					Fixed16Abs(player_->position[0] - enemy.position[0]) + Fixed16Abs(player_->position[1] - enemy.position[1]);
@@ -680,7 +687,41 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 
 	if(enemy.projectile == std::nullopt && rand_.Next() % 147 == 5)
 	{
-		enemy.projectile = MakeProjectile(enemy.position, enemy.direction);
+		bool can_fire = true;
+		if(enemy.type == EnemyType::Heavy)
+		{
+			// Heavy tank fires only if player or base is at front of it.
+
+			const auto target_is_in_front =
+			[&](const fixed16vec2_t& target) -> bool
+			{
+				const fixed16_t strafe_threshold = g_fixed16_one * 2;
+				switch(enemy.direction)
+				{
+				case GridDirection::XPlus:
+					return target[0] > enemy.position[0] && Fixed16Abs(enemy.position[1] - target[1]) < strafe_threshold;
+				case GridDirection::XMinus:
+					return target[0] < enemy.position[0] && Fixed16Abs(enemy.position[1] - target[1]) < strafe_threshold;
+				case GridDirection::YPlus:
+					return target[1] > enemy.position[1] && Fixed16Abs(enemy.position[0] - target[0]) < strafe_threshold;
+				case GridDirection::YMinus:
+					return target[1] < enemy.position[1] && Fixed16Abs(enemy.position[0] - target[0]) < strafe_threshold;
+				};
+				assert(false);
+				return false;
+			};
+
+			can_fire = target_is_in_front(base_pos);
+			if(player_ != std::nullopt)
+			{
+				can_fire |= target_is_in_front(player_->position);
+			}
+		}
+
+		if(can_fire)
+		{
+			enemy.projectile = MakeProjectile(enemy.position, enemy.direction);
+		}
 	}
 }
 
@@ -736,13 +777,19 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 		// Hit this enemy.
 		MakeExplosion(projectile.position);
-		MakeExplosion(enemy.position);
 
-		if(i + 1 < enemies_.size())
+		assert(enemy.health > 0);
+		--enemy.health;
+		if(enemy.health == 0)
 		{
-			enemy = std::move(enemies_.back());
+			MakeExplosion(enemy.position);
+
+			if(i + 1 < enemies_.size())
+			{
+				enemy = std::move(enemies_.back());
+			}
+			enemies_.pop_back();
 		}
-		enemies_.pop_back();
 		return true;
 	}
 
@@ -941,6 +988,7 @@ void GameBattleCity::SpawnNewEnemy()
 
 		Enemy enemy;
 		enemy.type = EnemyType(rand_.Next() % uint32_t(EnemyType::NumTypes));
+		enemy.health = enemy.type == EnemyType::Heavy ? 3 : 1;
 		enemy.position = position;
 		enemy.direction = GridDirection::YPlus;
 		enemy.spawn_tick = tick_;

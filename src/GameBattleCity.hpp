@@ -51,8 +51,8 @@ private:
 
 	enum class EnemyType : uint8_t
 	{
-		TargetKiller,
-		EagleHunter,
+		Basic,
+		LessRandom,
 		Fast,
 		Heavy,
 		NumTypes,
@@ -60,7 +60,8 @@ private:
 
 	struct Enemy
 	{
-		EnemyType type = EnemyType::TargetKiller;
+		EnemyType type = EnemyType::Basic;
+		uint8_t health = 0;
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YPlus;
 		uint32_t spawn_tick = 0;
