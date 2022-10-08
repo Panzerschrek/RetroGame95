@@ -62,6 +62,7 @@ private:
 	{
 		EnemyType type = EnemyType::Basic;
 		uint8_t health = 0;
+		bool gives_bonus = false;
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YPlus;
 		uint32_t spawn_tick = 0;
@@ -72,6 +73,23 @@ private:
 	{
 		fixed16vec2_t position{};
 		uint32_t start_tick = 0;
+	};
+
+	enum class BonusType : uint8_t
+	{
+		ExtraLife,
+		TankUpgrade,
+		Shield,
+		BaseProtection,
+		DestryAllTanks,
+		PauseAllTanks,
+		NumTypes,
+	};
+
+	struct Bonus
+	{
+		BonusType type = BonusType::ExtraLife;
+		fixed16vec2_t position{};
 	};
 
 	static const constexpr uint32_t c_field_width  = 32;
@@ -92,6 +110,7 @@ private:
 
 	void SpawnPlayer();
 	void SpawnNewEnemy();
+	void SpawnBonus();
 	void MakeExplosion(const fixed16vec2_t& position);
 
 	void FillField(const char* field_data);
@@ -114,6 +133,7 @@ private:
 	std::vector<Enemy> enemies_;
 	uint32_t enemies_left_ = 0;
 	std::vector<Explosion> explosions_;
+	std::optional<Bonus> bonus_;
 
 	uint32_t lives_ = 3;
 	uint32_t level_ = 0;

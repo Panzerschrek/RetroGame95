@@ -398,6 +398,27 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + y * c_block_size);
 	}
 
+	if(bonus_ != std::nullopt)
+	{
+		const SpriteBMP bonus_sprites[]
+		{
+			Sprites::battle_city_bonus_tank,
+			Sprites::battle_city_bonus_star,
+			Sprites::battle_city_bonus_helmet,
+			Sprites::battle_city_bonus_shovel,
+			Sprites::battle_city_bonus_grenade,
+			Sprites::battle_city_bonus_clock,
+		};
+
+		const SpriteBMP sprite = bonus_sprites[size_t(bonus_->type)];
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(bonus_->position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(bonus_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+
 	// Base.
 	if(!base_is_destroyed_)
 	{
@@ -456,6 +477,7 @@ void GameBattleCity::NextLevel()
 	enemies_.clear();
 	enemies_left_ = g_enemies_per_level;
 	explosions_.clear();
+	bonus_ = std::nullopt;
 
 	FillField(battle_city_level_0);
 
@@ -799,6 +821,10 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		if(enemy.health == 0)
 		{
 			MakeExplosion(enemy.position);
+			if(enemy.gives_bonus)
+			{
+				SpawnBonus();
+			}
 
 			if(i + 1 < enemies_.size())
 			{
@@ -1015,9 +1041,51 @@ void GameBattleCity::SpawnNewEnemy()
 		enemy.position = position;
 		enemy.direction = GridDirection::YPlus;
 		enemy.spawn_tick = tick_;
+
+		bool have_bonus_enemy = false;
+		for(const Enemy& enemy : enemies_)
+		{
+			have_bonus_enemy |= enemy.gives_bonus;
+		}
+
+		if(!have_bonus_enemy)
+		{
+			enemy.gives_bonus = rand_.Next() % 4 == 2;
+		}
+
 		enemies_.push_back(enemy);
 
 		--enemies_left_;
+		return;
+	}
+}
+
+void GameBattleCity::SpawnBonus()
+{
+	const auto bonus_type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
+	for(uint32_t i = 0; i < 256; ++i)
+	{
+		uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
+		uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
+
+		bool can_place = true;
+		for(uint32_t dy = 0; dy < 2; ++dy)
+		for(uint32_t dx = 0; dx < 2; ++dx)
+		{
+			const BlockType block_type = field_[x + dy - 1 + (y + dy - 1) * c_field_width].type;
+			can_place &= block_type ==
+				BlockType::Empty || block_type == BlockType::Bricks || block_type == BlockType::Foliage;
+		}
+
+		if(!can_place)
+		{
+			continue;
+		}
+
+		Bonus bonus;
+		bonus.type = bonus_type;
+		bonus.position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
+		bonus_ = bonus;
 		return;
 	}
 }
