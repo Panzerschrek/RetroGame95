@@ -425,10 +425,12 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y, "IP");
 	NumToString(text, sizeof(text), lives_, 2);
+	DrawSprite(frame_buffer, Sprites::battle_city_player_lives_symbol, texts_offset_x, texts_offset_y + g_glyph_height);
 	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height, text);
 
 	NumToString(text, sizeof(text), level_, 2);
 	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height * 8, text);
+	DrawSprite(frame_buffer, Sprites::battle_city_level_symbol, texts_offset_x, texts_offset_y + g_glyph_height * 6);
 
 	if(game_over_)
 	{
