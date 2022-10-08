@@ -1150,15 +1150,21 @@ void GameBattleCity::SpawnBonus()
 			can_place &= block_type ==
 				BlockType::Empty || block_type == BlockType::Bricks || block_type == BlockType::Foliage;
 		}
-
 		if(!can_place)
 		{
 			continue;
 		}
 
+		const fixed16vec2_t position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
+		if(player_ != std::nullopt && TanksIntersects(position, player_->position))
+		{
+			// Do not spawn bonus directly at player position.
+			continue;
+		}
+
 		Bonus bonus;
 		bonus.type = bonus_type;
-		bonus.position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
+		bonus.position = position;
 		bonus_ = bonus;
 		return;
 	}
