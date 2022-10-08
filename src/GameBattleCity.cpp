@@ -319,12 +319,25 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 				break;
 			};
 
-			GetDrawFuncForDirection(enemy.direction)(
-				frame_buffer,
-				sprite,
-				0,
-				field_offset_x + x - sprite.GetWidth () / 2,
-				field_offset_y + y - sprite.GetHeight() / 2);
+			const uint32_t start_x = field_offset_x + x - sprite.GetWidth () / 2;
+			const uint32_t start_y = field_offset_y + y - sprite.GetHeight() / 2;
+			if(enemy.gives_bonus)
+			{
+				const uint8_t colors[]= {0, 4, 12, 15};
+				uint32_t i = tick_ / 6 % 4;
+				if(i != 0)
+				{
+					FillRect(
+						frame_buffer,
+						g_cga_palette[colors[i]],
+						start_x,
+						start_y,
+						sprite.GetWidth(),
+						sprite.GetHeight());
+				}
+			}
+
+			GetDrawFuncForDirection(enemy.direction)( frame_buffer, sprite, 0, start_x, start_y);
 		}
 	}
 
