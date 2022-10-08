@@ -23,10 +23,12 @@ const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
 const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
 const uint32_t g_spawn_shield_duration = GameInterface::c_update_frequency * 3;
+const uint32_t g_shield_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_frequency;
 
 const size_t g_max_alive_enemies = 3;
 const uint32_t g_enemies_per_level = 15;
+const uint32_t g_max_lifes = 9;
 
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
 {
@@ -103,6 +105,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 	if(player_ != std::nullopt)
 	{
 		ProcessPlayerInput(keyboard_state);
+		TryToPickUpBonus();
 	}
 
 	for(Enemy& enemy : enemies_)
@@ -590,6 +593,67 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
 			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
 		}
+	}
+}
+
+void GameBattleCity::TryToPickUpBonus()
+{
+	assert(player_ != std::nullopt);
+
+	if(bonus_ == std::nullopt)
+	{
+		return;
+	}
+
+	if(!TanksIntersects(player_->position, bonus_->position))
+	{
+		// Too far.
+		return;
+	}
+
+	bool bonus_enemy_destroyed = false;
+
+	// Pick up the bonus.
+	switch(bonus_->type)
+	{
+	case BonusType::ExtraLife:
+		lives_ = std::min(lives_ + 1, g_max_lifes);
+		break;
+
+	case BonusType::TankUpgrade:
+		// TODO
+		break;
+
+	case BonusType::Shield:
+		player_->shield_end_tick = tick_ + g_shield_bonus_duration;
+		break;
+
+	case BonusType::BaseProtection:
+		// TODO
+		break;
+	case BonusType::DestryAllTanks:
+		for(const Enemy& enemy : enemies_)
+		{
+			bonus_enemy_destroyed |= enemy.gives_bonus;
+			MakeExplosion(enemy.position);
+		}
+		enemies_.clear();
+		break;
+
+	case BonusType::PauseAllTanks:
+		// TODO
+		break;
+
+	case BonusType::NumTypes:
+		assert(false);
+		break;
+	}
+
+	bonus_ = std::nullopt;
+
+	if(bonus_enemy_destroyed)
+	{
+		SpawnBonus();
 	}
 }
 

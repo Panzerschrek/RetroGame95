@@ -100,6 +100,7 @@ private:
 private:
 	void NextLevel();
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
+	void TryToPickUpBonus();
 
 	void UpdateEnemy(Enemy& enemy);
 
