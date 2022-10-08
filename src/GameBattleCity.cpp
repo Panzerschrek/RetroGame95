@@ -420,15 +420,12 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	}
 
 	// Base.
-	if(!base_is_destroyed_)
-	{
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			Sprites::battle_city_eagle,
-			0,
-			field_offset_x + c_block_size * (c_field_width / 2 - 1),
-			field_offset_y + c_block_size * (c_field_height - 2));
-	}
+	DrawSpriteWithAlpha(
+		frame_buffer,
+		base_is_destroyed_ ? Sprites::battle_city_eagle_destroyed : Sprites::battle_city_eagle,
+		0,
+		field_offset_x + c_block_size * (c_field_width / 2 - 1),
+		field_offset_y + c_block_size * (c_field_height - 2));
 
 	for(uint32_t i = 0; i < enemies_left_; ++i)
 	{
