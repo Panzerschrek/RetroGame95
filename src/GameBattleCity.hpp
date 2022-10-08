@@ -131,6 +131,7 @@ private:
 	bool base_is_destroyed_ = false;
 
 	std::optional<Player> player_;
+	uint32_t player_level_ = 1; // Saved between levels, but it is reseted after death.
 	std::vector<Enemy> enemies_;
 	uint32_t enemies_left_ = 0;
 	std::vector<Explosion> explosions_;

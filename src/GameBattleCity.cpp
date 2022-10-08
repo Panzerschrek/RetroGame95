@@ -587,7 +587,7 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	// Shoot.
 	if(keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)])
 	{
-		const size_t max_active_projectiles = 1; // TODO - use more for upgraded tank.
+		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
 		{
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
@@ -621,7 +621,7 @@ void GameBattleCity::TryToPickUpBonus()
 		break;
 
 	case BonusType::TankUpgrade:
-		// TODO
+		++player_level_;
 		break;
 
 	case BonusType::Shield:
@@ -945,6 +945,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 				MakeExplosion(projectile.position);
 				MakeExplosion(player_->position);
 				player_ = std::nullopt;
+				player_level_ = 1;
 			}
 			return true;
 		}
