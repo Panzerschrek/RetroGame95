@@ -492,7 +492,7 @@ void GameBattleCity::NextLevel()
 	explosions_.clear();
 	bonus_ = std::nullopt;
 
-	FillField(battle_city_level_0);
+	FillField(battle_city_levels[(level_ - 1) % std::size(battle_city_levels)]);
 
 	SpawnPlayer();
 }
