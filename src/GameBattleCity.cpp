@@ -1,5 +1,6 @@
 #include "GameBattleCity.hpp"
 #include "BattleCityLevels.hpp"
+#include "GameEndScreen.hpp"
 #include "GameMainMenu.hpp"
 #include "Draw.hpp"
 #include "SpriteBMP.hpp"
@@ -491,6 +492,13 @@ GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 
 void GameBattleCity::NextLevel()
 {
+	const auto max_level = uint32_t(std::size(battle_city_levels));
+	if(level_ >= max_level)
+	{
+		next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		return;
+	}
+
 	++level_;
 
 	enemies_.clear();
@@ -500,7 +508,7 @@ void GameBattleCity::NextLevel()
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
 
-	FillField(battle_city_levels[(level_ - 1) % std::size(battle_city_levels)]);
+	FillField(battle_city_levels[level_ - 1]);
 
 	SpawnPlayer();
 }
