@@ -31,7 +31,7 @@ const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_freque
 
 const size_t g_max_alive_enemies = 3;
 const uint32_t g_enemies_per_level = 15;
-const uint32_t g_max_lifes = 9;
+const uint32_t g_max_lives = 9;
 
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
 {
@@ -633,7 +633,7 @@ void GameBattleCity::TryToPickUpBonus()
 	switch(bonus_->type)
 	{
 	case BonusType::ExtraLife:
-		lives_ = std::min(lives_ + 1, g_max_lifes);
+		lives_ = std::min(lives_ + 1, g_max_lives);
 		break;
 
 	case BonusType::TankUpgrade:
