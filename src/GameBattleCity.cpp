@@ -193,6 +193,14 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	FillRect(frame_buffer, border_color, 0, field_offset_y, field_offset_x, field_height);
 	FillRect(frame_buffer, border_color, field_x_end, field_offset_y, frame_buffer.width - field_x_end, field_height);
 
+	// Base.
+	DrawSpriteWithAlpha(
+		frame_buffer,
+		base_is_destroyed_ ? Sprites::battle_city_eagle_destroyed : Sprites::battle_city_eagle,
+		0,
+		field_offset_x + c_block_size * (c_field_width / 2 - 1),
+		field_offset_y + c_block_size * (c_field_height - 2));
+
 	const SpriteBMP block_sprites[]
 	{
 		Sprites::battle_city_block_bricks,
@@ -439,13 +447,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(bonus_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
-	// Base.
-	DrawSpriteWithAlpha(
-		frame_buffer,
-		base_is_destroyed_ ? Sprites::battle_city_eagle_destroyed : Sprites::battle_city_eagle,
-		0,
-		field_offset_x + c_block_size * (c_field_width / 2 - 1),
-		field_offset_y + c_block_size * (c_field_height - 2));
+	// UI.
 
 	for(uint32_t i = 0; i < enemies_left_; ++i)
 	{
