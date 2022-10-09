@@ -18,6 +18,7 @@ DEFINE_STRING(game_name_arkanoid, "Arkanoid")
 DEFINE_STRING(game_name_tetris, "Tetris")
 DEFINE_STRING(game_name_snake, "Snake")
 DEFINE_STRING(game_name_pacman, "Pacman")
+DEFINE_STRING(game_name_battle_city, "Battle City")
 DEFINE_STRING(game_name_end_screen, "the End")
 
 DEFINE_STRING(arkanoid_round, "Round")
@@ -43,6 +44,8 @@ DEFINE_STRING(pacman_score, "Score")
 DEFINE_STRING(pacman_ready, "Ready!")
 DEFINE_STRING(pacman_game_over, "Game Over")
 DEFINE_STRING(pacman_level_completed, "level completed!")
+
+DEFINE_STRING(battle_city_game_over, "GAME\n\nOVER!")
 
 DEFINE_STRING(end_screen_congratulations,
 R"(

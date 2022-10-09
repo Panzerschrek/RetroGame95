@@ -1,6 +1,6 @@
 #include "GamePacman.hpp"
 #include "Draw.hpp"
-#include "GameEndScreen.hpp"
+#include "GameBattleCity.hpp"
 #include "GameMainMenu.hpp"
 #include "GamesDrawCommon.hpp"
 #include "Progress.hpp"
@@ -868,7 +868,7 @@ void GamePacman::NextLevel()
 	{
 		if(next_game_ == nullptr)
 		{
-			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+			next_game_ = std::make_unique<GameBattleCity>(sound_player_);
 		}
 		return;
 	}

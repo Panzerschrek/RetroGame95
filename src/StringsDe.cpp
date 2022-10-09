@@ -20,6 +20,7 @@ DEFINE_STRING(game_name_arkanoid, "das Verlorenes Raumschiff")
 DEFINE_STRING(game_name_tetris, "der Maurer")
 DEFINE_STRING(game_name_snake, "die Gefreßige Schlange")
 DEFINE_STRING(game_name_pacman, "Packmann")
+DEFINE_STRING(game_name_battle_city, "die Kampfstadt")
 DEFINE_STRING(game_name_end_screen, "das Ende")
 
 DEFINE_STRING(arkanoid_round, "Runde")
@@ -45,6 +46,8 @@ DEFINE_STRING(pacman_score, "Zahl")
 DEFINE_STRING(pacman_ready, "Sei bereit!")
 DEFINE_STRING(pacman_game_over, "Spiel ist vorbei")
 DEFINE_STRING(pacman_level_completed, "Level ist geschlossen!")
+
+DEFINE_STRING(battle_city_game_over, " SPIEL\n\n  IST\n\nVORBEI!")
 
 DEFINE_STRING(end_screen_congratulations,
 R"(

@@ -18,6 +18,7 @@ DECLARE_STRING(game_name_arkanoid)
 DECLARE_STRING(game_name_tetris)
 DECLARE_STRING(game_name_snake)
 DECLARE_STRING(game_name_pacman)
+DECLARE_STRING(game_name_battle_city)
 DECLARE_STRING(game_name_end_screen)
 
 DECLARE_STRING(arkanoid_round)
@@ -43,6 +44,8 @@ DECLARE_STRING(pacman_score)
 DECLARE_STRING(pacman_ready)
 DECLARE_STRING(pacman_game_over)
 DECLARE_STRING(pacman_level_completed)
+
+DECLARE_STRING(battle_city_game_over)
 
 DECLARE_STRING(end_screen_congratulations)
 DECLARE_STRING(end_screen_authors)

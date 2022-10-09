@@ -90,19 +90,14 @@ bool Host::Loop()
 	{
 		const uint8_t colors[2] = {8, 15};
 		const uint32_t index = prev_tick_time_ / 300 % 2;
-		const Color32 color_main = g_cga_palette[colors[index]];
-		const Color32 color_outline = g_cga_palette[colors[index ^ 1]];
-		const uint32_t offset_x = frame_buffer.width  / 2;
-		const uint32_t offset_y = frame_buffer.height / 2;
-		const char* const text = Strings::paused;
 
-		for(uint32_t dx = 0; dx < 3; ++dx)
-		for(uint32_t dy = 0; dy < 3; ++dy)
-		{
-			DrawTextCentered(frame_buffer, color_outline, offset_x + dx - 1, offset_y + dy - 1, text);
-		}
-
-		DrawTextCentered(frame_buffer, color_main, offset_x, offset_y, text);
+		DrawTextCenteredWithOutline(
+			frame_buffer,
+			g_cga_palette[colors[index]],
+			g_cga_palette[colors[index ^ 1]],
+			frame_buffer.width  / 2,
+			frame_buffer.height / 2,
+			Strings::paused);
 	}
 
 	system_window_.EndFrame();

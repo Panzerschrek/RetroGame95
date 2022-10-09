@@ -24,6 +24,16 @@ void DrawSprite(
 	uint32_t start_x,
 	uint32_t start_y);
 
+void DrawSpriteRect(
+	FrameBuffer frame_buffer,
+	SpriteBMP sprite,
+	uint32_t start_x,
+	uint32_t start_y,
+	uint32_t sprite_start_x,
+	uint32_t sprite_start_y,
+	uint32_t sprite_rect_width,
+	uint32_t sprite_rect_height);
+
 // Draw whole sprite without borders check. Reject texels with transparent color.
 void DrawSpriteWithAlpha(
 	FrameBuffer frame_buffer,
@@ -109,7 +119,7 @@ void DrawTextWithFullShadow(
 void DrawTextWithOutline(
 	FrameBuffer frame_buffer,
 	Color32 color,
-	Color32 shadow_color,
+	Color32 outline_color,
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
@@ -117,6 +127,14 @@ void DrawTextWithOutline(
 void DrawTextCentered(
 	FrameBuffer frame_buffer,
 	Color32 color,
+	uint32_t center_x,
+	uint32_t center_y,
+	const char* text);
+
+void DrawTextCenteredWithOutline(
+	FrameBuffer frame_buffer,
+	Color32 color,
+	Color32 outline_color,
 	uint32_t center_x,
 	uint32_t center_y,
 	const char* text);

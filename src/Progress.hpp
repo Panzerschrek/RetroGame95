@@ -7,6 +7,7 @@ enum class GameId
 	Tetris,
 	Snake,
 	Pacman,
+	BattleCity,
 	EndScreen,
 	NumGames,
 };
