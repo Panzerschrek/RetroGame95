@@ -24,6 +24,8 @@ const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency 
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
 const uint32_t g_spawn_shield_duration = GameInterface::c_update_frequency * 3;
 const uint32_t g_shield_bonus_duration = GameInterface::c_update_frequency * 15;
+const uint32_t g_enemies_freezee_bonus_duration = GameInterface::c_update_frequency * 15;
+const uint32_t g_base_protection_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_frequency;
 
 const size_t g_max_alive_enemies = 3;
@@ -87,6 +89,8 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 			next_game_ = std::make_unique<GameMainMenu>(sound_player_);
 		}
 	}
+
+	UpdateBaseProtectionBonus();
 
 	if(player_ == std::nullopt)
 	{
@@ -491,6 +495,8 @@ void GameBattleCity::NextLevel()
 	enemies_left_ = g_enemies_per_level;
 	explosions_.clear();
 	bonus_ = std::nullopt;
+	enemies_freezee_bonus_end_tick_ = 0;
+	base_protection_bonus_end_tick_ = 0;
 
 	FillField(battle_city_levels[(level_ - 1) % std::size(battle_city_levels)]);
 
@@ -629,8 +635,9 @@ void GameBattleCity::TryToPickUpBonus()
 		break;
 
 	case BonusType::BaseProtection:
-		// TODO
+		ActivateBaseProtectionBonus();
 		break;
+
 	case BonusType::DestryAllTanks:
 		for(const Enemy& enemy : enemies_)
 		{
@@ -641,7 +648,7 @@ void GameBattleCity::TryToPickUpBonus()
 		break;
 
 	case BonusType::PauseAllTanks:
-		// TODO
+		enemies_freezee_bonus_end_tick_ = tick_ + g_enemies_freezee_bonus_duration;
 		break;
 
 	case BonusType::NumTypes:
@@ -662,6 +669,10 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 	const fixed16vec2_t base_pos = {IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(c_field_height - 1)};
 
 	if(tick_ < enemy.spawn_tick + g_enemy_spawn_animation_duration)
+	{
+		return;
+	}
+	if(tick_ < enemies_freezee_bonus_end_tick_)
 	{
 		return;
 	}
@@ -1178,6 +1189,29 @@ void GameBattleCity::MakeExplosion(const fixed16vec2_t& position)
 	explosion.start_tick = tick_;
 
 	explosions_.push_back(explosion);
+}
+
+void GameBattleCity::ActivateBaseProtectionBonus()
+{
+	base_protection_bonus_end_tick_ = tick_ + g_base_protection_bonus_duration;
+
+	for(const auto& tile : c_base_wall_tiles)
+	{
+		Block& block = field_[tile[0] + tile[1] * c_field_width];
+		block.type = BlockType::Concrete;
+		block.destruction_mask = 0xF;
+	}
+}
+
+void GameBattleCity::UpdateBaseProtectionBonus()
+{
+	if(tick_ == base_protection_bonus_end_tick_)
+	{
+		for(const auto& tile : c_base_wall_tiles)
+		{
+			field_[tile[0] + tile[1] * c_field_width].type = BlockType::Bricks;
+		}
+	}
 }
 
 void GameBattleCity::FillField(const char* field_data)

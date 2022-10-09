@@ -97,6 +97,18 @@ private:
 
 	static const constexpr uint32_t c_block_size = 8; // In pixels.
 
+	static constexpr const uint32_t c_base_wall_tiles[][2]
+	{
+		{c_field_width / 2 - 2, c_field_height - 1},
+		{c_field_width / 2 - 2, c_field_height - 2},
+		{c_field_width / 2 - 2, c_field_height - 3},
+		{c_field_width / 2 - 1, c_field_height - 3},
+		{c_field_width / 2 - 0, c_field_height - 3},
+		{c_field_width / 2 + 1, c_field_height - 1},
+		{c_field_width / 2 + 1, c_field_height - 2},
+		{c_field_width / 2 + 1, c_field_height - 3},
+	};
+
 private:
 	void NextLevel();
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
@@ -113,6 +125,9 @@ private:
 	void SpawnNewEnemy();
 	void SpawnBonus();
 	void MakeExplosion(const fixed16vec2_t& position);
+
+	void ActivateBaseProtectionBonus();
+	void UpdateBaseProtectionBonus();
 
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
@@ -136,6 +151,8 @@ private:
 	uint32_t enemies_left_ = 0;
 	std::vector<Explosion> explosions_;
 	std::optional<Bonus> bonus_;
+	uint32_t enemies_freezee_bonus_end_tick_ = 0;
+	uint32_t base_protection_bonus_end_tick_ = 0;
 
 	uint32_t lives_ = 3;
 	uint32_t level_ = 0;
