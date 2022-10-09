@@ -19,6 +19,7 @@ enum class MusicId
 	DuHastDenFarbfilmVergessen,
 	InMeinemRaum,
 	HeavyMetal,
+	PreussensGloria,
 	NumMelodies,
 };
 

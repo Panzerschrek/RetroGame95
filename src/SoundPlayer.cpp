@@ -28,6 +28,7 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		{Music::du_hast_den_farbfilm_vergessen, std::size(Music::du_hast_den_farbfilm_vergessen)},
 		{Music::in_meinem_raum, std::size(Music::in_meinem_raum)},
 		{Music::heavy_metal, std::size(Music::heavy_metal)},
+		{Music::preussens_gloria, std::size(Music::preussens_gloria)},
 	};
 
 	for(size_t i= 0; i < size_t(MusicId::NumMelodies); ++i)
