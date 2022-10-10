@@ -1025,7 +1025,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			if(tick_ >= player_->shield_end_tick)
 			{
-				MakeEventSound(SoundId::Explosion);
+				MakeEventSound(SoundId::CharacterDeath);
 				MakeExplosion(projectile.position);
 				MakeExplosion(player_->position);
 				player_ = std::nullopt;
