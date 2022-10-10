@@ -683,7 +683,9 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	}
 
 	// Shoot.
-	if(keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)])
+	if((keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)]) ||
+		(keyboard_state.size() > size_t(SDL_SCANCODE_RCTRL) && keyboard_state[size_t(SDL_SCANCODE_RCTRL)]) ||
+		(keyboard_state.size() > size_t(SDL_SCANCODE_SPACE) && keyboard_state[size_t(SDL_SCANCODE_SPACE)]))
 	{
 		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
