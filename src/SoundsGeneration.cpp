@@ -95,6 +95,19 @@ SoundData GenCharacterDeath(const uint32_t sample_rate)
 		GenSquareWaveSound(sample_rate, 120 * g_fixed16_one, 48));
 }
 
+SoundData GenTankMovement(const uint32_t sample_rate)
+{
+	return GenSquareWaveSound(sample_rate, 24 * g_fixed16_one, 8);
+}
+
+SoundData GenTankStay(const uint32_t sample_rate)
+{
+	return
+		Concat(
+			GenSquareWaveSound(sample_rate, 24 * g_fixed16_one, 3),
+			GenSquareWaveSound(sample_rate, 20 * g_fixed16_one, 3));
+}
+
 SoundData GenTankShot(const uint32_t sample_rate)
 {
 	return Concat(

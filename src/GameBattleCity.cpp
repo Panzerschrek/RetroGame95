@@ -545,6 +545,29 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	const bool up_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)];
 	const bool down_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)];
 
+	if((left_pressed || right_pressed || up_pressed || down_pressed))
+	{
+		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankStay)
+		{
+			sound_player_.PlayLoopedSound(SoundId::TankMovement);
+			ActiveSound active_sound;
+			active_sound.id = SoundId::TankMovement;
+			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+			current_sound_ = active_sound;
+		}
+	}
+	else
+	{
+		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankMovement)
+		{
+			sound_player_.PlayLoopedSound(SoundId::TankStay);
+			ActiveSound active_sound;
+			active_sound.id = SoundId::TankStay;
+			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+			current_sound_ = active_sound;
+		}
+	}
+
 	// Rotate player.
 	// Align player position to grid to simplify navigation.
 	if(left_pressed)
@@ -634,7 +657,7 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
 			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
 
-			sound_player_.PlaySound(SoundId::TankShot);
+			MakeEventSound(SoundId::TankShot);
 		}
 	}
 }
@@ -654,7 +677,7 @@ void GameBattleCity::TryToPickUpBonus()
 		return;
 	}
 
-	sound_player_.PlaySound(SoundId::SnakeBonusEat);
+	MakeEventSound(SoundId::SnakeBonusEat);
 
 	bool bonus_enemy_destroyed = false;
 
@@ -918,7 +941,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	{
 		if(is_player_projectile)
 		{
-			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
+			MakeEventSound(SoundId::ArkanoidBallHit);
 		}
 		MakeExplosion(projectile.position);
 		return true;
@@ -949,7 +972,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		if(enemy.health == 0)
 		{
 			MakeExplosion(enemy.position);
-			sound_player_.PlaySound(SoundId::Explosion);
+			MakeEventSound(SoundId::Explosion);
 			if(enemy.gives_bonus)
 			{
 				SpawnBonus();
@@ -997,7 +1020,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			if(tick_ >= player_->shield_end_tick)
 			{
-				sound_player_.PlaySound(SoundId::Explosion);
+				MakeEventSound(SoundId::Explosion);
 				MakeExplosion(projectile.position);
 				MakeExplosion(player_->position);
 				player_ = std::nullopt;
@@ -1065,7 +1088,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	{
 		if(is_player_projectile)
 		{
-			sound_player_.PlaySound(something_is_destroyed ? SoundId::ProjectileHit : SoundId::ArkanoidBallHit);
+			MakeEventSound(something_is_destroyed ? SoundId::ProjectileHit : SoundId::ArkanoidBallHit);
 		}
 		MakeExplosion(projectile.position);
 		return true;
@@ -1075,7 +1098,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
 		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
 	{
-		sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
+		MakeEventSound(SoundId::ArkanoidBallHit);
 		MakeExplosion(projectile.position);
 		MakeExplosion({IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(int32_t(c_field_height - 1))});
 		base_is_destroyed_ = true;
@@ -1265,6 +1288,16 @@ void GameBattleCity::UpdateBaseProtectionBonus()
 			field_[tile[0] + tile[1] * c_field_width].type = BlockType::Bricks;
 		}
 	}
+}
+
+void GameBattleCity::MakeEventSound(const SoundId sound_id)
+{
+	sound_player_.PlaySound(sound_id);
+
+	ActiveSound active_sound;
+	active_sound.id = sound_id;
+	active_sound.end_tick = tick_ + GameInterface::c_update_frequency / 2;
+	current_sound_ = active_sound;
 }
 
 void GameBattleCity::FillField(const char* field_data)

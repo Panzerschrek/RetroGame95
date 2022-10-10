@@ -13,6 +13,8 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		GenTetrisFigureStep,
 		GenSnakeBonusEat,
 		GenCharacterDeath,
+		GenTankMovement,
+		GenTankStay,
 		GenTankShot,
 		GenProjectileHit,
 		GenExplosion,
@@ -43,6 +45,11 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 void SoundPlayer::PlaySound(const SoundId sound_id)
 {
 	sound_out_.PlaySound(sounds_[size_t(sound_id)]);
+}
+
+void SoundPlayer::PlayLoopedSound(const SoundId sound_id)
+{
+	sound_out_.PlayLoopedSound(sounds_[size_t(sound_id)]);
 }
 
 void SoundPlayer::PlayMusic(const MusicId music_id)

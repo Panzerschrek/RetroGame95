@@ -22,6 +22,7 @@ public:
 
 	// Sound data reference must outlive this clss.
 	void PlaySound(const SoundData& src_sound_data);
+	void PlayLoopedSound(const SoundData& src_sound_data);
 	void StopPlaying();
 
 	uint32_t GetSampleRate() const { return sample_rate_; }
@@ -41,6 +42,7 @@ private:
 	struct Channel
 	{
 		bool is_active = false;
+		bool is_looped = false;
 		uint32_t position_samples = 0;
 		const SoundData* src_sound_data = nullptr;
 	};
