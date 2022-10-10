@@ -633,6 +633,8 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 		{
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
 			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
+
+			sound_player_.PlaySound(SoundId::TetrisFigureStep); // TODO - use another sound.
 		}
 	}
 }
@@ -651,6 +653,8 @@ void GameBattleCity::TryToPickUpBonus()
 		// Too far.
 		return;
 	}
+
+	sound_player_.PlaySound(SoundId::SnakeBonusEat);
 
 	bool bonus_enemy_destroyed = false;
 
@@ -912,6 +916,10 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 	if(min_x < 0 || max_x > int32_t(c_field_width ) || min_y < 0 || max_y > int32_t(c_field_height))
 	{
+		if(is_player_projectile)
+		{
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
+		}
 		MakeExplosion(projectile.position);
 		return true;
 	}
@@ -941,6 +949,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		if(enemy.health == 0)
 		{
 			MakeExplosion(enemy.position);
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
 			if(enemy.gives_bonus)
 			{
 				SpawnBonus();
@@ -1050,6 +1059,10 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 	if(hit)
 	{
+		if(is_player_projectile)
+		{
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
+		}
 		MakeExplosion(projectile.position);
 		return true;
 	}
@@ -1058,6 +1071,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
 		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
 	{
+		sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
 		MakeExplosion(projectile.position);
 		MakeExplosion({IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(int32_t(c_field_height - 1))});
 		base_is_destroyed_ = true;
