@@ -490,6 +490,14 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + c_field_height * c_block_size / 2,
 			Strings::battle_city_game_over);
 	}
+	else if(tick_ < level_end_animation_end_tick_)
+	{
+		const uint32_t fade_duration = GameInterface::c_update_frequency * 5;
+		const uint32_t y_offset =
+			field_height * (std::min(fade_duration, level_end_animation_end_tick_ - tick_)) / fade_duration;
+
+		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
+	}
 }
 
 GameInterfacePtr GameBattleCity::AskForNextGameTransition()
