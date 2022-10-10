@@ -24,6 +24,11 @@ SoundData Concat(SoundData a, const SoundData& b, const SoundData& c, const Soun
 	return Concat(Concat(a, b), c, d);
 }
 
+SoundData Concat(SoundData a, const SoundData& b, const SoundData& c, const SoundData& d, const SoundData& e)
+{
+	return Concat(Concat(a, b), c, d, e);
+}
+
 } // namespace
 
 SoundData GenSinWaveSound(const uint32_t sample_rate, const fixed16_t sin_wave_frequency, const uint32_t periods)
@@ -81,7 +86,6 @@ SoundData GenSnakeBonusEat(const uint32_t sample_rate)
 		GenSquareWaveSound(sample_rate, 160 * g_fixed16_one, 8));
 }
 
-
 SoundData GenCharacterDeath(const uint32_t sample_rate)
 {
 	return Concat(
@@ -89,4 +93,29 @@ SoundData GenCharacterDeath(const uint32_t sample_rate)
 		GenSquareWaveSound(sample_rate, 160 * g_fixed16_one, 24),
 		GenSquareWaveSound(sample_rate, 140 * g_fixed16_one, 32),
 		GenSquareWaveSound(sample_rate, 120 * g_fixed16_one, 48));
+}
+
+SoundData GenTankShot(const uint32_t sample_rate)
+{
+	return Concat(
+		GenSquareWaveSound(sample_rate, 900 * g_fixed16_one, 20),
+		GenSquareWaveSound(sample_rate, 800 * g_fixed16_one, 20),
+		GenSquareWaveSound(sample_rate, 700 * g_fixed16_one, 20));
+}
+
+SoundData GenProjectileHit(const uint32_t sample_rate)
+{
+	return Concat(
+		GenSquareWaveSound(sample_rate, 60 * g_fixed16_one, 4),
+		GenSquareWaveSound(sample_rate, 40 * g_fixed16_one, 4));
+}
+
+SoundData GenExplosion(const uint32_t sample_rate)
+{
+	return Concat(
+		GenSquareWaveSound(sample_rate, 1200 * g_fixed16_one, 40),
+		GenSquareWaveSound(sample_rate, 1500 * g_fixed16_one, 40),
+		GenSquareWaveSound(sample_rate,  750 * g_fixed16_one, 60),
+		GenSquareWaveSound(sample_rate,  500 * g_fixed16_one, 60),
+		GenSquareWaveSound(sample_rate,  200 * g_fixed16_one, 20));
 }

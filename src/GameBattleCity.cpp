@@ -634,7 +634,7 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
 			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
 
-			sound_player_.PlaySound(SoundId::TetrisFigureStep); // TODO - use another sound.
+			sound_player_.PlaySound(SoundId::TankShot);
 		}
 	}
 }
@@ -918,7 +918,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	{
 		if(is_player_projectile)
 		{
-			sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
+			sound_player_.PlaySound(SoundId::ArkanoidBallHit);
 		}
 		MakeExplosion(projectile.position);
 		return true;
@@ -949,7 +949,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		if(enemy.health == 0)
 		{
 			MakeExplosion(enemy.position);
-			sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
+			sound_player_.PlaySound(SoundId::Explosion);
 			if(enemy.gives_bonus)
 			{
 				SpawnBonus();
@@ -997,6 +997,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			if(tick_ >= player_->shield_end_tick)
 			{
+				sound_player_.PlaySound(SoundId::Explosion);
 				MakeExplosion(projectile.position);
 				MakeExplosion(player_->position);
 				player_ = std::nullopt;
@@ -1009,6 +1010,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	// TODO - process collisions against player.
 
 	bool hit = false;
+	bool something_is_destroyed = false;
 	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
 	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
 	{
@@ -1024,6 +1026,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 		if(block.type == BlockType::Bricks)
 		{
+			something_is_destroyed = true;
+
 			uint32_t mask = 0;
 			switch(projectile.direction)
 			{
@@ -1061,7 +1065,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	{
 		if(is_player_projectile)
 		{
-			sound_player_.PlaySound(SoundId::ArkanoidBallHit); // TODO - use another sound.
+			sound_player_.PlaySound(something_is_destroyed ? SoundId::ProjectileHit : SoundId::ArkanoidBallHit);
 		}
 		MakeExplosion(projectile.position);
 		return true;

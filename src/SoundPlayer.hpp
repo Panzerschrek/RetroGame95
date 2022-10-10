@@ -8,6 +8,9 @@ enum class SoundId
 	TetrisFigureStep,
 	SnakeBonusEat,
 	CharacterDeath,
+	TankShot,
+	ProjectileHit,
+	Explosion,
 	NumSounds,
 };
 

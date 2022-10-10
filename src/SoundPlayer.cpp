@@ -13,6 +13,9 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		GenTetrisFigureStep,
 		GenSnakeBonusEat,
 		GenCharacterDeath,
+		GenTankShot,
+		GenProjectileHit,
+		GenExplosion,
 	};
 
 	for(size_t i= 0; i < size_t(SoundId::NumSounds); ++i)
