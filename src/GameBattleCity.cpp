@@ -558,6 +558,7 @@ void GameBattleCity::NextLevel()
 
 	++level_;
 
+	lives_ = std::max(lives_, 3u);
 	enemies_.clear();
 	enemies_left_ = g_enemies_per_level;
 	explosions_.clear();
