@@ -971,8 +971,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		--enemy.health;
 		if(enemy.health == 0)
 		{
-			MakeExplosion(enemy.position);
 			MakeEventSound(SoundId::Explosion);
+			MakeExplosion(enemy.position);
 			if(enemy.gives_bonus)
 			{
 				SpawnBonus();
@@ -984,6 +984,11 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			}
 			enemies_.pop_back();
 		}
+		else
+		{
+			MakeEventSound(SoundId::ProjectileHit);
+		}
+
 		return true;
 	}
 
