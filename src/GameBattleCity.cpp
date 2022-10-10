@@ -28,6 +28,7 @@ const uint32_t g_shield_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_enemies_freezee_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_base_protection_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_frequency;
+const uint32_t g_level_start_animation_duration = GameInterface::c_update_frequency * 2;
 
 const size_t g_max_alive_enemies = 3;
 const uint32_t g_enemies_per_level = 15;
@@ -93,7 +94,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 	UpdateBaseProtectionBonus();
 
-	if(!game_over_ && tick_ > level_end_animation_end_tick_)
+	if(!game_over_ && tick_ > level_start_animation_end_tick_ && tick_ >= level_end_animation_end_tick_)
 	{
 		if(player_ == std::nullopt)
 		{
@@ -498,6 +499,29 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
 	}
+	else if(tick_ < level_start_animation_end_tick_)
+	{
+		const uint32_t y_offset =
+			field_height - field_height * (std::min(g_level_start_animation_duration, level_start_animation_end_tick_ - tick_)) / g_level_start_animation_duration;
+
+		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
+
+		const uint32_t text_y_center = field_offset_y + c_field_height * c_block_size / 2;
+		if(field_offset_y + y_offset < text_y_center)
+		{
+			char text[64];
+			std::strcpy(text, Strings::battle_city_stage);
+			const size_t offset = std::strlen(text);
+			NumToString(text + offset, std::size(text) - offset, level_, 2);
+
+			DrawTextCentered(
+				frame_buffer,
+				g_cga_palette[0],
+				field_offset_x + c_field_width  * c_block_size / 2,
+				field_offset_y + c_field_height * c_block_size / 2,
+				text);
+		}
+	}
 }
 
 GameInterfacePtr GameBattleCity::AskForNextGameTransition()
@@ -540,6 +564,8 @@ void GameBattleCity::NextLevel()
 	bonus_ = std::nullopt;
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
+
+	level_start_animation_end_tick_ = tick_ + g_level_start_animation_duration;
 
 	FillField(battle_city_levels[level_ - 1]);
 

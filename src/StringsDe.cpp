@@ -47,6 +47,7 @@ DEFINE_STRING(pacman_ready, "Sei bereit!")
 DEFINE_STRING(pacman_game_over, "Spiel ist vorbei")
 DEFINE_STRING(pacman_level_completed, "Level ist geschlossen!")
 
+DEFINE_STRING(battle_city_stage, "STUFE")
 DEFINE_STRING(battle_city_game_over, " SPIEL\n\n  IST\n\nVORBEI!")
 
 DEFINE_STRING(end_screen_congratulations,
