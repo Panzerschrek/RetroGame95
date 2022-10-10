@@ -92,6 +92,12 @@ private:
 		fixed16vec2_t position{};
 	};
 
+	struct ActiveSound
+	{
+		uint32_t end_tick = 0;
+		SoundId id = SoundId::NumSounds;
+	};
+
 	static const constexpr uint32_t c_field_width  = 32;
 	static const constexpr uint32_t c_field_height = 26;
 
@@ -110,6 +116,7 @@ private:
 	};
 
 private:
+	void EndLevel();
 	void NextLevel();
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
 	void TryToPickUpBonus();
@@ -128,6 +135,8 @@ private:
 
 	void ActivateBaseProtectionBonus();
 	void UpdateBaseProtectionBonus();
+
+	void MakeEventSound(SoundId sound_id);
 
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
@@ -153,6 +162,9 @@ private:
 	std::optional<Bonus> bonus_;
 	uint32_t enemies_freezee_bonus_end_tick_ = 0;
 	uint32_t base_protection_bonus_end_tick_ = 0;
+	uint32_t level_end_animation_end_tick_ = 0;
+
+	std::optional<ActiveSound> current_sound_;
 
 	uint32_t lives_ = 3;
 	uint32_t level_ = 0;

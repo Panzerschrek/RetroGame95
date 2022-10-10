@@ -93,56 +93,59 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 	UpdateBaseProtectionBonus();
 
-	if(player_ == std::nullopt)
+	if(tick_ > level_end_animation_end_tick_)
 	{
-		// Respawn player.
-		if(lives_ == 0)
+		if(player_ == std::nullopt)
 		{
-			game_over_ = true;
-		}
-		else
-		{
-			--lives_;
-			SpawnPlayer();
-		}
-	}
-
-	if(player_ != std::nullopt)
-	{
-		ProcessPlayerInput(keyboard_state);
-		TryToPickUpBonus();
-	}
-
-	for(Enemy& enemy : enemies_)
-	{
-		UpdateEnemy(enemy);
-		if(enemy.projectile != std::nullopt)
-		{
-			if(UpdateProjectile(*enemy.projectile, false))
+			// Respawn player.
+			if(lives_ == 0)
 			{
-				enemy.projectile = std::nullopt;
-			}
-		}
-	}
-
-	if(player_ != std::nullopt)
-	{
-		for(size_t p = 0; p < player_->projectiles.size();)
-		{
-			if(UpdateProjectile(player_->projectiles[p], true))
-			{
-				// This projectile is dead.
-				if(p + 1 < player_->projectiles.size())
-				{
-					player_->projectiles[p] = player_->projectiles.back();
-				}
-				player_->projectiles.pop_back();
+				game_over_ = true;
 			}
 			else
 			{
-				++p;
+				--lives_;
+				SpawnPlayer();
 			}
-		} // for projectiles.
+		}
+
+		if(player_ != std::nullopt)
+		{
+			ProcessPlayerInput(keyboard_state);
+			TryToPickUpBonus();
+		}
+
+		for(Enemy& enemy : enemies_)
+		{
+			UpdateEnemy(enemy);
+			if(enemy.projectile != std::nullopt)
+			{
+				if(UpdateProjectile(*enemy.projectile, false))
+				{
+					enemy.projectile = std::nullopt;
+				}
+			}
+		}
+
+		if(player_ != std::nullopt)
+		{
+			for(size_t p = 0; p < player_->projectiles.size();)
+			{
+				if(UpdateProjectile(player_->projectiles[p], true))
+				{
+					// This projectile is dead.
+					if(p + 1 < player_->projectiles.size())
+					{
+						player_->projectiles[p] = player_->projectiles.back();
+					}
+					player_->projectiles.pop_back();
+				}
+				else
+				{
+					++p;
+				}
+			} // for projectiles.
+		}
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -169,9 +172,13 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		SpawnNewEnemy();
 	}
 
-	if(enemies_.empty() && enemies_left_ == 0 && !base_is_destroyed_ && player_ != std::nullopt && !game_over_)
+	if(tick_ == level_end_animation_end_tick_)
 	{
 		NextLevel();
+	}
+	if(enemies_.empty() && enemies_left_ == 0 && !base_is_destroyed_ && player_ != std::nullopt && !game_over_)
+	{
+		EndLevel();
 	}
 }
 
@@ -490,12 +497,30 @@ GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
+void GameBattleCity::EndLevel()
+{
+	if(tick_ < level_end_animation_end_tick_)
+	{
+		return;
+	}
+
+	const MusicId music_id = MusicId::PreussensGloria;
+	sound_player_.PlayMusic(music_id);
+
+	level_end_animation_end_tick_ =
+		tick_ +
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
+}
+
 void GameBattleCity::NextLevel()
 {
 	const auto max_level = uint32_t(std::size(battle_city_levels));
 	if(level_ >= max_level)
 	{
-		next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		if(next_game_ != nullptr)
+		{
+			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		}
 		return;
 	}
 
@@ -519,6 +544,29 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	const bool right_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_RIGHT) && keyboard_state[size_t(SDL_SCANCODE_RIGHT)];
 	const bool up_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)];
 	const bool down_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)];
+
+	if((left_pressed || right_pressed || up_pressed || down_pressed))
+	{
+		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankStay)
+		{
+			sound_player_.PlayLoopedSound(SoundId::TankMovement);
+			ActiveSound active_sound;
+			active_sound.id = SoundId::TankMovement;
+			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+			current_sound_ = active_sound;
+		}
+	}
+	else
+	{
+		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankMovement)
+		{
+			sound_player_.PlayLoopedSound(SoundId::TankStay);
+			ActiveSound active_sound;
+			active_sound.id = SoundId::TankStay;
+			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+			current_sound_ = active_sound;
+		}
+	}
 
 	// Rotate player.
 	// Align player position to grid to simplify navigation.
@@ -608,6 +656,8 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 		{
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
 			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
+
+			MakeEventSound(SoundId::TankShot);
 		}
 	}
 }
@@ -626,6 +676,8 @@ void GameBattleCity::TryToPickUpBonus()
 		// Too far.
 		return;
 	}
+
+	MakeEventSound(SoundId::SnakeBonusEat);
 
 	bool bonus_enemy_destroyed = false;
 
@@ -887,6 +939,10 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 	if(min_x < 0 || max_x > int32_t(c_field_width ) || min_y < 0 || max_y > int32_t(c_field_height))
 	{
+		if(is_player_projectile)
+		{
+			MakeEventSound(SoundId::ArkanoidBallHit);
+		}
 		MakeExplosion(projectile.position);
 		return true;
 	}
@@ -915,6 +971,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		--enemy.health;
 		if(enemy.health == 0)
 		{
+			MakeEventSound(SoundId::Explosion);
 			MakeExplosion(enemy.position);
 			if(enemy.gives_bonus)
 			{
@@ -927,6 +984,11 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			}
 			enemies_.pop_back();
 		}
+		else
+		{
+			MakeEventSound(SoundId::ProjectileHit);
+		}
+
 		return true;
 	}
 
@@ -963,6 +1025,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			if(tick_ >= player_->shield_end_tick)
 			{
+				MakeEventSound(SoundId::CharacterDeath);
 				MakeExplosion(projectile.position);
 				MakeExplosion(player_->position);
 				player_ = std::nullopt;
@@ -975,6 +1038,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 	// TODO - process collisions against player.
 
 	bool hit = false;
+	bool something_is_destroyed = false;
 	for(int32_t y = std::max(0, min_y); y < std::min(max_y, int32_t(c_field_height)); ++y)
 	for(int32_t x = std::max(0, min_x); x < std::min(max_x, int32_t(c_field_width )); ++x)
 	{
@@ -990,6 +1054,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 		if(block.type == BlockType::Bricks)
 		{
+			something_is_destroyed = true;
+
 			uint32_t mask = 0;
 			switch(projectile.direction)
 			{
@@ -1025,6 +1091,10 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 
 	if(hit)
 	{
+		if(is_player_projectile)
+		{
+			MakeEventSound(something_is_destroyed ? SoundId::ProjectileHit : SoundId::ArkanoidBallHit);
+		}
 		MakeExplosion(projectile.position);
 		return true;
 	}
@@ -1033,6 +1103,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		min_x >= int32_t(c_field_width / 2 - 1) && max_x <= int32_t(c_field_width / 2 + 1) &&
 		min_y >= int32_t(c_field_height - 2) && max_y <= int32_t(c_field_height))
 	{
+		MakeEventSound(SoundId::ArkanoidBallHit);
 		MakeExplosion(projectile.position);
 		MakeExplosion({IntToFixed16(int32_t(c_field_width / 2)), IntToFixed16(int32_t(c_field_height - 1))});
 		base_is_destroyed_ = true;
@@ -1222,6 +1293,16 @@ void GameBattleCity::UpdateBaseProtectionBonus()
 			field_[tile[0] + tile[1] * c_field_width].type = BlockType::Bricks;
 		}
 	}
+}
+
+void GameBattleCity::MakeEventSound(const SoundId sound_id)
+{
+	sound_player_.PlaySound(sound_id);
+
+	ActiveSound active_sound;
+	active_sound.id = sound_id;
+	active_sound.end_tick = tick_ + GameInterface::c_update_frequency / 2;
+	current_sound_ = active_sound;
 }
 
 void GameBattleCity::FillField(const char* field_data)

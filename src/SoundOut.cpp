@@ -90,6 +90,19 @@ void SoundOut::PlaySound(const SoundData& src_sound_data)
 	LockChannel();
 
 	channel_.is_active = true;
+	channel_.is_looped = false;
+	channel_.src_sound_data = &src_sound_data;
+	channel_.position_samples = 0;
+
+	UnlockChannel();
+}
+
+void SoundOut::PlayLoopedSound(const SoundData& src_sound_data)
+{
+	LockChannel();
+
+	channel_.is_active = true;
+	channel_.is_looped = true;
 	channel_.src_sound_data = &src_sound_data;
 	channel_.position_samples = 0;
 
@@ -131,22 +144,39 @@ void SoundOut::FillAudioBuffer(SampleType* const buffer, const uint32_t sample_c
 	// Zero buffer.
 	for(uint32_t i= 0u; i < sample_count; ++i)
 	{
-		buffer[i]= 0;
+		buffer[i] = 0;
 	}
 
 	const fixed16_t volume = volume_.load();
 
 	if(channel_.is_active && channel_.src_sound_data != nullptr)
 	{
-		const uint32_t samples_to_fill=
-			std::min(sample_count, uint32_t(channel_.src_sound_data->samples.size()) - channel_.position_samples);
-		const SampleType* const src = channel_.src_sound_data->samples.data() + channel_.position_samples;
-		for(uint32_t i= 0; i < samples_to_fill; ++i)
+		uint32_t dst_pos = 0;
+		while(dst_pos < sample_count)
 		{
-			buffer[i] = SampleType(Fixed16FloorToInt(src[i] * volume));
+			const uint32_t samples_to_fill=
+				std::min(sample_count - dst_pos, uint32_t(channel_.src_sound_data->samples.size()) - channel_.position_samples);
+			const SampleType* const src = channel_.src_sound_data->samples.data() + channel_.position_samples;
+			for(uint32_t i = 0; i < samples_to_fill; ++i)
+			{
+				buffer[dst_pos + i] = SampleType(Fixed16FloorToInt(src[i] * volume));
+			}
+
+			dst_pos += samples_to_fill;
+			channel_.position_samples += samples_to_fill;
+			if(channel_.position_samples >= uint32_t(channel_.src_sound_data->samples.size()))
+			{
+				if(channel_.is_looped)
+				{
+					channel_.position_samples = 0;
+				}
+				else
+				{
+					break;
+				}
+			}
 		}
 
-		channel_.position_samples += samples_to_fill;
 		channel_.is_active = channel_.position_samples < uint32_t(channel_.src_sound_data->samples.size());
 	}
 }

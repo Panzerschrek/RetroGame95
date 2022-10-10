@@ -8,6 +8,11 @@ enum class SoundId
 	TetrisFigureStep,
 	SnakeBonusEat,
 	CharacterDeath,
+	TankMovement,
+	TankStay,
+	TankShot,
+	ProjectileHit,
+	Explosion,
 	NumSounds,
 };
 
@@ -19,6 +24,7 @@ enum class MusicId
 	DuHastDenFarbfilmVergessen,
 	InMeinemRaum,
 	HeavyMetal,
+	PreussensGloria,
 	NumMelodies,
 };
 
@@ -31,6 +37,7 @@ public:
 	SoundPlayer& operator=(const SoundPlayer&) = delete;
 
 	void PlaySound(SoundId sound_id);
+	void PlayLoopedSound(SoundId sound_id);
 	void PlayMusic(MusicId music_id);
 	void StopPlaying();
 

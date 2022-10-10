@@ -13,6 +13,11 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		GenTetrisFigureStep,
 		GenSnakeBonusEat,
 		GenCharacterDeath,
+		GenTankMovement,
+		GenTankStay,
+		GenTankShot,
+		GenProjectileHit,
+		GenExplosion,
 	};
 
 	for(size_t i= 0; i < size_t(SoundId::NumSounds); ++i)
@@ -28,6 +33,7 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		{Music::du_hast_den_farbfilm_vergessen, std::size(Music::du_hast_den_farbfilm_vergessen)},
 		{Music::in_meinem_raum, std::size(Music::in_meinem_raum)},
 		{Music::heavy_metal, std::size(Music::heavy_metal)},
+		{Music::preussens_gloria, std::size(Music::preussens_gloria)},
 	};
 
 	for(size_t i= 0; i < size_t(MusicId::NumMelodies); ++i)
@@ -39,6 +45,11 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 void SoundPlayer::PlaySound(const SoundId sound_id)
 {
 	sound_out_.PlaySound(sounds_[size_t(sound_id)]);
+}
+
+void SoundPlayer::PlayLoopedSound(const SoundId sound_id)
+{
+	sound_out_.PlayLoopedSound(sounds_[size_t(sound_id)]);
 }
 
 void SoundPlayer::PlayMusic(const MusicId music_id)
