@@ -93,56 +93,59 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 	UpdateBaseProtectionBonus();
 
-	if(player_ == std::nullopt)
+	if(tick_ > level_end_animation_end_tick_)
 	{
-		// Respawn player.
-		if(lives_ == 0)
+		if(player_ == std::nullopt)
 		{
-			game_over_ = true;
-		}
-		else
-		{
-			--lives_;
-			SpawnPlayer();
-		}
-	}
-
-	if(player_ != std::nullopt)
-	{
-		ProcessPlayerInput(keyboard_state);
-		TryToPickUpBonus();
-	}
-
-	for(Enemy& enemy : enemies_)
-	{
-		UpdateEnemy(enemy);
-		if(enemy.projectile != std::nullopt)
-		{
-			if(UpdateProjectile(*enemy.projectile, false))
+			// Respawn player.
+			if(lives_ == 0)
 			{
-				enemy.projectile = std::nullopt;
-			}
-		}
-	}
-
-	if(player_ != std::nullopt)
-	{
-		for(size_t p = 0; p < player_->projectiles.size();)
-		{
-			if(UpdateProjectile(player_->projectiles[p], true))
-			{
-				// This projectile is dead.
-				if(p + 1 < player_->projectiles.size())
-				{
-					player_->projectiles[p] = player_->projectiles.back();
-				}
-				player_->projectiles.pop_back();
+				game_over_ = true;
 			}
 			else
 			{
-				++p;
+				--lives_;
+				SpawnPlayer();
 			}
-		} // for projectiles.
+		}
+
+		if(player_ != std::nullopt)
+		{
+			ProcessPlayerInput(keyboard_state);
+			TryToPickUpBonus();
+		}
+
+		for(Enemy& enemy : enemies_)
+		{
+			UpdateEnemy(enemy);
+			if(enemy.projectile != std::nullopt)
+			{
+				if(UpdateProjectile(*enemy.projectile, false))
+				{
+					enemy.projectile = std::nullopt;
+				}
+			}
+		}
+
+		if(player_ != std::nullopt)
+		{
+			for(size_t p = 0; p < player_->projectiles.size();)
+			{
+				if(UpdateProjectile(player_->projectiles[p], true))
+				{
+					// This projectile is dead.
+					if(p + 1 < player_->projectiles.size())
+					{
+						player_->projectiles[p] = player_->projectiles.back();
+					}
+					player_->projectiles.pop_back();
+				}
+				else
+				{
+					++p;
+				}
+			} // for projectiles.
+		}
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -169,9 +172,13 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		SpawnNewEnemy();
 	}
 
-	if(enemies_.empty() && enemies_left_ == 0 && !base_is_destroyed_ && player_ != std::nullopt && !game_over_)
+	if(tick_ == level_end_animation_end_tick_)
 	{
 		NextLevel();
+	}
+	if(enemies_.empty() && enemies_left_ == 0 && !base_is_destroyed_ && player_ != std::nullopt && !game_over_)
+	{
+		EndLevel();
 	}
 }
 
@@ -490,12 +497,30 @@ GameInterfacePtr GameBattleCity::AskForNextGameTransition()
 	return std::move(next_game_);
 }
 
+void GameBattleCity::EndLevel()
+{
+	if(tick_ < level_end_animation_end_tick_)
+	{
+		return;
+	}
+
+	const MusicId music_id = MusicId::PreussensGloria;
+	sound_player_.PlayMusic(music_id);
+
+	level_end_animation_end_tick_ =
+		tick_ +
+		uint32_t(Fixed16RoundToInt(g_fixed16_one + sound_player_.GetMelodyDuration(music_id))) * GameInterface::c_update_frequency;
+}
+
 void GameBattleCity::NextLevel()
 {
 	const auto max_level = uint32_t(std::size(battle_city_levels));
 	if(level_ >= max_level)
 	{
-		next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		if(next_game_ != nullptr)
+		{
+			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
+		}
 		return;
 	}
 
