@@ -549,7 +549,7 @@ void GameBattleCity::NextLevel()
 	const auto max_level = uint32_t(std::size(battle_city_levels));
 	if(level_ >= max_level)
 	{
-		if(next_game_ != nullptr)
+		if(next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
 		}
