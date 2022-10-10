@@ -93,7 +93,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 	UpdateBaseProtectionBonus();
 
-	if(tick_ > level_end_animation_end_tick_)
+	if(!game_over_ && tick_ > level_end_animation_end_tick_)
 	{
 		if(player_ == std::nullopt)
 		{
@@ -146,6 +146,13 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 				}
 			} // for projectiles.
 		}
+
+		if(enemies_left_ > 0 &&
+			enemies_.size() < g_max_alive_enemies &&
+			(tick_ % GameInterface::c_update_frequency) == 0)
+		{
+			SpawnNewEnemy();
+		}
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -164,13 +171,6 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 			++e;
 		}
 	} // for explosions.
-
-	if(enemies_left_ > 0 &&
-		enemies_.size() < g_max_alive_enemies &&
-		(tick_ % GameInterface::c_update_frequency) == 0)
-	{
-		SpawnNewEnemy();
-	}
 
 	if(tick_ == level_end_animation_end_tick_)
 	{
