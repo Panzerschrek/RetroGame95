@@ -73,6 +73,7 @@ private:
 	{
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YPlus;
+		PacmanGhostType type = PacmanGhostType::Blinky;
 	};
 
 	struct Explosion

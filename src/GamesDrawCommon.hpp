@@ -1,6 +1,7 @@
 #pragma once
 #include "FrameBuffer.hpp"
 #include "GamesCommon.hpp"
+#include "SpriteBMP.hpp"
 
 const constexpr uint32_t g_arkanoid_field_offset_x = 10;
 const constexpr uint32_t g_arkanoid_field_offset_y = 10;
@@ -31,3 +32,5 @@ void DrawTetrisField(
 	uint32_t field_height);
 
 void DrawSnakeStats(FrameBuffer frame_buffer, uint32_t length, uint32_t lives, uint32_t level, uint32_t score);
+
+SpriteBMP GetPacmanGhostSprite(PacmanGhostType ghost_type, GridDirection ghost_direction);

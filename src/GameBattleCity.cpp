@@ -1,8 +1,9 @@
 #include "GameBattleCity.hpp"
 #include "BattleCityLevels.hpp"
+#include "Draw.hpp"
 #include "GameEndScreen.hpp"
 #include "GameMainMenu.hpp"
-#include "Draw.hpp"
+#include "GamesDrawCommon.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
 #include "String.hpp"
@@ -374,17 +375,10 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP pacman_ghost_sprites[4]
-	{
-		Sprites::pacman_ghost_0_right,
-		Sprites::pacman_ghost_0_left ,
-		Sprites::pacman_ghost_0_down ,
-		Sprites::pacman_ghost_0_up   ,
-	};
 
 	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
 	{
-		const SpriteBMP sprite = pacman_ghost_sprites[size_t(pacman_ghost.direction)];
+		const SpriteBMP sprite = GetPacmanGhostSprite(pacman_ghost.type, pacman_ghost.direction);
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
@@ -1519,9 +1513,26 @@ void GameBattleCity::TrySpawnPacmanGhost()
 			continue;
 		}
 
+		PacmanGhostType ghost_type = PacmanGhostType::Blinky;
+		for(uint32_t j = 0; j < 64; ++j)
+		{
+			ghost_type = PacmanGhostType(rand_.Next() % 4);
+			bool is_unique = true;
+			for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+			{
+				is_unique &= pacman_ghost.type != ghost_type;
+			}
+
+			if(is_unique)
+			{
+				break;
+			}
+		}
+
 		PacmanGhost pacman_ghost;
 		pacman_ghost.position = position;
 		pacman_ghost.direction = GridDirection::YPlus;
+		pacman_ghost.type = ghost_type;
 
 		pacman_ghosts_.push_back(pacman_ghost);
 		return;
