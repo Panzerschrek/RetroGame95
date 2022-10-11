@@ -31,6 +31,7 @@ const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_freque
 const uint32_t g_level_start_animation_duration = GameInterface::c_update_frequency * 2;
 
 const size_t g_max_alive_enemies = 3;
+const size_t g_max_alive_pacman_ghosts = 2;
 const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
@@ -154,6 +155,8 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		{
 			SpawnNewEnemy();
 		}
+
+		TrySpawnPacmanGhost();
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -365,6 +368,25 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	const SpriteBMP pacman_ghost_sprites[4]
+	{
+		Sprites::pacman_ghost_0_right,
+		Sprites::pacman_ghost_0_left ,
+		Sprites::pacman_ghost_0_down ,
+		Sprites::pacman_ghost_0_up   ,
+	};
+
+	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+	{
+		const SpriteBMP sprite = pacman_ghost_sprites[size_t(pacman_ghost.direction)];
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(pacman_ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(pacman_ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+
 	const auto draw_projectile =
 	[&](const Projectile& projectile)
 	{
@@ -562,6 +584,7 @@ void GameBattleCity::NextLevel()
 	enemies_.clear();
 	enemies_left_ = g_enemies_per_level;
 	explosions_.clear();
+	pacman_ghosts_.clear();
 	bonus_ = std::nullopt;
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
@@ -1220,21 +1243,29 @@ void GameBattleCity::SpawnNewEnemy()
 			continue;
 		}
 
-		bool intersects_other_tank = false;
+		bool position_blocked = false;
 		for(const Enemy& enemy : enemies_)
 		{
 			if(TanksIntersects(position, enemy.position))
 			{
-				intersects_other_tank = true;
+				position_blocked = true;
+				break;
+			}
+		}
+		for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			if(TanksIntersects(position, pacman_ghost.position))
+			{
+				position_blocked = true;
 				break;
 			}
 		}
 		if(player_ != std::nullopt)
 		{
-			intersects_other_tank |= TanksIntersects(position, player_->position);
+			position_blocked |= TanksIntersects(position, player_->position);
 		}
 
-		if(intersects_other_tank)
+		if(position_blocked)
 		{
 			continue;
 		}
@@ -1260,6 +1291,67 @@ void GameBattleCity::SpawnNewEnemy()
 		enemies_.push_back(enemy);
 
 		--enemies_left_;
+		return;
+	}
+}
+
+void GameBattleCity::TrySpawnPacmanGhost()
+{
+	if(pacman_ghosts_.size() >= g_max_alive_pacman_ghosts)
+	{
+		return;
+	}
+
+	if(rand_.Next() % 345 != 29)
+	{
+		return;
+	}
+
+	// Try to spawn it at random position, but avoid obstacles.
+	for(uint32_t i = 0; i < 64; ++i)
+	{
+		const uint32_t x = 1 + (rand_.Next() % (c_field_width - 2));
+		const uint32_t y = 1;
+
+		const fixed16vec2_t position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
+
+		if(!CanMove(position))
+		{
+			continue;
+		}
+
+		bool position_blocked = false;
+		for(const Enemy& enemy : enemies_)
+		{
+			if(TanksIntersects(position, enemy.position))
+			{
+				position_blocked = true;
+				break;
+			}
+		}
+		for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			if(TanksIntersects(position, pacman_ghost.position))
+			{
+				position_blocked = true;
+				break;
+			}
+		}
+		if(player_ != std::nullopt)
+		{
+			position_blocked |= TanksIntersects(position, player_->position);
+		}
+
+		if(position_blocked)
+		{
+			continue;
+		}
+
+		PacmanGhost pacman_ghost;
+		pacman_ghost.position = position;
+		pacman_ghost.direction = GridDirection::YPlus;
+
+		pacman_ghosts_.push_back(pacman_ghost);
 		return;
 	}
 }
