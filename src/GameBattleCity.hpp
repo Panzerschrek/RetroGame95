@@ -162,11 +162,12 @@ private:
 	std::optional<Bonus> bonus_;
 	uint32_t enemies_freezee_bonus_end_tick_ = 0;
 	uint32_t base_protection_bonus_end_tick_ = 0;
+	uint32_t level_start_animation_end_tick_ = 0;
 	uint32_t level_end_animation_end_tick_ = 0;
 
 	std::optional<ActiveSound> current_sound_;
 
-	uint32_t lives_ = 3;
+	uint32_t lives_ = 0;
 	uint32_t level_ = 0;
 	bool game_over_ = false;
 };

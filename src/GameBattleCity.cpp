@@ -28,6 +28,7 @@ const uint32_t g_shield_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_enemies_freezee_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_base_protection_bonus_duration = GameInterface::c_update_frequency * 15;
 const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_frequency;
+const uint32_t g_level_start_animation_duration = GameInterface::c_update_frequency * 2;
 
 const size_t g_max_alive_enemies = 3;
 const uint32_t g_enemies_per_level = 15;
@@ -93,7 +94,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 	UpdateBaseProtectionBonus();
 
-	if(tick_ > level_end_animation_end_tick_)
+	if(!game_over_ && tick_ > level_start_animation_end_tick_ && tick_ >= level_end_animation_end_tick_)
 	{
 		if(player_ == std::nullopt)
 		{
@@ -146,6 +147,13 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 				}
 			} // for projectiles.
 		}
+
+		if(enemies_left_ > 0 &&
+			enemies_.size() < g_max_alive_enemies &&
+			(tick_ % GameInterface::c_update_frequency) == 0)
+		{
+			SpawnNewEnemy();
+		}
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -164,13 +172,6 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 			++e;
 		}
 	} // for explosions.
-
-	if(enemies_left_ > 0 &&
-		enemies_.size() < g_max_alive_enemies &&
-		(tick_ % GameInterface::c_update_frequency) == 0)
-	{
-		SpawnNewEnemy();
-	}
 
 	if(tick_ == level_end_animation_end_tick_)
 	{
@@ -490,6 +491,37 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + c_field_height * c_block_size / 2,
 			Strings::battle_city_game_over);
 	}
+	else if(tick_ < level_end_animation_end_tick_)
+	{
+		const uint32_t fade_duration = GameInterface::c_update_frequency * 5;
+		const uint32_t y_offset =
+			field_height * (std::min(fade_duration, level_end_animation_end_tick_ - tick_)) / fade_duration;
+
+		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
+	}
+	else if(tick_ < level_start_animation_end_tick_)
+	{
+		const uint32_t y_offset =
+			field_height - field_height * (std::min(g_level_start_animation_duration, level_start_animation_end_tick_ - tick_)) / g_level_start_animation_duration;
+
+		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
+
+		const uint32_t text_y_center = field_offset_y + c_field_height * c_block_size / 2;
+		if(field_offset_y + y_offset < text_y_center)
+		{
+			char text[64];
+			std::strcpy(text, Strings::battle_city_stage);
+			const size_t offset = std::strlen(text);
+			NumToString(text + offset, std::size(text) - offset, level_, 2);
+
+			DrawTextCentered(
+				frame_buffer,
+				g_cga_palette[0],
+				field_offset_x + c_field_width  * c_block_size / 2,
+				field_offset_y + c_field_height * c_block_size / 2,
+				text);
+		}
+	}
 }
 
 GameInterfacePtr GameBattleCity::AskForNextGameTransition()
@@ -517,7 +549,7 @@ void GameBattleCity::NextLevel()
 	const auto max_level = uint32_t(std::size(battle_city_levels));
 	if(level_ >= max_level)
 	{
-		if(next_game_ != nullptr)
+		if(next_game_ == nullptr)
 		{
 			next_game_ = std::make_unique<GameEndScreen>(sound_player_);
 		}
@@ -526,12 +558,15 @@ void GameBattleCity::NextLevel()
 
 	++level_;
 
+	lives_ = std::max(lives_, 3u);
 	enemies_.clear();
 	enemies_left_ = g_enemies_per_level;
 	explosions_.clear();
 	bonus_ = std::nullopt;
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
+
+	level_start_animation_end_tick_ = tick_ + g_level_start_animation_duration;
 
 	FillField(battle_city_levels[level_ - 1]);
 
@@ -649,7 +684,9 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	}
 
 	// Shoot.
-	if(keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)])
+	if((keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)]) ||
+		(keyboard_state.size() > size_t(SDL_SCANCODE_RCTRL) && keyboard_state[size_t(SDL_SCANCODE_RCTRL)]) ||
+		(keyboard_state.size() > size_t(SDL_SCANCODE_SPACE) && keyboard_state[size_t(SDL_SCANCODE_SPACE)]))
 	{
 		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
