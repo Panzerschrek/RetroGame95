@@ -1507,7 +1507,7 @@ void GameBattleCity::TrySpawnPacmanGhost()
 		return;
 	}
 
-	if(rand_.Next() % 345 != 29)
+	if(rand_.Next() % 1345 != 29)
 	{
 		return;
 	}
