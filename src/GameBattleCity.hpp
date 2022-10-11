@@ -128,6 +128,7 @@ private:
 	void TryToPickUpBonus();
 
 	void UpdateEnemy(Enemy& enemy);
+	void UpdatePacmanGhost(PacmanGhost& pacman_ghost);
 
 	// Returns true if need to kill it.
 	bool UpdateProjectile(Projectile& projectile, bool is_player_projectile);

@@ -15,6 +15,7 @@ namespace
 const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_enemy_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_enemy_speed_fast = g_enemy_speed * 3 / 2;
+const fixed16_t g_pacman_ghost_speed = g_player_speed * 9 / 10;
 
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
 
@@ -127,6 +128,11 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 					enemy.projectile = std::nullopt;
 				}
 			}
+		}
+
+		for(PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			UpdatePacmanGhost(pacman_ghost);
 		}
 
 		if(player_ != std::nullopt)
@@ -974,6 +980,140 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		if(can_fire)
 		{
 			enemy.projectile = MakeProjectile(enemy.position, enemy.direction);
+		}
+	}
+}
+
+void GameBattleCity::UpdatePacmanGhost(PacmanGhost& pacman_ghost)
+{
+	const auto movement_is_blocked =
+	[&](const fixed16vec2_t& new_position)
+	{
+		for(const Enemy& enemy : enemies_)
+		{
+			if(TanksIntersects(new_position, enemy.position))
+			{
+				return true;
+			}
+		}
+		for(const PacmanGhost& other_pacman_ghost : pacman_ghosts_)
+		{
+			if(&pacman_ghost != &other_pacman_ghost && TanksIntersects(new_position, other_pacman_ghost.position))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	fixed16vec2_t new_position = pacman_ghost.position;
+	switch(pacman_ghost.direction)
+	{
+	case GridDirection::XPlus:
+		new_position[0] += g_pacman_ghost_speed;
+		break;
+	case GridDirection::XMinus:
+		new_position[0] -= g_pacman_ghost_speed;
+		break;
+	case GridDirection::YPlus:
+		new_position[1] += g_pacman_ghost_speed;
+		break;
+	case GridDirection::YMinus:
+		new_position[1] -= g_pacman_ghost_speed;
+		break;
+	}
+
+	// Move straight, but after tile change try to change direction.
+	const bool tile_changed =
+		Fixed16FloorToInt(new_position[0]) != Fixed16FloorToInt(pacman_ghost.position[0]) ||
+		Fixed16FloorToInt(new_position[1]) != Fixed16FloorToInt(pacman_ghost.position[1]);
+
+	const bool can_move = CanMove(new_position) && !movement_is_blocked(new_position);
+	if(can_move)
+	{
+		pacman_ghost.position = new_position;
+	}
+
+	if((tile_changed || !can_move) && player_ != std::nullopt)
+	{
+		GridDirection new_direction = pacman_ghost.direction;
+		fixed16_t best_square_distance = std::numeric_limits<fixed16_t>::max();
+
+		const auto add_new_direction_candidate =
+		[&](const fixed16vec2_t& next_position, const GridDirection direction)
+		{
+			if(!CanMove(next_position) || movement_is_blocked(next_position))
+			{
+				return;
+			}
+
+			const fixed16_t square_distance =
+				Fixed16VecSquareLen(
+					{next_position[0] - player_->position[0], next_position[1] - player_->position[1]});
+			if(square_distance < best_square_distance)
+			{
+				best_square_distance = square_distance;
+				new_direction = direction;
+			}
+		};
+
+		// Avoid turning back.
+		if(pacman_ghost.direction != GridDirection::XPlus )
+		{
+			add_new_direction_candidate({pacman_ghost.position[0] - g_fixed16_one / 2, IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[1]))}, GridDirection::XMinus);
+		}
+		if(pacman_ghost.direction != GridDirection::XMinus)
+		{
+			add_new_direction_candidate({pacman_ghost.position[0] + g_fixed16_one / 2, IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[1]))}, GridDirection::XPlus );
+		}
+		if(pacman_ghost.direction != GridDirection::YPlus )
+		{
+			add_new_direction_candidate({IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[0])), pacman_ghost.position[1] - g_fixed16_one / 2}, GridDirection::YMinus);
+		}
+		if(pacman_ghost.direction != GridDirection::YMinus)
+		{
+			add_new_direction_candidate({IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[0])), pacman_ghost.position[1] + g_fixed16_one / 2}, GridDirection::YPlus );
+		}
+
+		if(best_square_distance == std::numeric_limits<fixed16_t>::max())
+		{
+			// Can't move - turn back.
+			switch(pacman_ghost.direction)
+			{
+			case GridDirection::XPlus:
+				new_direction = GridDirection::XMinus;
+				break;
+			case GridDirection::XMinus:
+				new_direction = GridDirection::XPlus;
+				break;
+			case GridDirection::YPlus:
+				new_direction = GridDirection::YMinus;
+				break;
+			case GridDirection::YMinus:
+				new_direction = GridDirection::YPlus;
+				break;
+			}
+		}
+
+		// Align ghost to grid.
+		new_position = pacman_ghost.position;
+		switch(new_direction)
+		{
+		case GridDirection::XPlus:
+		case GridDirection::XMinus:
+			new_position[1] = IntToFixed16(Fixed16RoundToInt(new_position[1]));
+			break;
+		case GridDirection::YPlus:
+		case GridDirection::YMinus:
+			new_position[0] = IntToFixed16(Fixed16RoundToInt(new_position[0]));
+			break;
+		}
+
+		// Make sure we still do not move towards other enemy/ghost even after alignemnt to grid.
+		if(!movement_is_blocked(new_position))
+		{
+			pacman_ghost.position = new_position;
+			pacman_ghost.direction = new_direction;
 		}
 	}
 }
