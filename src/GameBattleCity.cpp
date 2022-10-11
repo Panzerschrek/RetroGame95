@@ -818,18 +818,22 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		break;
 	}
 
-	bool moves_towards_other_tank = false;
+	bool movement_blocked = false;
 	for(const Enemy& other_enemy : enemies_)
 	{
 		if(&enemy != &other_enemy && TanksIntersects(new_position, other_enemy.position))
 		{
-			moves_towards_other_tank = true;
+			movement_blocked = true;
 			break;
 		}
 	}
+	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+	{
+		movement_blocked |= TanksIntersects(new_position, pacman_ghost.position);
+	}
 	if(player_ != std::nullopt)
 	{
-		moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
+		movement_blocked |= TanksIntersects(new_position, player_->position);
 	}
 
 	// Move straight, but after tile change try to change direction with small probability even if still can move straight.
@@ -838,7 +842,7 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		Fixed16FloorToInt(new_position[1]) != Fixed16FloorToInt(enemy.position[1]);
 	const bool want_to_change_direction = tile_changed && rand_.Next() % 16 == 0;
 
-	if(CanMove(new_position) && !moves_towards_other_tank && !want_to_change_direction)
+	if(CanMove(new_position) && !movement_blocked && !want_to_change_direction)
 	{
 		enemy.position = new_position;
 	}
@@ -909,21 +913,25 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		}
 
 		// Make sure we still do not move towards other tank even after alignemnt to grid.
-		moves_towards_other_tank = false;
+		movement_blocked = false;
 		for(const Enemy& other_enemy : enemies_)
 		{
 			if(&enemy != &other_enemy && TanksIntersects(new_position, other_enemy.position))
 			{
-				moves_towards_other_tank = true;
+				movement_blocked = true;
 				break;
 			}
 		}
+		for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			movement_blocked |= TanksIntersects(new_position, pacman_ghost.position);
+		}
 		if(player_ != std::nullopt)
 		{
-			moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
+			movement_blocked |= TanksIntersects(new_position, player_->position);
 		}
 
-		if(!moves_towards_other_tank)
+		if(!movement_blocked)
 		{
 			enemy.position = new_position;
 			enemy.direction = new_direction;
@@ -1048,6 +1056,30 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			MakeEventSound(SoundId::ProjectileHit);
 		}
+
+		return true;
+	}
+	for(size_t i = 0; i < pacman_ghosts_.size() && is_player_projectile; ++i)
+	{
+		PacmanGhost& pacman_ghost = pacman_ghosts_[i];
+
+		const fixed16vec2_t min = {pacman_ghost.position[0] - g_tank_half_size, pacman_ghost.position[1] - g_tank_half_size};
+		const fixed16vec2_t max = {pacman_ghost.position[0] + g_tank_half_size, pacman_ghost.position[1] + g_tank_half_size};
+
+		if(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f)
+		{
+			continue;
+		}
+
+		// Hit this ghost.
+		MakeExplosion(projectile.position);
+		MakeEventSound(SoundId::Explosion);
+
+		if(i + 1 < pacman_ghosts_.size())
+		{
+			pacman_ghost = std::move(pacman_ghosts_.back());
+		}
+		pacman_ghosts_.pop_back();
 
 		return true;
 	}
