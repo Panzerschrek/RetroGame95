@@ -980,6 +980,11 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 
 void GameBattleCity::UpdatePacmanGhost(PacmanGhost& pacman_ghost)
 {
+	if(tick_ < enemies_freezee_bonus_end_tick_)
+	{
+		return;
+	}
+
 	const auto movement_is_blocked =
 	[&](const fixed16vec2_t& new_position)
 	{
