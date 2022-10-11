@@ -136,6 +136,8 @@ private:
 
 	bool CanMove(const fixed16vec2_t& position) const;
 
+	void KillPlayer();
+
 	void SpawnPlayer();
 	void SpawnNewEnemy();
 	void TrySpawnPacmanGhost();

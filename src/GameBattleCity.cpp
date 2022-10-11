@@ -1110,6 +1110,35 @@ void GameBattleCity::UpdatePacmanGhost(PacmanGhost& pacman_ghost)
 			pacman_ghost.direction = new_direction;
 		}
 	}
+
+	if(player_ != std::nullopt && tick_ >= player_->shield_end_tick)
+	{
+		const fixed16_t eat_dist = g_tank_half_size;
+		if( Fixed16Abs(pacman_ghost.position[0] - player_->position[0]) <= eat_dist &&
+			Fixed16Abs(pacman_ghost.position[1] - player_->position[1]) <= eat_dist)
+		{
+			KillPlayer();
+
+			// Turn around after killing the player.
+			GridDirection new_direction = pacman_ghost.direction;
+			switch(pacman_ghost.direction)
+			{
+			case GridDirection::XPlus:
+				new_direction = GridDirection::XMinus;
+				break;
+			case GridDirection::XMinus:
+				new_direction = GridDirection::XPlus;
+				break;
+			case GridDirection::YPlus:
+				new_direction = GridDirection::YMinus;
+				break;
+			case GridDirection::YMinus:
+				new_direction = GridDirection::YPlus;
+				break;
+			}
+			pacman_ghost.direction = new_direction;
+		}
+	}
 }
 
 bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_player_projectile)
@@ -1251,11 +1280,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			if(tick_ >= player_->shield_end_tick)
 			{
-				MakeEventSound(SoundId::CharacterDeath);
 				MakeExplosion(projectile.position);
-				MakeExplosion(player_->position);
-				player_ = std::nullopt;
-				player_level_ = 1;
+				KillPlayer();
 			}
 			return true;
 		}
@@ -1380,6 +1406,14 @@ bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
 	}
 
 	return true;
+}
+
+void GameBattleCity::KillPlayer()
+{
+	MakeExplosion(player_->position);
+	MakeEventSound(SoundId::CharacterDeath);
+	player_ = std::nullopt;
+	player_level_ = 1;
 }
 
 void GameBattleCity::SpawnPlayer()
