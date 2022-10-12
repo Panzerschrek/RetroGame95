@@ -1764,10 +1764,7 @@ void GameBattleCity::BlockEnemiesWithTetrisFigures()
 		BlockEnemyWithTetrisFigure(enemy.position);
 	}
 
-	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
-	{
-		BlockEnemyWithTetrisFigure(pacman_ghost.position);
-	}
+	// Do not block packman ghosts becase ghost cant' shoot and can't free themselves from blocking.
 }
 
 void GameBattleCity::BlockEnemyWithTetrisFigure(const fixed16vec2_t& position)
