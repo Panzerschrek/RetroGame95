@@ -193,7 +193,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 		DrawArkanoidLevelStartSplash(frame_buffer, level_);
 	}
 
-	if(playing_level_end_animation)
+	if(playing_level_end_animation && tick_ / 40 % 2 != 0)
 	{
 		DrawTextCentered(
 			frame_buffer,

@@ -487,7 +487,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + c_block_size * c_field_height / 2,
 			text);
 	}
-	if(level_end_animation_end_tick_ != std::nullopt)
+	if(level_end_animation_end_tick_ != std::nullopt && tick_ / 40 % 2 != 0)
 	{
 		DrawTextCentered(
 			frame_buffer,
