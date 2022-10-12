@@ -37,16 +37,22 @@ const size_t g_max_alive_pacman_ghosts = 2;
 const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
+bool BBoxesIntersect(
+	const fixed16vec2_t& min_a, const fixed16vec2_t& max_a,
+	const fixed16vec2_t& min_b, const fixed16vec2_t& max_b)
+{
+	return !(
+		min_a[0] >= max_b[0] || max_a[0] <= min_b[0] ||
+		min_a[1] >= max_b[1] || max_a[1] <= min_b[1]);
+}
+
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
 {
-	const fixed16vec2_t box_min_0 = {pos0[0] - g_tank_half_size, pos0[1] - g_tank_half_size};
-	const fixed16vec2_t box_max_0 = {pos0[0] + g_tank_half_size, pos0[1] + g_tank_half_size};
-	const fixed16vec2_t box_min_1 = {pos1[0] - g_tank_half_size, pos1[1] - g_tank_half_size};
-	const fixed16vec2_t box_max_1 = {pos1[0] + g_tank_half_size, pos1[1] + g_tank_half_size};
-
-	return !(
-		box_min_0[0] >= box_max_1[0] || box_max_0[0] <= box_min_1[0] ||
-		box_min_0[1] >= box_max_1[1] || box_max_0[1] <= box_min_1[1]);
+	return BBoxesIntersect(
+		{pos0[0] - g_tank_half_size, pos0[1] - g_tank_half_size},
+		{pos0[0] + g_tank_half_size, pos0[1] + g_tank_half_size},
+		{pos1[0] - g_tank_half_size, pos1[1] - g_tank_half_size},
+		{pos1[0] + g_tank_half_size, pos1[1] + g_tank_half_size});
 }
 
 uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
@@ -1832,9 +1838,38 @@ void GameBattleCity::BlockEnemyWithTetrisFigure(const fixed16vec2_t& position)
 				can_place = false;
 				break;
 			}
-		}
 
-		// TODO - make sure we do not place figure at enemy/player position.
+			const fixed16vec2_t bbox_min{IntToFixed16(block_shifted[0]), IntToFixed16(block_shifted[1])};
+			const fixed16vec2_t bbox_max{bbox_min[0] + g_fixed16_one, bbox_min[1] + g_fixed16_one};
+
+			for(const Enemy& enemy : enemies_)
+			{
+				can_place &=
+					!BBoxesIntersect(
+						bbox_min,
+						bbox_max,
+						{enemy.position[0] - g_tank_half_size, enemy.position[1] - g_tank_half_size},
+						{enemy.position[0] + g_tank_half_size, enemy.position[1] + g_tank_half_size});
+			}
+			for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+			{
+				can_place &=
+					!BBoxesIntersect(
+						bbox_min,
+						bbox_max,
+						{pacman_ghost.position[0] - g_tank_half_size, pacman_ghost.position[1] - g_tank_half_size},
+						{pacman_ghost.position[0] + g_tank_half_size, pacman_ghost.position[1] + g_tank_half_size});
+			}
+			if(player_ != std::nullopt)
+			{
+				can_place &=
+					!BBoxesIntersect(
+						bbox_min,
+						bbox_max,
+						{player_->position[0] - g_tank_half_size, player_->position[1] - g_tank_half_size},
+						{player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size});
+			}
+		}
 
 		if(!can_place)
 		{
