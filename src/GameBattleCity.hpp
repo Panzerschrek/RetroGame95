@@ -99,6 +99,18 @@ private:
 		fixed16vec2_t position{};
 	};
 
+	enum class SnakeBonusType : uint8_t
+	{
+		FoodSmall,
+		NumTypes,
+	};
+
+	struct SnakeBonus
+	{
+		SnakeBonusType type = SnakeBonusType::FoodSmall;
+		fixed16vec2_t position{};
+	};
+
 	struct ActiveSound
 	{
 		uint32_t end_tick = 0;
@@ -127,6 +139,7 @@ private:
 	void NextLevel();
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
 	void TryToPickUpBonus();
+	void TryToPickUpSnakeBonus();
 
 	void UpdateEnemy(Enemy& enemy);
 	void UpdatePacmanGhost(PacmanGhost& pacman_ghost);
@@ -142,6 +155,7 @@ private:
 	void SpawnNewEnemy();
 	void TrySpawnPacmanGhost();
 	void SpawnBonus();
+	void TrySpawnSnakeBonus();
 	void MakeExplosion(const fixed16vec2_t& position);
 
 	void ActivateBaseProtectionBonus();
@@ -172,6 +186,7 @@ private:
 	std::vector<PacmanGhost> pacman_ghosts_;
 	std::vector<Explosion> explosions_;
 	std::optional<Bonus> bonus_;
+	std::optional<SnakeBonus> snake_bonus_;
 	uint32_t enemies_freezee_bonus_end_tick_ = 0;
 	uint32_t base_protection_bonus_end_tick_ = 0;
 	uint32_t level_start_animation_end_tick_ = 0;

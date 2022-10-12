@@ -117,6 +117,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		{
 			ProcessPlayerInput(keyboard_state);
 			TryToPickUpBonus();
+			TryToPickUpSnakeBonus();
 		}
 
 		for(Enemy& enemy : enemies_)
@@ -164,6 +165,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		}
 
 		TrySpawnPacmanGhost();
+		TrySpawnSnakeBonus();
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -267,6 +269,22 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 				}
 			}
 		}
+	}
+
+	if(snake_bonus_ != std::nullopt)
+	{
+		const SpriteBMP bonus_sprites[]
+		{
+			Sprites::snake_food_small,
+		};
+
+		const SpriteBMP sprite = bonus_sprites[size_t(snake_bonus_->type)];
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(snake_bonus_->position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(snake_bonus_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
 	if(player_ != std::nullopt)
@@ -374,7 +392,6 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			GetDrawFuncForDirection(enemy.direction)( frame_buffer, sprite, 0, start_x, start_y);
 		}
 	}
-
 
 	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
 	{
@@ -586,6 +603,7 @@ void GameBattleCity::NextLevel()
 	explosions_.clear();
 	pacman_ghosts_.clear();
 	bonus_ = std::nullopt;
+	snake_bonus_ = std::nullopt;
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
 
@@ -784,6 +802,39 @@ void GameBattleCity::TryToPickUpBonus()
 	{
 		SpawnBonus();
 	}
+}
+
+void GameBattleCity::TryToPickUpSnakeBonus()
+{
+	assert(player_ != std::nullopt);
+
+	if(snake_bonus_ == std::nullopt)
+	{
+		return;
+	}
+
+	// TODO - use smaller bbox.
+	if(!TanksIntersects(player_->position, snake_bonus_->position))
+	{
+		// Too far.
+		return;
+	}
+
+	MakeEventSound(SoundId::SnakeBonusEat);
+
+	// Pick up the bonus.
+	switch(snake_bonus_->type)
+	{
+	case SnakeBonusType::FoodSmall:
+		// TODO
+		break;
+
+	case SnakeBonusType::NumTypes:
+		assert(false);
+		break;
+	};
+
+	snake_bonus_ = std::nullopt;
 }
 
 void GameBattleCity::UpdateEnemy(Enemy& enemy)
@@ -1583,14 +1634,14 @@ void GameBattleCity::SpawnBonus()
 	const auto bonus_type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
 	for(uint32_t i = 0; i < 256; ++i)
 	{
-		uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
-		uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
+		const uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
+		const uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
 
 		bool can_place = true;
 		for(uint32_t dy = 0; dy < 2; ++dy)
 		for(uint32_t dx = 0; dx < 2; ++dx)
 		{
-			const BlockType block_type = field_[x + dy - 1 + (y + dy - 1) * c_field_width].type;
+			const BlockType block_type = field_[x + dx - 1 + (y + dy - 1) * c_field_width].type;
 			can_place &= block_type ==
 				BlockType::Empty || block_type == BlockType::Bricks || block_type == BlockType::Foliage;
 		}
@@ -1610,6 +1661,46 @@ void GameBattleCity::SpawnBonus()
 		bonus.type = bonus_type;
 		bonus.position = position;
 		bonus_ = bonus;
+		return;
+	}
+}
+
+void GameBattleCity::TrySpawnSnakeBonus()
+{
+	if(snake_bonus_ != std::nullopt)
+	{
+		return;
+	}
+
+	if(rand_.Next() % 1547 != 653)
+	{
+		return;
+	}
+
+	const auto bonus_type = SnakeBonusType(rand_.Next() % uint32_t(SnakeBonusType::NumTypes));
+	for(uint32_t i = 0; i < 256; ++i)
+	{
+		const uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
+		const uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
+
+		const Block& block= field_[x + y * c_field_width];
+		if(!(block.type == BlockType::Empty || block.destruction_mask == 0))
+		{
+			continue;
+		}
+
+		const fixed16vec2_t position =
+			{IntToFixed16(int32_t(x)) + g_fixed16_one / 2, IntToFixed16(int32_t(y)) + g_fixed16_one / 2};
+		if(player_ != std::nullopt && TanksIntersects(position, player_->position))
+		{
+			// Do not spawn bonus directly at player position.
+			continue;
+		}
+
+		SnakeBonus bonus;
+		bonus.type = bonus_type;
+		bonus.position = position;
+		snake_bonus_ = bonus;
 		return;
 	}
 }
