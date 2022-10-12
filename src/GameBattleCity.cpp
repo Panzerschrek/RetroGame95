@@ -22,6 +22,7 @@ const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_updat
 
 const fixed16_t g_tank_half_size = g_fixed16_one - 1;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
+const fixed16_t g_snake_bonus_half_size = g_fixed16_one / 2;
 
 const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
@@ -826,8 +827,11 @@ void GameBattleCity::TryToPickUpSnakeBonus()
 		return;
 	}
 
-	// TODO - use smaller bbox.
-	if(!TanksIntersects(player_->position, snake_bonus_->position))
+	if(!BBoxesIntersect(
+		{snake_bonus_->position[0] - g_snake_bonus_half_size, snake_bonus_->position[1] - g_snake_bonus_half_size},
+		{snake_bonus_->position[0] + g_snake_bonus_half_size, snake_bonus_->position[1] + g_snake_bonus_half_size},
+		{player_->position[0] - g_tank_half_size, player_->position[1] - g_tank_half_size},
+		{player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size}))
 	{
 		// Too far.
 		return;
@@ -1807,7 +1811,6 @@ void GameBattleCity::BlockEnemyWithTetrisFigure(const fixed16vec2_t& position)
 			figure_min_y = std::min(figure_min_y, block[1]);
 			figure_max_y = std::max(figure_max_y, block[1]);
 		}
-
 
 		const int32_t offset_min_x = enemy_min_x - figure_max_x;
 		const int32_t offset_min_y = enemy_min_y - figure_max_y;
