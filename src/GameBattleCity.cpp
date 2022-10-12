@@ -1373,8 +1373,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			continue;
 		}
 
-		if(block.type == BlockType::Bricks ||
-			(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6))
+		if(block.type == BlockType::Bricks)
 		{
 			something_is_destroyed = true;
 
@@ -1405,6 +1404,13 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 				// Destroy only this side.
 				block.destruction_mask &= ~mask;
 			}
+		}
+		else if(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6)
+		{
+			something_is_destroyed = true;
+
+			// Destroy tetris blocks with one shot.
+			block.destruction_mask = 0;
 		}
 
 		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
