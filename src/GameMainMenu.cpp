@@ -130,9 +130,15 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 					*select_game_row = SelectGameMenuRow((uint32_t(*select_game_row) + 1) % uint32_t(SelectGameMenuRow::NumGames));
 				}
 			}
-			if(event.key.keysym.scancode >= SDL_SCANCODE_F1 && event.key.keysym.scancode <= SDL_SCANCODE_F12)
+
+			#ifdef DEBUG
+			const bool enable_level_select = true;
+			#else
+			const bool enable_level_select = false;
+			#endif
+			if(enable_level_select &&
+				event.key.keysym.scancode >= SDL_SCANCODE_F1 && event.key.keysym.scancode <= SDL_SCANCODE_F12)
 			{
-				// TODO - consider this cheat.
 				if(next_game_ == nullptr)
 				{
 					next_game_ = CreateGameByIndex(event.key.keysym.scancode - SDL_SCANCODE_F1, sound_player_);
