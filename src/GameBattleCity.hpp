@@ -18,13 +18,20 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	enum class BlockType
+	enum class BlockType : uint8_t
 	{
 		Empty,
 		Bricks,
 		Concrete,
 		Foliage,
 		Water,
+		TetrisBlock0,
+		TetrisBlock1,
+		TetrisBlock2,
+		TetrisBlock3,
+		TetrisBlock4,
+		TetrisBlock5,
+		TetrisBlock6,
 	};
 
 	struct Block
@@ -160,6 +167,9 @@ private:
 
 	void ActivateBaseProtectionBonus();
 	void UpdateBaseProtectionBonus();
+
+	void BlockEnemiesWithTetrisFigures();
+	void BlockEnemyWithTetrisFigure(const fixed16vec2_t& position);
 
 	void MakeEventSound(SoundId sound_id);
 

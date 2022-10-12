@@ -229,6 +229,13 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		Sprites::battle_city_block_concrete,
 		Sprites::battle_city_block_foliage,
 		Sprites::battle_city_block_water,
+		Sprites::tetris_block_small_4,
+		Sprites::tetris_block_small_7,
+		Sprites::tetris_block_small_5,
+		Sprites::tetris_block_small_1,
+		Sprites::tetris_block_small_2,
+		Sprites::tetris_block_small_6,
+		Sprites::tetris_block_small_3,
 	};
 
 	// Draw field except foliage.
@@ -826,7 +833,7 @@ void GameBattleCity::TryToPickUpSnakeBonus()
 	switch(snake_bonus_->type)
 	{
 	case SnakeBonusType::FoodSmall:
-		// TODO
+		BlockEnemiesWithTetrisFigures();
 		break;
 
 	case SnakeBonusType::NumTypes:
@@ -1735,6 +1742,113 @@ void GameBattleCity::UpdateBaseProtectionBonus()
 			field_[tile[0] + tile[1] * c_field_width].type = BlockType::Bricks;
 		}
 	}
+}
+
+void GameBattleCity::BlockEnemiesWithTetrisFigures()
+{
+	for(const Enemy& enemy : enemies_)
+	{
+		BlockEnemyWithTetrisFigure(enemy.position);
+	}
+
+	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+	{
+		BlockEnemyWithTetrisFigure(pacman_ghost.position);
+	}
+}
+
+void GameBattleCity::BlockEnemyWithTetrisFigure(const fixed16vec2_t& position)
+{
+	const int32_t enemy_min_x = Fixed16FloorToInt(position[0] - g_tank_half_size) - 1;
+	const int32_t enemy_min_y = Fixed16FloorToInt(position[1] - g_tank_half_size) - 1;
+	const int32_t enemy_max_x = Fixed16FloorToInt(position[0] + g_tank_half_size) + 1;
+	const int32_t enemy_max_y = Fixed16FloorToInt(position[1] + g_tank_half_size) + 1;
+
+	/* Try to place tetris figures at free space touching these cells.
+	  ####
+	  #  #
+	  #  #
+	  ####
+	*/
+
+	for(int32_t i = 0; i < 256; ++i)
+	{
+		const uint32_t type_index = rand_.Next() % g_tetris_num_piece_types;
+		const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + type_index);
+
+		TetrisPieceBlocks blocks = g_tetris_pieces_blocks[type_index];
+
+		// Choose random rotation.
+		const uint32_t num_rotations = rand_.Next() / 47u % 4u;
+		for(uint32_t i = 0; i < num_rotations; ++i)
+		{
+			TetrisPiece piece;
+			piece.type = type;
+			piece.blocks = blocks;
+			blocks = RotateTetrisPieceBlocks(piece);
+		}
+
+		int32_t figure_min_x = 99999, figure_max_x = -9999;
+		int32_t figure_min_y = 99999, figure_max_y = -9999;
+		for(const TetrisPieceBlock& block : blocks)
+		{
+			figure_min_x = std::min(figure_min_x, block[0]);
+			figure_max_x = std::max(figure_max_x, block[0]);
+			figure_min_y = std::min(figure_min_y, block[1]);
+			figure_max_y = std::max(figure_max_y, block[1]);
+		}
+
+
+		const int32_t offset_min_x = enemy_min_x - figure_max_x;
+		const int32_t offset_min_y = enemy_min_y - figure_max_y;
+		const int32_t offset_max_x = enemy_max_x - figure_min_x;
+		const int32_t offset_max_y = enemy_max_y - figure_min_y;
+
+		assert(offset_min_x <= offset_max_x);
+		assert(offset_min_y <= offset_max_y);
+
+		const int32_t offset_x = offset_min_x + int32_t(rand_.Next() % uint32_t(1 + offset_max_x - offset_min_x));
+		const int32_t offset_y = offset_min_y + int32_t(rand_.Next() % uint32_t(1 + offset_max_y - offset_min_y));
+
+		TetrisPieceBlocks blocks_shifted = blocks;
+		for(TetrisPieceBlock& block_shifted : blocks_shifted)
+		{
+			block_shifted[0] += offset_x;
+			block_shifted[1] += offset_y;
+		}
+
+		bool can_place = true;
+		for(const TetrisPieceBlock& block_shifted : blocks_shifted)
+		{
+			if( block_shifted[0] >= 0 && block_shifted[0] < int32_t(c_field_width ) &&
+				block_shifted[1] >= 0 && block_shifted[1] < int32_t(c_field_height))
+			{
+				const Block& field_block = field_[uint32_t(block_shifted[0]) + uint32_t(block_shifted[1]) * c_field_width];
+				can_place &= field_block.type == BlockType::Empty || field_block.destruction_mask == 0;
+			}
+			else
+			{
+				can_place = false;
+				break;
+			}
+		}
+
+		// TODO - make sure we do not place figure at enemy/player position.
+
+		if(!can_place)
+		{
+			continue;
+		}
+
+		// Place it.
+
+		for(const TetrisPieceBlock& block_shifted : blocks_shifted)
+		{
+			Block& field_block = field_[uint32_t(block_shifted[0]) + uint32_t(block_shifted[1]) * c_field_width];
+			field_block.type = BlockType(uint32_t(BlockType::TetrisBlock0) + type_index);
+			field_block.destruction_mask = 0xF;
+		}
+	} // for tries.
 }
 
 void GameBattleCity::MakeEventSound(const SoundId sound_id)
