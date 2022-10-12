@@ -1367,7 +1367,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			continue;
 		}
 
-		if(block.type == BlockType::Bricks)
+		if(block.type == BlockType::Bricks ||
+			(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6))
 		{
 			something_is_destroyed = true;
 
