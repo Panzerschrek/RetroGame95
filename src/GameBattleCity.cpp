@@ -42,9 +42,9 @@ const uint32_t g_max_lives = 9;
 
 const uint32_t g_transition_time_hide_pacman_ui = GameInterface::c_update_frequency * 3;
 const uint32_t g_transition_time_show_field_borders = g_transition_time_hide_pacman_ui + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_hide_pacman = g_transition_time_show_field_borders + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_hide_pacman_field = g_transition_time_hide_pacman + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_show_ui = g_transition_time_hide_pacman_field + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_tank = g_transition_time_show_field_borders + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_field = g_transition_time_show_tank + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_ui = g_transition_time_show_field + GameInterface::c_update_frequency;
 
 bool BBoxesIntersect(
 	const fixed16vec2_t& min_a, const fixed16vec2_t& max_a,
@@ -173,7 +173,8 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 			} // for projectiles.
 		}
 
-		if(enemies_left_ > 0 &&
+		if(tick_ >= g_transition_time_show_tank &&
+			enemies_left_ > 0 &&
 			enemies_.size() < g_max_alive_enemies &&
 			(tick_ % GameInterface::c_update_frequency) == 0)
 		{
@@ -236,7 +237,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_small_3,
 	};
 
-	if(tick_ < g_transition_time_hide_pacman_field)
+	if(tick_ < g_transition_time_show_field)
 	{
 		const uint32_t pacman_field_width  = c_field_width  + 4;
 		const uint32_t pacman_field_height = c_field_height + 4;
@@ -335,7 +336,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t x = uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size)));
 		const uint32_t y = uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size)));
 
-		if(tick_ < g_transition_time_hide_pacman)
+		if(tick_ < g_transition_time_show_tank)
 		{
 			const SpriteBMP sprites[]
 			{
@@ -536,7 +537,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(explosion.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
-	if(tick_ >= g_transition_time_hide_pacman_field)
+	if(tick_ >= g_transition_time_show_field)
 	{
 		// Draw foliage after player and enemies.
 		for(uint32_t y = 0; y < c_field_height; ++y)
@@ -851,9 +852,10 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	}
 
 	// Shoot.
-	if((keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)]) ||
+	if(((keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)]) ||
 		(keyboard_state.size() > size_t(SDL_SCANCODE_RCTRL) && keyboard_state[size_t(SDL_SCANCODE_RCTRL)]) ||
-		(keyboard_state.size() > size_t(SDL_SCANCODE_SPACE) && keyboard_state[size_t(SDL_SCANCODE_SPACE)]))
+		(keyboard_state.size() > size_t(SDL_SCANCODE_SPACE) && keyboard_state[size_t(SDL_SCANCODE_SPACE)])) &&
+		tick_ >= g_transition_time_show_tank)
 	{
 		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
