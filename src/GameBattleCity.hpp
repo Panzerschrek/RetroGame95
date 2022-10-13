@@ -45,6 +45,7 @@ private:
 	{
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YMinus;
+		bool is_armor_piercing = false;
 	};
 
 	struct Player
@@ -54,6 +55,7 @@ private:
 		uint32_t next_shot_tick = 0;
 		uint32_t shield_end_tick = 0;
 		std::vector<Projectile> projectiles;
+		uint32_t armor_piercing_shells = 0;
 	};
 
 	enum class EnemyType : uint8_t
@@ -109,6 +111,7 @@ private:
 	enum class SnakeBonusType : uint8_t
 	{
 		FoodSmall,
+		FoodMedium,
 		NumTypes,
 	};
 
@@ -176,7 +179,8 @@ private:
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
 
-	static Projectile MakeProjectile(const fixed16vec2_t& tank_position, GridDirection tank_direction);
+	static Projectile MakeProjectile(
+		const fixed16vec2_t& tank_position, GridDirection tank_direction, bool is_armor_piercing);
 
 private:
 	SoundPlayer& sound_player_;

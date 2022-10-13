@@ -19,6 +19,7 @@ const fixed16_t g_enemy_speed_fast = g_enemy_speed * 3 / 2;
 const fixed16_t g_pacman_ghost_speed = g_player_speed * 9 / 10;
 
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
+const fixed16_t g_armor_piercing_projectile_speed = g_projectile_speed * 2 / 3;
 
 const fixed16_t g_tank_half_size = g_fixed16_one - 1;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
@@ -290,6 +291,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const SpriteBMP bonus_sprites[]
 		{
 			Sprites::snake_food_small,
+			Sprites::snake_food_medium,
 		};
 
 		const SpriteBMP sprite = bonus_sprites[size_t(snake_bonus_->type)];
@@ -421,7 +423,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	const auto draw_projectile =
 	[&](const Projectile& projectile)
 	{
-		const SpriteBMP sprite(Sprites::battle_city_projectile);
+		const SpriteBMP sprite(projectile.is_armor_piercing ? Sprites::arkanoid_ball : Sprites::battle_city_projectile);
 		GetDrawFuncForDirection(projectile.direction)(
 			frame_buffer,
 			sprite,
@@ -516,9 +518,22 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const SpriteBMP sprite(Sprites::battle_city_remaining_enemy);
 		DrawSprite(
 			frame_buffer,
-			Sprites::battle_city_remaining_enemy,
+			sprite,
 			frame_buffer.width - 32 + sprite.GetWidth() * (i % 2),
 			40 + (i / 2) * sprite.GetHeight());
+	}
+
+	if(player_ != std::nullopt)
+	{
+		for(uint32_t i = 0; i < player_->armor_piercing_shells; ++i)
+		{
+			const SpriteBMP sprite(Sprites::arkanoid_ball);
+			DrawSprite(
+				frame_buffer,
+				sprite,
+				frame_buffer.width - 40 + (sprite.GetWidth() + 2) * (i % 4),
+				frame_buffer.height - 24 + (i / 4) * (sprite.GetHeight() + 2));
+		}
 	}
 
 	const uint32_t texts_offset_x = frame_buffer.width - 32;
@@ -746,8 +761,15 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
 		{
+			bool is_armor_piercing = false;
+			if(player_->armor_piercing_shells > 0)
+			{
+				--player_->armor_piercing_shells;
+				is_armor_piercing = true;
+			}
+
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
-			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
+			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction, is_armor_piercing));
 
 			MakeEventSound(SoundId::TankShot);
 		}
@@ -844,6 +866,10 @@ void GameBattleCity::TryToPickUpSnakeBonus()
 	{
 	case SnakeBonusType::FoodSmall:
 		BlockEnemiesWithTetrisFigures();
+		break;
+
+	case SnakeBonusType::FoodMedium:
+		player_->armor_piercing_shells = 4;
 		break;
 
 	case SnakeBonusType::NumTypes:
@@ -1041,7 +1067,7 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 
 		if(can_fire)
 		{
-			enemy.projectile = MakeProjectile(enemy.position, enemy.direction);
+			enemy.projectile = MakeProjectile(enemy.position, enemy.direction, false);
 		}
 	}
 }
@@ -1216,19 +1242,20 @@ void GameBattleCity::UpdatePacmanGhost(PacmanGhost& pacman_ghost)
 
 bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_player_projectile)
 {
+	const fixed16_t speed = projectile.is_armor_piercing ? g_armor_piercing_projectile_speed : g_projectile_speed;
 	switch (projectile.direction)
 	{
 	case GridDirection::XPlus:
-		projectile.position[0] += g_projectile_speed;
+		projectile.position[0] += speed;
 		break;
 	case GridDirection::XMinus:
-		projectile.position[0] -= g_projectile_speed;
+		projectile.position[0] -= speed;
 		break;
 	case GridDirection::YPlus:
-		projectile.position[1] += g_projectile_speed;
+		projectile.position[1] += speed;
 		break;
 	case GridDirection::YMinus:
-		projectile.position[1] -= g_projectile_speed;
+		projectile.position[1] -= speed;
 		break;
 	}
 
@@ -1272,7 +1299,14 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		MakeExplosion(projectile.position);
 
 		assert(enemy.health > 0);
-		--enemy.health;
+		if(projectile.is_armor_piercing)
+		{
+			enemy.health = 0;
+		}
+		else
+		{
+			--enemy.health;
+		}
 		if(enemy.health == 0)
 		{
 			MakeEventSound(SoundId::Explosion);
@@ -1377,44 +1411,58 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			continue;
 		}
 
-		if(block.type == BlockType::Bricks)
+		if(projectile.is_armor_piercing)
 		{
-			something_is_destroyed = true;
-
-			uint32_t mask = 0;
-			switch(projectile.direction)
+			if(block.type == BlockType::Bricks ||
+				block.type == BlockType::Concrete ||
+				(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6))
 			{
-			case GridDirection::XPlus:
-				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
-				break;
-			case GridDirection::XMinus:
-				mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
-				break;
-			case GridDirection::YPlus:
-				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
-				break;
-			case GridDirection::YMinus:
-				mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
-				break;
-			}
-
-			if((mask & block.destruction_mask) == 0)
-			{
-				// This side of block is already destroyed. Destroy another side.
+				// Armor-piercing projectile destroys blocks with one shot, even concrete blocks.
+				something_is_destroyed = true;
 				block.destruction_mask = 0;
 			}
-			else
-			{
-				// Destroy only this side.
-				block.destruction_mask &= ~mask;
-			}
 		}
-		else if(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6)
+		else
 		{
-			something_is_destroyed = true;
+			if(block.type == BlockType::Bricks)
+			{
+				something_is_destroyed = true;
 
-			// Destroy tetris blocks with one shot.
-			block.destruction_mask = 0;
+				uint32_t mask = 0;
+				switch(projectile.direction)
+				{
+				case GridDirection::XPlus:
+					mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
+					break;
+				case GridDirection::XMinus:
+					mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
+					break;
+				case GridDirection::YPlus:
+					mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
+					break;
+				case GridDirection::YMinus:
+					mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
+					break;
+				}
+
+				if((mask & block.destruction_mask) == 0)
+				{
+					// This side of block is already destroyed. Destroy another side.
+					block.destruction_mask = 0;
+				}
+				else
+				{
+					// Destroy only this side.
+					block.destruction_mask &= ~mask;
+				}
+			}
+			else if(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6)
+			{
+				something_is_destroyed = true;
+
+				// Destroy tetris blocks with one shot.
+				block.destruction_mask = 0;
+			}
 		}
 
 		// TODO - destroy also concrete blocks if projectile is from upgraded player tank.
@@ -1707,7 +1755,7 @@ void GameBattleCity::TrySpawnSnakeBonus()
 		const uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
 		const uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
 
-		const Block& block= field_[x + y * c_field_width];
+		const Block& block = field_[x + y * c_field_width];
 		if(!(block.type == BlockType::Empty || block.destruction_mask == 0))
 		{
 			continue;
@@ -1936,11 +1984,13 @@ GameBattleCity::BlockType GameBattleCity::GetBlockTypeForLevelDataByte(const cha
 
 GameBattleCity::Projectile GameBattleCity::MakeProjectile(
 	const fixed16vec2_t& tank_position,
-	const GridDirection tank_direction)
+	const GridDirection tank_direction,
+	const bool is_armor_piercing)
 {
 	Projectile projectile;
 	projectile.position = tank_position;
 	projectile.direction = tank_direction;
+	projectile.is_armor_piercing = is_armor_piercing;
 
 	const fixed16_t offset = g_tank_half_size + g_projectile_half_size;
 
