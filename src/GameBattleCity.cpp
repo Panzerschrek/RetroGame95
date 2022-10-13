@@ -42,7 +42,8 @@ const uint32_t g_max_lives = 9;
 
 const uint32_t g_transition_time_hide_pacman_ui = GameInterface::c_update_frequency * 3;
 const uint32_t g_transition_time_show_field_borders = g_transition_time_hide_pacman_ui + GameInterface::c_update_frequency;
-const uint32_t g_transition_time_show_tank = g_transition_time_show_field_borders + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_stop_auto_movement = g_transition_time_show_field_borders + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_tank = g_transition_time_stop_auto_movement + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_show_field = g_transition_time_show_tank + GameInterface::c_update_frequency;
 const uint32_t g_transition_time_show_ui = g_transition_time_show_field + GameInterface::c_update_frequency;
 
@@ -748,26 +749,29 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	const bool up_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)];
 	const bool down_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)];
 
-	if((left_pressed || right_pressed || up_pressed || down_pressed))
+	if(tick_ >= g_transition_time_show_tank)
 	{
-		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankStay)
+		if((left_pressed || right_pressed || up_pressed || down_pressed))
 		{
-			sound_player_.PlayLoopedSound(SoundId::TankMovement);
-			ActiveSound active_sound;
-			active_sound.id = SoundId::TankMovement;
-			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
-			current_sound_ = active_sound;
+			if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankStay)
+			{
+				sound_player_.PlayLoopedSound(SoundId::TankMovement);
+				ActiveSound active_sound;
+				active_sound.id = SoundId::TankMovement;
+				active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+				current_sound_ = active_sound;
+			}
 		}
-	}
-	else
-	{
-		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankMovement)
+		else
 		{
-			sound_player_.PlayLoopedSound(SoundId::TankStay);
-			ActiveSound active_sound;
-			active_sound.id = SoundId::TankStay;
-			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
-			current_sound_ = active_sound;
+			if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankMovement)
+			{
+				sound_player_.PlayLoopedSound(SoundId::TankStay);
+				ActiveSound active_sound;
+				active_sound.id = SoundId::TankStay;
+				active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+				current_sound_ = active_sound;
+			}
 		}
 	}
 
@@ -811,6 +815,24 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	else if(down_pressed)
 	{
 		new_position[1] += g_player_speed;
+	}
+	else if(tick_ < g_transition_time_stop_auto_movement)
+	{
+		switch(player_->direction)
+		{
+		case GridDirection::XPlus:
+			new_position[0] += g_player_speed;
+			break;
+		case GridDirection::XMinus:
+			new_position[0] -= g_player_speed;
+			break;
+		case GridDirection::YPlus:
+			new_position[1] += g_player_speed;
+			break;
+		case GridDirection::YMinus:
+			new_position[1] -= g_player_speed;
+			break;
+		}
 	}
 
 	bool moves_towards_other_tank = false;
