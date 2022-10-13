@@ -40,6 +40,8 @@ const size_t g_max_alive_pacman_ghosts = 2;
 const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
+const uint32_t g_transition_time_hide_pacman_field = GameInterface::c_update_frequency * 10;
+
 bool BBoxesIntersect(
 	const fixed16vec2_t& min_a, const fixed16vec2_t& max_a,
 	const fixed16vec2_t& min_b, const fixed16vec2_t& max_b)
@@ -246,41 +248,58 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_small_3,
 	};
 
-	// Draw field except foliage.
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
+	if(tick_ < g_transition_time_hide_pacman_field)
 	{
-		const Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.destruction_mask == 0)
+		const uint32_t pacman_field_width  = c_field_width  + 3;
+		const uint32_t pacman_field_height = c_field_height + 2;
+		DrawPacmanField(
+			frame_buffer,
+			battle_city_level_0_pacman_field,
+			pacman_field_width,
+			pacman_field_height,
+			0,
+			0,
+			pacman_field_width,
+			pacman_field_height);
+	}
+	else
+	{
+		// Draw field except foliage.
+		for(uint32_t y = 0; y < c_field_height; ++y)
+		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
-			continue;
-		}
-
-		const uint32_t sprite_x = field_offset_x + x * c_block_size;
-		const uint32_t sprite_y = field_offset_y + y * c_block_size;
-		const SpriteBMP sprite = block_sprites[size_t(block.type)];
-
-		if(block.destruction_mask == 0xF)
-		{
-			DrawSprite(frame_buffer, sprite, sprite_x, sprite_y);
-		}
-		else
-		{
-			const uint32_t segment_size = c_block_size / 2;
-			for(uint32_t dy = 0; dy < 2; ++dy)
-			for(uint32_t dx = 0; dx < 2; ++dx)
+			const Block& block = field_[x + y * c_field_width];
+			if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.destruction_mask == 0)
 			{
-				if((block.destruction_mask & BlockMaskForCoord(dx, dy)) != 0)
+				continue;
+			}
+
+			const uint32_t sprite_x = field_offset_x + x * c_block_size;
+			const uint32_t sprite_y = field_offset_y + y * c_block_size;
+			const SpriteBMP sprite = block_sprites[size_t(block.type)];
+
+			if(block.destruction_mask == 0xF)
+			{
+				DrawSprite(frame_buffer, sprite, sprite_x, sprite_y);
+			}
+			else
+			{
+				const uint32_t segment_size = c_block_size / 2;
+				for(uint32_t dy = 0; dy < 2; ++dy)
+				for(uint32_t dx = 0; dx < 2; ++dx)
 				{
-					DrawSpriteRect(
-						frame_buffer,
-						sprite,
-						sprite_x + dx * segment_size,
-						sprite_y + dy * segment_size,
-						dx * segment_size,
-						dy * segment_size,
-						segment_size,
-						segment_size);
+					if((block.destruction_mask & BlockMaskForCoord(dx, dy)) != 0)
+					{
+						DrawSpriteRect(
+							frame_buffer,
+							sprite,
+							sprite_x + dx * segment_size,
+							sprite_y + dy * segment_size,
+							dx * segment_size,
+							dy * segment_size,
+							segment_size,
+							segment_size);
+					}
 				}
 			}
 		}
@@ -472,22 +491,25 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(explosion.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
-	// Draw foliage after player and enemies.
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
+	if(tick_ >= g_transition_time_hide_pacman_field)
 	{
-		const Block& block = field_[x + y * c_field_width];
-		if(block.type != BlockType::Foliage || block.destruction_mask == 0)
+		// Draw foliage after player and enemies.
+		for(uint32_t y = 0; y < c_field_height; ++y)
+		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
-			continue;
-		}
+			const Block& block = field_[x + y * c_field_width];
+			if(block.type != BlockType::Foliage || block.destruction_mask == 0)
+			{
+				continue;
+			}
 
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			block_sprites[size_t(BlockType::Foliage)],
-			0,
-			field_offset_x + x * c_block_size,
-			field_offset_y + y * c_block_size);
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				block_sprites[size_t(BlockType::Foliage)],
+				0,
+				field_offset_x + x * c_block_size,
+				field_offset_y + y * c_block_size);
+		}
 	}
 
 	if(bonus_ != std::nullopt)
