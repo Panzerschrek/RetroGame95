@@ -242,6 +242,19 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	if(tick_ < g_transition_time_show_field)
 	{
+		// Base.
+		for(uint32_t dy = 0; dy < 2; ++dy)
+		for(uint32_t dx = 0; dx < 2; ++dx)
+		{
+			const SpriteBMP sprite(Sprites::pacman_food);
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + c_block_size * (c_field_width / 2 - 1 + dx) + c_block_size / 2 - sprite.GetWidth() / 2,
+				field_offset_y + c_block_size * (c_field_height - 2 + dy)  + c_block_size / 2 - sprite.GetHeight() / 2);
+		}
+
 		const uint32_t pacman_field_width  = c_field_width  + 4;
 		const uint32_t pacman_field_height = c_field_height + 4;
 		DrawPacmanField(
