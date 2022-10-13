@@ -63,6 +63,89 @@ void CopyImageWithScale(
 	func(src, src_width, src_height, dst, dst_stride);
 }
 
+template<uint32_t scale>
+void CopyImageWithCrtEffect(
+	const Color32* src,
+	const uint32_t src_width,
+	const uint32_t src_height,
+	Color32* const dst,
+	const uint32_t dst_stride)
+{
+	for(uint32_t y = 0; y < src_height; ++y)
+	{
+		const Color32* const src_line = src + src_width * y;
+		const Color32* const src_line_minus = src + src_width * (std::max(1u, y) - 1);
+		const Color32* const src_line_plus  = src + src_width * (std::min(src_height - 2, y) + 1);
+		Color32* dst_start_line = dst + y * scale * dst_stride;
+		for(uint32_t x = 0; x < src_width ; ++x)
+		{
+			const uint32_t x_minus = std::max(1u, x) - 1;
+			const uint32_t x_plus  = std::min(src_width - 2, x) + 1;
+			ColorComponents components = ColorComponentsScale(UnpackColor(src_line[x]), 16);
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line[x_minus]), 4));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line[x_plus ]), 4));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_minus[x]), 2));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_plus [x]), 2));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_minus[x_minus]), 1));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_minus[x_plus ]), 1));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_plus [x_minus]), 1));
+			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_plus [x_plus ]), 1));
+
+			const uint32_t result_shift = 5;
+
+			for(uint32_t dy = 0; dy < scale; ++dy)
+			{
+				Color32* const dst_line = dst_start_line + dy * dst_stride;
+
+				for(uint32_t dx = 0; dx < scale; ++dx)
+				{
+					const uint32_t dst_x = x * scale + dx;
+					ColorComponents components_modified = components;
+					switch(dst_x % 3)
+					{
+					case 0:
+						components_modified[3] = components_modified[3] * 3 / 4;
+						components_modified[2] = components_modified[2] * 3 / 4;
+						break;
+					case 1:
+						components_modified[3] = components_modified[3] * 3 / 4;
+						components_modified[1] = components_modified[1] * 3 / 4;
+						break;
+					case 2:
+						components_modified[2] = components_modified[2] * 3 / 4;
+						components_modified[1] = components_modified[1] * 3 / 4;
+						break;
+					}
+					dst_line[dst_x] = PackColor(ColorComponentsShiftRight(components_modified, result_shift));
+				}
+			} // for dst y
+		} // for src x
+	} // for src y
+}
+
+void CopyImageWithScaleAndCrtEffect(
+	const uint32_t scale,
+	const Color32* src,
+	const uint32_t src_width,
+	const uint32_t src_height,
+	Color32* const dst,
+	const uint32_t dst_stride)
+{
+	auto func = CopyImageWithScaleImpl<1>;
+	switch(scale)
+	{
+	case 1: func = CopyImageWithCrtEffect<1>; break;
+	case 2: func = CopyImageWithCrtEffect<2>; break;
+	case 3: func = CopyImageWithCrtEffect<3>; break;
+	case 4: func = CopyImageWithCrtEffect<4>; break;
+	case 5: func = CopyImageWithCrtEffect<5>; break;
+	case 6: func = CopyImageWithCrtEffect<6>; break;
+	default: func = CopyImageWithCrtEffect<g_max_scale>; break;
+	}
+
+	func(src, src_width, src_height, dst, dst_stride);
+}
+
 } // namespace
 
 SystemWindow::SystemWindow()
@@ -95,6 +178,10 @@ std::vector<SDL_Event> SystemWindow::GetEvents()
 	{
 		if(event.type == SDL_KEYDOWN)
 		{
+			if(event.key.keysym.scancode == SDL_SCANCODE_BACKSPACE)
+			{
+				use_crt_effect_ = !use_crt_effect_;
+			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_MINUS && scale_ > 1)
 			{
 				--scale_;
@@ -152,7 +239,7 @@ void SystemWindow::EndFrame()
 		SDL_LockSurface(surface_);
 	}
 
-	CopyImageWithScale(
+	(use_crt_effect_ ? CopyImageWithScaleAndCrtEffect : CopyImageWithScale)(
 		scale_,
 		frame_buffer_data_.data(),
 		uint32_t(surface_->w) / scale_,

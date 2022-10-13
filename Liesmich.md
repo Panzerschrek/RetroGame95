@@ -23,6 +23,7 @@ Spielen Sie es bis zum Ende!
 * Esc - Spiel beenden
 * "-" - das Fenster reduzieren
 * "=" - das Fenster vergrößern
+* "Backspace" - CRT Effect umschalten
 * "[" - leiser
 * "]" - lauter
 * "Pause" - Spiel anhalten
