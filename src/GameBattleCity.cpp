@@ -98,6 +98,8 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 {
 	NextLevel();
 	level_start_animation_end_tick_ = 0;
+
+	SpawnSnakeBonus();
 }
 
 void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -323,7 +325,10 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			Sprites::snake_food_medium,
 		};
 
-		const SpriteBMP sprite = bonus_sprites[size_t(snake_bonus_->type)];
+		const SpriteBMP sprite =
+			tick_ < g_transition_time_show_field
+				? Sprites::pacman_bonus_deadly
+				: bonus_sprites[size_t(snake_bonus_->type)];
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
