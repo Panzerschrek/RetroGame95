@@ -41,7 +41,8 @@ const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
 const uint32_t g_transition_time_show_field_borders = GameInterface::c_update_frequency * 5;
-const uint32_t g_transition_time_hide_pacman_field = g_transition_time_show_field_borders + GameInterface::c_update_frequency * 2;
+const uint32_t g_transition_time_hide_pacman = g_transition_time_show_field_borders + GameInterface::c_update_frequency * 2;
+const uint32_t g_transition_time_hide_pacman_field = g_transition_time_hide_pacman + GameInterface::c_update_frequency * 2;
 const uint32_t g_transition_time_show_ui = g_transition_time_hide_pacman_field + GameInterface::c_update_frequency * 2;
 
 
@@ -334,27 +335,64 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t x = uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size)));
 		const uint32_t y = uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size)));
 
+		if(tick_ < g_transition_time_hide_pacman)
 		{
-			const bool use_a = ((x ^ y) & 1) != 0;
+			const SpriteBMP sprites[]
+			{
+				Sprites::pacman_0,
+				Sprites::pacman_1,
+				Sprites::pacman_2,
+				Sprites::pacman_3,
+				Sprites::pacman_2,
+				Sprites::pacman_1,
+			};
 
-			const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
-			GetDrawFuncForDirection(player_->direction)(
-				frame_buffer,
-				sprite,
-				0,
-				field_offset_x + x - sprite.GetWidth () / 2,
-				field_offset_y + y - sprite.GetHeight() / 2);
+			const uint32_t num_frames = uint32_t(std::size(sprites));
+			const fixed16_t dist = player_->position[0] + player_->position[1];
+
+			const SpriteBMP sprite(sprites[((uint32_t(dist) * num_frames) >> g_fixed16_base) % num_frames]);
+			const uint32_t pacman_x = field_offset_x + x - sprite.GetWidth () / 2;
+			const uint32_t pacman_y = field_offset_y + y - sprite.GetHeight() / 2;
+			switch(player_->direction)
+			{
+			case GridDirection::XMinus:
+				DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			case GridDirection::XPlus:
+				DrawSpriteWithAlpha         (frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			case GridDirection::YMinus:
+				DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			case GridDirection::YPlus:
+				DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			}
 		}
-
-		if(tick_ < player_->shield_end_tick)
+		else
 		{
-			const SpriteBMP sprite(tick_ / 6 % 2 != 0 ? Sprites::battle_city_player_shield_a : Sprites::battle_city_player_shield_b);
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				sprite,
-				0,
-				field_offset_x + x - sprite.GetWidth () / 2,
-				field_offset_y + y - sprite.GetHeight() / 2);
+			{
+				const bool use_a = ((x ^ y) & 1) != 0;
+
+				const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
+				GetDrawFuncForDirection(player_->direction)(
+					frame_buffer,
+					sprite,
+					0,
+					field_offset_x + x - sprite.GetWidth () / 2,
+					field_offset_y + y - sprite.GetHeight() / 2);
+			}
+
+			if(tick_ < player_->shield_end_tick)
+			{
+				const SpriteBMP sprite(tick_ / 6 % 2 != 0 ? Sprites::battle_city_player_shield_a : Sprites::battle_city_player_shield_b);
+				DrawSpriteWithAlpha(
+					frame_buffer,
+					sprite,
+					0,
+					field_offset_x + x - sprite.GetWidth () / 2,
+					field_offset_y + y - sprite.GetHeight() / 2);
+			}
 		}
 	}
 
