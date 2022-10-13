@@ -40,11 +40,11 @@ const size_t g_max_alive_pacman_ghosts = 2;
 const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
-const uint32_t g_transition_time_show_field_borders = GameInterface::c_update_frequency * 5;
-const uint32_t g_transition_time_hide_pacman = g_transition_time_show_field_borders + GameInterface::c_update_frequency * 2;
-const uint32_t g_transition_time_hide_pacman_field = g_transition_time_hide_pacman + GameInterface::c_update_frequency * 2;
-const uint32_t g_transition_time_show_ui = g_transition_time_hide_pacman_field + GameInterface::c_update_frequency * 2;
-
+const uint32_t g_transition_time_hide_pacman_ui = GameInterface::c_update_frequency * 3;
+const uint32_t g_transition_time_show_field_borders = g_transition_time_hide_pacman_ui + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_hide_pacman = g_transition_time_show_field_borders + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_hide_pacman_field = g_transition_time_hide_pacman + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_ui = g_transition_time_hide_pacman_field + GameInterface::c_update_frequency;
 
 bool BBoxesIntersect(
 	const fixed16vec2_t& min_a, const fixed16vec2_t& max_a,
@@ -579,6 +579,32 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	}
 
 	// UI.
+
+	if(tick_ < g_transition_time_hide_pacman_ui)
+	{
+		const SpriteBMP life_spirte(Sprites::pacman_life);
+		for(uint32_t i = 0; i < lives_; ++i)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				life_spirte,
+				0,
+				field_offset_x + (c_field_width + 1) * c_block_size + i % 3 * (life_spirte.GetWidth() + 2),
+				c_block_size * 2 + i / 3 * (life_spirte.GetHeight() + 3));
+		}
+
+		const uint32_t texts_offset_x = field_offset_x + (c_field_width + 1) * c_block_size;
+		const uint32_t texts_offset_y = 8 * g_glyph_height;
+
+		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
+
+		char text[64];
+		NumToString(text, sizeof(text), level_, 5);
+		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
+
+		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
+		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, "    ß");
+	}
 
 	if(tick_ >= g_transition_time_show_ui)
 	{
