@@ -45,14 +45,6 @@ private:
 		uint32_t next_shoot_tick = 0;
 	};
 
-	enum class GhostType
-	{
-		Blinky,
-		Pinky,
-		Inky,
-		Clyde,
-	};
-
 	enum class GhostMode
 	{
 		Chase,
@@ -63,7 +55,7 @@ private:
 
 	struct Ghost
 	{
-		GhostType type = GhostType::Blinky;
+		PacmanGhostType type = PacmanGhostType::Blinky;
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::XPlus;
 		fixed16vec2_t target_position{};
@@ -120,7 +112,7 @@ private:
 	void MovePacman();
 	void MoveGhost(Ghost& ghost);
 	std::array<int32_t, 2> GetGhostDestinationBlock(
-		GhostType ghost_type,
+		PacmanGhostType ghost_type,
 		GhostMode ghost_mode,
 		const std::array<int32_t, 2>& ghost_position);
 	void ProcessPacmanGhostsTouch();
@@ -140,7 +132,7 @@ private:
 	void UpdateSnakePosition();
 
 	static bool IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block);
-	static std::array<int32_t, 2> GetScatterModeTarget(GhostType ghost_type);
+	static std::array<int32_t, 2> GetScatterModeTarget(PacmanGhostType ghost_type);
 	static void ReverseGhostMovement(Ghost& ghost);
 	static fixed16_t GetGhostSpeed(GhostMode ghost_mode);
 

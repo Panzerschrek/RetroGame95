@@ -18,13 +18,20 @@ public: // GameInterface
 	virtual GameInterfacePtr AskForNextGameTransition() override;
 
 private:
-	enum class BlockType
+	enum class BlockType : uint8_t
 	{
 		Empty,
 		Bricks,
 		Concrete,
 		Foliage,
 		Water,
+		TetrisBlock0,
+		TetrisBlock1,
+		TetrisBlock2,
+		TetrisBlock3,
+		TetrisBlock4,
+		TetrisBlock5,
+		TetrisBlock6,
 	};
 
 	struct Block
@@ -38,6 +45,7 @@ private:
 	{
 		fixed16vec2_t position{};
 		GridDirection direction = GridDirection::YMinus;
+		bool is_armor_piercing = false;
 	};
 
 	struct Player
@@ -47,6 +55,7 @@ private:
 		uint32_t next_shot_tick = 0;
 		uint32_t shield_end_tick = 0;
 		std::vector<Projectile> projectiles;
+		uint32_t armor_piercing_shells = 0;
 	};
 
 	enum class EnemyType : uint8_t
@@ -69,6 +78,13 @@ private:
 		std::optional<Projectile> projectile;
 	};
 
+	struct PacmanGhost
+	{
+		fixed16vec2_t position{};
+		GridDirection direction = GridDirection::YPlus;
+		PacmanGhostType type = PacmanGhostType::Blinky;
+	};
+
 	struct Explosion
 	{
 		fixed16vec2_t position{};
@@ -89,6 +105,19 @@ private:
 	struct Bonus
 	{
 		BonusType type = BonusType::ExtraLife;
+		fixed16vec2_t position{};
+	};
+
+	enum class SnakeBonusType : uint8_t
+	{
+		FoodSmall,
+		FoodMedium,
+		NumTypes,
+	};
+
+	struct SnakeBonus
+	{
+		SnakeBonusType type = SnakeBonusType::FoodSmall;
 		fixed16vec2_t position{};
 	};
 
@@ -120,28 +149,39 @@ private:
 	void NextLevel();
 	void ProcessPlayerInput(const std::vector<bool>& keyboard_state);
 	void TryToPickUpBonus();
+	void TryToPickUpSnakeBonus();
 
 	void UpdateEnemy(Enemy& enemy);
+	void UpdatePacmanGhost(PacmanGhost& pacman_ghost);
 
 	// Returns true if need to kill it.
 	bool UpdateProjectile(Projectile& projectile, bool is_player_projectile);
 
 	bool CanMove(const fixed16vec2_t& position) const;
 
+	void KillPlayer();
+
 	void SpawnPlayer();
 	void SpawnNewEnemy();
+	void SpawnPacmanGhost();
+	void TrySpawnExtraElement();
 	void SpawnBonus();
+	void SpawnSnakeBonus();
 	void MakeExplosion(const fixed16vec2_t& position);
 
 	void ActivateBaseProtectionBonus();
 	void UpdateBaseProtectionBonus();
+
+	void BlockEnemiesWithTetrisFigures();
+	void BlockEnemyWithTetrisFigure(const fixed16vec2_t& position);
 
 	void MakeEventSound(SoundId sound_id);
 
 	void FillField(const char* field_data);
 	static BlockType GetBlockTypeForLevelDataByte(char b);
 
-	static Projectile MakeProjectile(const fixed16vec2_t& tank_position, GridDirection tank_direction);
+	static Projectile MakeProjectile(
+		const fixed16vec2_t& tank_position, GridDirection tank_direction, bool is_armor_piercing);
 
 private:
 	SoundPlayer& sound_player_;
@@ -158,8 +198,11 @@ private:
 	uint32_t player_level_ = 1; // Saved between levels, but it is reseted after death.
 	std::vector<Enemy> enemies_;
 	uint32_t enemies_left_ = 0;
+	std::vector<PacmanGhost> pacman_ghosts_;
 	std::vector<Explosion> explosions_;
 	std::optional<Bonus> bonus_;
+	std::optional<SnakeBonus> snake_bonus_;
+	uint32_t extra_elements_spawn_points_ = 0;
 	uint32_t enemies_freezee_bonus_end_tick_ = 0;
 	uint32_t base_protection_bonus_end_tick_ = 0;
 	uint32_t level_start_animation_end_tick_ = 0;

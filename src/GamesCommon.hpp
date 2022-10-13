@@ -99,6 +99,22 @@ constexpr const uint32_t g_tetris_field_height = 20;
 
 TetrisPieceBlocks RotateTetrisPieceBlocks(const TetrisPiece& piece);
 
+//
+// Pacman stuff
+//
+
+enum class PacmanGhostType
+{
+	Blinky,
+	Pinky,
+	Inky,
+	Clyde,
+};
+
+//
+// Other stuff
+//
+
 // Returns true if detected collision.
 bool MakeCollisionBetweenObjectAndBox(
 	const fixed16vec2_t& box_min,

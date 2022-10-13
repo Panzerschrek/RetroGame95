@@ -20,6 +20,35 @@ const SpriteBMP g_tetris_blocks[g_tetris_num_piece_types]
 	Sprites::tetris_block_3,
 };
 
+const SpriteBMP g_pacman_ghost_sprites[4][4]
+{
+	{
+		Sprites::pacman_ghost_0_right,
+		Sprites::pacman_ghost_0_left ,
+		Sprites::pacman_ghost_0_down ,
+		Sprites::pacman_ghost_0_up   ,
+	},
+	{
+		Sprites::pacman_ghost_1_right,
+		Sprites::pacman_ghost_1_left ,
+		Sprites::pacman_ghost_1_down ,
+		Sprites::pacman_ghost_1_up   ,
+	},
+	{
+		Sprites::pacman_ghost_2_right,
+		Sprites::pacman_ghost_2_left ,
+		Sprites::pacman_ghost_2_down ,
+		Sprites::pacman_ghost_2_up   ,
+	},
+	{
+		Sprites::pacman_ghost_3_right,
+		Sprites::pacman_ghost_3_left ,
+		Sprites::pacman_ghost_3_down ,
+		Sprites::pacman_ghost_3_up   ,
+	},
+};
+
+
 } // namespace
 
 void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exit)
@@ -411,4 +440,9 @@ void DrawSnakeStats(
 			frame_buffer.height - g_glyph_height - 1,
 			text);
 	}
+}
+
+SpriteBMP GetPacmanGhostSprite(const PacmanGhostType ghost_type, const GridDirection ghost_direction)
+{
+	return g_pacman_ghost_sprites[size_t(ghost_type)][size_t(ghost_direction)];
 }

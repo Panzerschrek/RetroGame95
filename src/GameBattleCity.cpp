@@ -1,8 +1,9 @@
 #include "GameBattleCity.hpp"
 #include "BattleCityLevels.hpp"
+#include "Draw.hpp"
 #include "GameEndScreen.hpp"
 #include "GameMainMenu.hpp"
-#include "Draw.hpp"
+#include "GamesDrawCommon.hpp"
 #include "SpriteBMP.hpp"
 #include "Sprites.hpp"
 #include "String.hpp"
@@ -16,11 +17,14 @@ namespace
 const fixed16_t g_player_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_enemy_speed = g_fixed16_one * 4 / GameInterface::c_update_frequency;
 const fixed16_t g_enemy_speed_fast = g_enemy_speed * 3 / 2;
+const fixed16_t g_pacman_ghost_speed = g_player_speed * 9 / 10;
 
 const fixed16_t g_projectile_speed = g_fixed16_one * 20 / GameInterface::c_update_frequency;
+const fixed16_t g_armor_piercing_projectile_speed = g_projectile_speed * 2 / 3;
 
 const fixed16_t g_tank_half_size = g_fixed16_one - 1;
 const fixed16_t g_projectile_half_size = g_fixed16_one / 8;
+const fixed16_t g_snake_bonus_half_size = g_fixed16_one / 2;
 
 const uint32_t g_min_player_reload_interval = GameInterface::c_update_frequency / 3;
 const uint32_t g_explosion_duration = GameInterface::c_update_frequency / 3;
@@ -32,19 +36,26 @@ const uint32_t g_enemy_spawn_animation_duration = GameInterface::c_update_freque
 const uint32_t g_level_start_animation_duration = GameInterface::c_update_frequency * 2;
 
 const size_t g_max_alive_enemies = 3;
+const size_t g_max_alive_pacman_ghosts = 2;
 const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
+bool BBoxesIntersect(
+	const fixed16vec2_t& min_a, const fixed16vec2_t& max_a,
+	const fixed16vec2_t& min_b, const fixed16vec2_t& max_b)
+{
+	return !(
+		min_a[0] >= max_b[0] || max_a[0] <= min_b[0] ||
+		min_a[1] >= max_b[1] || max_a[1] <= min_b[1]);
+}
+
 bool TanksIntersects(const fixed16vec2_t& pos0, const fixed16vec2_t& pos1)
 {
-	const fixed16vec2_t box_min_0 = {pos0[0] - g_tank_half_size, pos0[1] - g_tank_half_size};
-	const fixed16vec2_t box_max_0 = {pos0[0] + g_tank_half_size, pos0[1] + g_tank_half_size};
-	const fixed16vec2_t box_min_1 = {pos1[0] - g_tank_half_size, pos1[1] - g_tank_half_size};
-	const fixed16vec2_t box_max_1 = {pos1[0] + g_tank_half_size, pos1[1] + g_tank_half_size};
-
-	return !(
-		box_min_0[0] >= box_max_1[0] || box_max_0[0] <= box_min_1[0] ||
-		box_min_0[1] >= box_max_1[1] || box_max_0[1] <= box_min_1[1]);
+	return BBoxesIntersect(
+		{pos0[0] - g_tank_half_size, pos0[1] - g_tank_half_size},
+		{pos0[0] + g_tank_half_size, pos0[1] + g_tank_half_size},
+		{pos1[0] - g_tank_half_size, pos1[1] - g_tank_half_size},
+		{pos1[0] + g_tank_half_size, pos1[1] + g_tank_half_size});
 }
 
 uint32_t BlockMaskForCoord(const uint32_t x, const uint32_t y)
@@ -115,6 +126,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		{
 			ProcessPlayerInput(keyboard_state);
 			TryToPickUpBonus();
+			TryToPickUpSnakeBonus();
 		}
 
 		for(Enemy& enemy : enemies_)
@@ -127,6 +139,11 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 					enemy.projectile = std::nullopt;
 				}
 			}
+		}
+
+		for(PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			UpdatePacmanGhost(pacman_ghost);
 		}
 
 		if(player_ != std::nullopt)
@@ -155,6 +172,8 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 		{
 			SpawnNewEnemy();
 		}
+
+		TrySpawnExtraElement();
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -218,6 +237,13 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		Sprites::battle_city_block_concrete,
 		Sprites::battle_city_block_foliage,
 		Sprites::battle_city_block_water,
+		Sprites::tetris_block_small_4,
+		Sprites::tetris_block_small_7,
+		Sprites::tetris_block_small_5,
+		Sprites::tetris_block_small_1,
+		Sprites::tetris_block_small_2,
+		Sprites::tetris_block_small_6,
+		Sprites::tetris_block_small_3,
 	};
 
 	// Draw field except foliage.
@@ -258,6 +284,23 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 				}
 			}
 		}
+	}
+
+	if(snake_bonus_ != std::nullopt)
+	{
+		const SpriteBMP bonus_sprites[]
+		{
+			Sprites::snake_food_small,
+			Sprites::snake_food_medium,
+		};
+
+		const SpriteBMP sprite = bonus_sprites[size_t(snake_bonus_->type)];
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(snake_bonus_->position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(snake_bonus_->position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
 	if(player_ != std::nullopt)
@@ -366,10 +409,21 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
+	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+	{
+		const SpriteBMP sprite = GetPacmanGhostSprite(pacman_ghost.type, pacman_ghost.direction);
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			sprite,
+			0,
+			field_offset_x + uint32_t(Fixed16FloorToInt(pacman_ghost.position[0] * int32_t(c_block_size))) - sprite.GetWidth () / 2,
+			field_offset_y + uint32_t(Fixed16FloorToInt(pacman_ghost.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
+	}
+
 	const auto draw_projectile =
 	[&](const Projectile& projectile)
 	{
-		const SpriteBMP sprite(Sprites::battle_city_projectile);
+		const SpriteBMP sprite(projectile.is_armor_piercing ? Sprites::arkanoid_ball : Sprites::battle_city_projectile);
 		GetDrawFuncForDirection(projectile.direction)(
 			frame_buffer,
 			sprite,
@@ -464,9 +518,22 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const SpriteBMP sprite(Sprites::battle_city_remaining_enemy);
 		DrawSprite(
 			frame_buffer,
-			Sprites::battle_city_remaining_enemy,
+			sprite,
 			frame_buffer.width - 32 + sprite.GetWidth() * (i % 2),
 			40 + (i / 2) * sprite.GetHeight());
+	}
+
+	if(player_ != std::nullopt)
+	{
+		for(uint32_t i = 0; i < player_->armor_piercing_shells; ++i)
+		{
+			const SpriteBMP sprite(Sprites::arkanoid_ball);
+			DrawSprite(
+				frame_buffer,
+				sprite,
+				frame_buffer.width - 40 + (sprite.GetWidth() + 2) * (i % 4),
+				frame_buffer.height - 24 + (i / 4) * (sprite.GetHeight() + 2));
+		}
 	}
 
 	const uint32_t texts_offset_x = frame_buffer.width - 32;
@@ -563,7 +630,10 @@ void GameBattleCity::NextLevel()
 	enemies_.clear();
 	enemies_left_ = g_enemies_per_level;
 	explosions_.clear();
+	pacman_ghosts_.clear();
 	bonus_ = std::nullopt;
+	snake_bonus_ = std::nullopt;
+	extra_elements_spawn_points_ = 0;
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
 
@@ -692,8 +762,15 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)
 		{
+			bool is_armor_piercing = false;
+			if(player_->armor_piercing_shells > 0)
+			{
+				--player_->armor_piercing_shells;
+				is_armor_piercing = true;
+			}
+
 			player_->next_shot_tick = tick_ + g_min_player_reload_interval;
-			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction));
+			player_->projectiles.push_back(MakeProjectile(player_->position, player_->direction, is_armor_piercing));
 
 			MakeEventSound(SoundId::TankShot);
 		}
@@ -744,6 +821,7 @@ void GameBattleCity::TryToPickUpBonus()
 			bonus_enemy_destroyed |= enemy.gives_bonus;
 			MakeExplosion(enemy.position);
 		}
+		extra_elements_spawn_points_ += uint32_t(enemies_.size());
 		enemies_.clear();
 		break;
 
@@ -762,6 +840,46 @@ void GameBattleCity::TryToPickUpBonus()
 	{
 		SpawnBonus();
 	}
+}
+
+void GameBattleCity::TryToPickUpSnakeBonus()
+{
+	assert(player_ != std::nullopt);
+
+	if(snake_bonus_ == std::nullopt)
+	{
+		return;
+	}
+
+	if(!BBoxesIntersect(
+		{snake_bonus_->position[0] - g_snake_bonus_half_size, snake_bonus_->position[1] - g_snake_bonus_half_size},
+		{snake_bonus_->position[0] + g_snake_bonus_half_size, snake_bonus_->position[1] + g_snake_bonus_half_size},
+		{player_->position[0] - g_tank_half_size, player_->position[1] - g_tank_half_size},
+		{player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size}))
+	{
+		// Too far.
+		return;
+	}
+
+	MakeEventSound(SoundId::SnakeBonusEat);
+
+	// Pick up the bonus.
+	switch(snake_bonus_->type)
+	{
+	case SnakeBonusType::FoodSmall:
+		BlockEnemiesWithTetrisFigures();
+		break;
+
+	case SnakeBonusType::FoodMedium:
+		player_->armor_piercing_shells = 4;
+		break;
+
+	case SnakeBonusType::NumTypes:
+		assert(false);
+		break;
+	};
+
+	snake_bonus_ = std::nullopt;
 }
 
 void GameBattleCity::UpdateEnemy(Enemy& enemy)
@@ -796,18 +914,22 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		break;
 	}
 
-	bool moves_towards_other_tank = false;
+	bool movement_blocked = false;
 	for(const Enemy& other_enemy : enemies_)
 	{
 		if(&enemy != &other_enemy && TanksIntersects(new_position, other_enemy.position))
 		{
-			moves_towards_other_tank = true;
+			movement_blocked = true;
 			break;
 		}
 	}
+	for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+	{
+		movement_blocked |= TanksIntersects(new_position, pacman_ghost.position);
+	}
 	if(player_ != std::nullopt)
 	{
-		moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
+		movement_blocked |= TanksIntersects(new_position, player_->position);
 	}
 
 	// Move straight, but after tile change try to change direction with small probability even if still can move straight.
@@ -816,7 +938,7 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		Fixed16FloorToInt(new_position[1]) != Fixed16FloorToInt(enemy.position[1]);
 	const bool want_to_change_direction = tile_changed && rand_.Next() % 16 == 0;
 
-	if(CanMove(new_position) && !moves_towards_other_tank && !want_to_change_direction)
+	if(CanMove(new_position) && !movement_blocked && !want_to_change_direction)
 	{
 		enemy.position = new_position;
 	}
@@ -887,21 +1009,25 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 		}
 
 		// Make sure we still do not move towards other tank even after alignemnt to grid.
-		moves_towards_other_tank = false;
+		movement_blocked = false;
 		for(const Enemy& other_enemy : enemies_)
 		{
 			if(&enemy != &other_enemy && TanksIntersects(new_position, other_enemy.position))
 			{
-				moves_towards_other_tank = true;
+				movement_blocked = true;
 				break;
 			}
 		}
+		for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			movement_blocked |= TanksIntersects(new_position, pacman_ghost.position);
+		}
 		if(player_ != std::nullopt)
 		{
-			moves_towards_other_tank |= TanksIntersects(new_position, player_->position);
+			movement_blocked |= TanksIntersects(new_position, player_->position);
 		}
 
-		if(!moves_towards_other_tank)
+		if(!movement_blocked)
 		{
 			enemy.position = new_position;
 			enemy.direction = new_direction;
@@ -943,26 +1069,195 @@ void GameBattleCity::UpdateEnemy(Enemy& enemy)
 
 		if(can_fire)
 		{
-			enemy.projectile = MakeProjectile(enemy.position, enemy.direction);
+			enemy.projectile = MakeProjectile(enemy.position, enemy.direction, false);
+		}
+	}
+}
+
+void GameBattleCity::UpdatePacmanGhost(PacmanGhost& pacman_ghost)
+{
+	if(tick_ < enemies_freezee_bonus_end_tick_)
+	{
+		return;
+	}
+
+	const auto movement_is_blocked =
+	[&](const fixed16vec2_t& new_position)
+	{
+		for(const Enemy& enemy : enemies_)
+		{
+			if(TanksIntersects(new_position, enemy.position))
+			{
+				return true;
+			}
+		}
+		for(const PacmanGhost& other_pacman_ghost : pacman_ghosts_)
+		{
+			if(&pacman_ghost != &other_pacman_ghost && TanksIntersects(new_position, other_pacman_ghost.position))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	fixed16vec2_t new_position = pacman_ghost.position;
+	switch(pacman_ghost.direction)
+	{
+	case GridDirection::XPlus:
+		new_position[0] += g_pacman_ghost_speed;
+		break;
+	case GridDirection::XMinus:
+		new_position[0] -= g_pacman_ghost_speed;
+		break;
+	case GridDirection::YPlus:
+		new_position[1] += g_pacman_ghost_speed;
+		break;
+	case GridDirection::YMinus:
+		new_position[1] -= g_pacman_ghost_speed;
+		break;
+	}
+
+	// Move straight, but after tile change try to change direction.
+	const bool tile_changed =
+		Fixed16FloorToInt(new_position[0]) != Fixed16FloorToInt(pacman_ghost.position[0]) ||
+		Fixed16FloorToInt(new_position[1]) != Fixed16FloorToInt(pacman_ghost.position[1]);
+
+	const bool can_move = CanMove(new_position) && !movement_is_blocked(new_position);
+	if(can_move)
+	{
+		pacman_ghost.position = new_position;
+	}
+
+	if((tile_changed || !can_move) && player_ != std::nullopt)
+	{
+		GridDirection new_direction = pacman_ghost.direction;
+		fixed16_t best_square_distance = std::numeric_limits<fixed16_t>::max();
+
+		const auto add_new_direction_candidate =
+		[&](const fixed16vec2_t& next_position, const GridDirection direction)
+		{
+			if(!CanMove(next_position) || movement_is_blocked(next_position))
+			{
+				return;
+			}
+
+			const fixed16_t square_distance =
+				Fixed16VecSquareLen(
+					{next_position[0] - player_->position[0], next_position[1] - player_->position[1]});
+			if(square_distance < best_square_distance)
+			{
+				best_square_distance = square_distance;
+				new_direction = direction;
+			}
+		};
+
+		// Avoid turning back.
+		if(pacman_ghost.direction != GridDirection::XPlus )
+		{
+			add_new_direction_candidate({pacman_ghost.position[0] - g_fixed16_one / 2, IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[1]))}, GridDirection::XMinus);
+		}
+		if(pacman_ghost.direction != GridDirection::XMinus)
+		{
+			add_new_direction_candidate({pacman_ghost.position[0] + g_fixed16_one / 2, IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[1]))}, GridDirection::XPlus );
+		}
+		if(pacman_ghost.direction != GridDirection::YPlus )
+		{
+			add_new_direction_candidate({IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[0])), pacman_ghost.position[1] - g_fixed16_one / 2}, GridDirection::YMinus);
+		}
+		if(pacman_ghost.direction != GridDirection::YMinus)
+		{
+			add_new_direction_candidate({IntToFixed16(Fixed16RoundToInt(pacman_ghost.position[0])), pacman_ghost.position[1] + g_fixed16_one / 2}, GridDirection::YPlus );
+		}
+
+		if(best_square_distance == std::numeric_limits<fixed16_t>::max())
+		{
+			// Can't move - turn back.
+			switch(pacman_ghost.direction)
+			{
+			case GridDirection::XPlus:
+				new_direction = GridDirection::XMinus;
+				break;
+			case GridDirection::XMinus:
+				new_direction = GridDirection::XPlus;
+				break;
+			case GridDirection::YPlus:
+				new_direction = GridDirection::YMinus;
+				break;
+			case GridDirection::YMinus:
+				new_direction = GridDirection::YPlus;
+				break;
+			}
+		}
+
+		// Align ghost to grid.
+		new_position = pacman_ghost.position;
+		switch(new_direction)
+		{
+		case GridDirection::XPlus:
+		case GridDirection::XMinus:
+			new_position[1] = IntToFixed16(Fixed16RoundToInt(new_position[1]));
+			break;
+		case GridDirection::YPlus:
+		case GridDirection::YMinus:
+			new_position[0] = IntToFixed16(Fixed16RoundToInt(new_position[0]));
+			break;
+		}
+
+		// Make sure we still do not move towards other enemy/ghost even after alignemnt to grid.
+		if(!movement_is_blocked(new_position))
+		{
+			pacman_ghost.position = new_position;
+			pacman_ghost.direction = new_direction;
+		}
+	}
+
+	if(player_ != std::nullopt && tick_ >= player_->shield_end_tick)
+	{
+		const fixed16_t eat_dist = g_tank_half_size;
+		if( Fixed16Abs(pacman_ghost.position[0] - player_->position[0]) <= eat_dist &&
+			Fixed16Abs(pacman_ghost.position[1] - player_->position[1]) <= eat_dist)
+		{
+			KillPlayer();
+
+			// Turn around after killing the player.
+			GridDirection new_direction = pacman_ghost.direction;
+			switch(pacman_ghost.direction)
+			{
+			case GridDirection::XPlus:
+				new_direction = GridDirection::XMinus;
+				break;
+			case GridDirection::XMinus:
+				new_direction = GridDirection::XPlus;
+				break;
+			case GridDirection::YPlus:
+				new_direction = GridDirection::YMinus;
+				break;
+			case GridDirection::YMinus:
+				new_direction = GridDirection::YPlus;
+				break;
+			}
+			pacman_ghost.direction = new_direction;
 		}
 	}
 }
 
 bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_player_projectile)
 {
+	const fixed16_t speed = projectile.is_armor_piercing ? g_armor_piercing_projectile_speed : g_projectile_speed;
 	switch (projectile.direction)
 	{
 	case GridDirection::XPlus:
-		projectile.position[0] += g_projectile_speed;
+		projectile.position[0] += speed;
 		break;
 	case GridDirection::XMinus:
-		projectile.position[0] -= g_projectile_speed;
+		projectile.position[0] -= speed;
 		break;
 	case GridDirection::YPlus:
-		projectile.position[1] += g_projectile_speed;
+		projectile.position[1] += speed;
 		break;
 	case GridDirection::YMinus:
-		projectile.position[1] -= g_projectile_speed;
+		projectile.position[1] -= speed;
 		break;
 	}
 
@@ -1006,7 +1301,14 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		MakeExplosion(projectile.position);
 
 		assert(enemy.health > 0);
-		--enemy.health;
+		if(projectile.is_armor_piercing)
+		{
+			enemy.health = 0;
+		}
+		else
+		{
+			--enemy.health;
+		}
 		if(enemy.health == 0)
 		{
 			MakeEventSound(SoundId::Explosion);
@@ -1015,6 +1317,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			{
 				SpawnBonus();
 			}
+			++extra_elements_spawn_points_;
 
 			if(i + 1 < enemies_.size())
 			{
@@ -1026,6 +1329,30 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			MakeEventSound(SoundId::ProjectileHit);
 		}
+
+		return true;
+	}
+	for(size_t i = 0; i < pacman_ghosts_.size() && is_player_projectile; ++i)
+	{
+		PacmanGhost& pacman_ghost = pacman_ghosts_[i];
+
+		const fixed16vec2_t min = {pacman_ghost.position[0] - g_tank_half_size, pacman_ghost.position[1] - g_tank_half_size};
+		const fixed16vec2_t max = {pacman_ghost.position[0] + g_tank_half_size, pacman_ghost.position[1] + g_tank_half_size};
+
+		if(min[0] >= max_x_f || max[0] <= min_x_f || min[1] >= max_y_f || max[1] <= min_y_f)
+		{
+			continue;
+		}
+
+		// Hit this ghost.
+		MakeExplosion(projectile.position);
+		MakeEventSound(SoundId::Explosion);
+
+		if(i + 1 < pacman_ghosts_.size())
+		{
+			pacman_ghost = std::move(pacman_ghosts_.back());
+		}
+		pacman_ghosts_.pop_back();
 
 		return true;
 	}
@@ -1063,11 +1390,8 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 		{
 			if(tick_ >= player_->shield_end_tick)
 			{
-				MakeEventSound(SoundId::CharacterDeath);
 				MakeExplosion(projectile.position);
-				MakeExplosion(player_->position);
-				player_ = std::nullopt;
-				player_level_ = 1;
+				KillPlayer();
 			}
 			return true;
 		}
@@ -1090,36 +1414,57 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			continue;
 		}
 
-		if(block.type == BlockType::Bricks)
+		if(projectile.is_armor_piercing)
 		{
-			something_is_destroyed = true;
-
-			uint32_t mask = 0;
-			switch(projectile.direction)
+			if(block.type == BlockType::Bricks ||
+				block.type == BlockType::Concrete ||
+				(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6))
 			{
-			case GridDirection::XPlus:
-				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
-				break;
-			case GridDirection::XMinus:
-				mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
-				break;
-			case GridDirection::YPlus:
-				mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
-				break;
-			case GridDirection::YMinus:
-				mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
-				break;
-			}
-
-			if((mask & block.destruction_mask) == 0)
-			{
-				// This side of block is already destroyed. Destroy another side.
+				// Armor-piercing projectile destroys blocks with one shot, even concrete blocks.
+				something_is_destroyed = true;
 				block.destruction_mask = 0;
 			}
-			else
+		}
+		else
+		{
+			if(block.type == BlockType::Bricks)
 			{
-				// Destroy only this side.
-				block.destruction_mask &= ~mask;
+				something_is_destroyed = true;
+
+				uint32_t mask = 0;
+				switch(projectile.direction)
+				{
+				case GridDirection::XPlus:
+					mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(0, 1);
+					break;
+				case GridDirection::XMinus:
+					mask = BlockMaskForCoord(1, 0) | BlockMaskForCoord(1, 1);
+					break;
+				case GridDirection::YPlus:
+					mask = BlockMaskForCoord(0, 0) | BlockMaskForCoord(1, 0);
+					break;
+				case GridDirection::YMinus:
+					mask = BlockMaskForCoord(0, 1) | BlockMaskForCoord(1, 1);
+					break;
+				}
+
+				if((mask & block.destruction_mask) == 0)
+				{
+					// This side of block is already destroyed. Destroy another side.
+					block.destruction_mask = 0;
+				}
+				else
+				{
+					// Destroy only this side.
+					block.destruction_mask &= ~mask;
+				}
+			}
+			else if(block.type >= BlockType::TetrisBlock0 && block.type <= BlockType::TetrisBlock6)
+			{
+				something_is_destroyed = true;
+
+				// Destroy tetris blocks with one shot.
+				block.destruction_mask = 0;
 			}
 		}
 
@@ -1194,6 +1539,14 @@ bool GameBattleCity::CanMove(const fixed16vec2_t& position) const
 	return true;
 }
 
+void GameBattleCity::KillPlayer()
+{
+	MakeExplosion(player_->position);
+	MakeEventSound(SoundId::CharacterDeath);
+	player_ = std::nullopt;
+	player_level_ = 1;
+}
+
 void GameBattleCity::SpawnPlayer()
 {
 	Player player;
@@ -1221,21 +1574,29 @@ void GameBattleCity::SpawnNewEnemy()
 			continue;
 		}
 
-		bool intersects_other_tank = false;
+		bool position_blocked = false;
 		for(const Enemy& enemy : enemies_)
 		{
 			if(TanksIntersects(position, enemy.position))
 			{
-				intersects_other_tank = true;
+				position_blocked = true;
+				break;
+			}
+		}
+		for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			if(TanksIntersects(position, pacman_ghost.position))
+			{
+				position_blocked = true;
 				break;
 			}
 		}
 		if(player_ != std::nullopt)
 		{
-			intersects_other_tank |= TanksIntersects(position, player_->position);
+			position_blocked |= TanksIntersects(position, player_->position);
 		}
 
-		if(intersects_other_tank)
+		if(position_blocked)
 		{
 			continue;
 		}
@@ -1265,19 +1626,133 @@ void GameBattleCity::SpawnNewEnemy()
 	}
 }
 
+void GameBattleCity::SpawnPacmanGhost()
+{
+	// Try to spawn it at random position, but avoid obstacles.
+	for(uint32_t i = 0; i < 64; ++i)
+	{
+		const uint32_t x = 1 + (rand_.Next() % (c_field_width - 2));
+		const uint32_t y = 1;
+
+		const fixed16vec2_t position = {IntToFixed16(int32_t(x)), IntToFixed16(int32_t(y))};
+
+		if(!CanMove(position))
+		{
+			continue;
+		}
+
+		bool position_blocked = false;
+		for(const Enemy& enemy : enemies_)
+		{
+			if(TanksIntersects(position, enemy.position))
+			{
+				position_blocked = true;
+				break;
+			}
+		}
+		for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+		{
+			if(TanksIntersects(position, pacman_ghost.position))
+			{
+				position_blocked = true;
+				break;
+			}
+		}
+		if(player_ != std::nullopt)
+		{
+			position_blocked |= TanksIntersects(position, player_->position);
+		}
+
+		if(position_blocked)
+		{
+			continue;
+		}
+
+		PacmanGhostType ghost_type = PacmanGhostType::Blinky;
+		for(uint32_t j = 0; j < 64; ++j)
+		{
+			ghost_type = PacmanGhostType(rand_.Next() % 4);
+			bool is_unique = true;
+			for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+			{
+				is_unique &= pacman_ghost.type != ghost_type;
+			}
+
+			if(is_unique)
+			{
+				break;
+			}
+		}
+
+		PacmanGhost pacman_ghost;
+		pacman_ghost.position = position;
+		pacman_ghost.direction = GridDirection::YPlus;
+		pacman_ghost.type = ghost_type;
+
+		pacman_ghosts_.push_back(pacman_ghost);
+		return;
+	}
+}
+
+void GameBattleCity::TrySpawnExtraElement()
+{
+	// Give spawn points for enemies kill. Make extra elements spawn dependent on number of killed enemies, not just time.
+
+	if(extra_elements_spawn_points_ == 0)
+	{
+		return;
+	}
+	if(snake_bonus_ != std::nullopt && pacman_ghosts_.size() >= g_max_alive_pacman_ghosts)
+	{
+		return;
+	}
+
+	if(rand_.Next() % 745 != 29)
+	{
+		return;
+	}
+
+	--extra_elements_spawn_points_;
+	if(rand_.Next() % 10 >= 6)
+	{
+		// Spawn something not for each spawn point.
+		return;
+	}
+
+	if(pacman_ghosts_.size() >= g_max_alive_pacman_ghosts)
+	{
+		SpawnSnakeBonus();
+	}
+	else if(snake_bonus_ != std::nullopt)
+	{
+		SpawnPacmanGhost();
+	}
+	else
+	{
+		if(rand_.Next() % 3 == 0)
+		{
+			SpawnPacmanGhost();
+		}
+		else
+		{
+			SpawnSnakeBonus();
+		}
+	}
+}
+
 void GameBattleCity::SpawnBonus()
 {
 	const auto bonus_type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
 	for(uint32_t i = 0; i < 256; ++i)
 	{
-		uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
-		uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
+		const uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
+		const uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
 
 		bool can_place = true;
 		for(uint32_t dy = 0; dy < 2; ++dy)
 		for(uint32_t dx = 0; dx < 2; ++dx)
 		{
-			const BlockType block_type = field_[x + dy - 1 + (y + dy - 1) * c_field_width].type;
+			const BlockType block_type = field_[x + dx - 1 + (y + dy - 1) * c_field_width].type;
 			can_place &= block_type ==
 				BlockType::Empty || block_type == BlockType::Bricks || block_type == BlockType::Foliage;
 		}
@@ -1297,6 +1772,41 @@ void GameBattleCity::SpawnBonus()
 		bonus.type = bonus_type;
 		bonus.position = position;
 		bonus_ = bonus;
+		return;
+	}
+}
+
+void GameBattleCity::SpawnSnakeBonus()
+{
+	if(snake_bonus_ != std::nullopt)
+	{
+		return;
+	}
+
+	const auto bonus_type = SnakeBonusType(rand_.Next() % uint32_t(SnakeBonusType::NumTypes));
+	for(uint32_t i = 0; i < 256; ++i)
+	{
+		const uint32_t x = rand_.Next() % (c_field_width  - 2) + 1;
+		const uint32_t y = rand_.Next() % (c_field_height - 4) + 1;
+
+		const Block& block = field_[x + y * c_field_width];
+		if(!(block.type == BlockType::Empty || block.destruction_mask == 0))
+		{
+			continue;
+		}
+
+		const fixed16vec2_t position =
+			{IntToFixed16(int32_t(x)) + g_fixed16_one / 2, IntToFixed16(int32_t(y)) + g_fixed16_one / 2};
+		if(player_ != std::nullopt && TanksIntersects(position, player_->position))
+		{
+			// Do not spawn bonus directly at player position.
+			continue;
+		}
+
+		SnakeBonus bonus;
+		bonus.type = bonus_type;
+		bonus.position = position;
+		snake_bonus_ = bonus;
 		return;
 	}
 }
@@ -1331,6 +1841,138 @@ void GameBattleCity::UpdateBaseProtectionBonus()
 			field_[tile[0] + tile[1] * c_field_width].type = BlockType::Bricks;
 		}
 	}
+}
+
+void GameBattleCity::BlockEnemiesWithTetrisFigures()
+{
+	for(const Enemy& enemy : enemies_)
+	{
+		BlockEnemyWithTetrisFigure(enemy.position);
+	}
+
+	// Do not block packman ghosts becase ghost cant' shoot and can't free themselves from blocking.
+}
+
+void GameBattleCity::BlockEnemyWithTetrisFigure(const fixed16vec2_t& position)
+{
+	const int32_t enemy_min_x = Fixed16FloorToInt(position[0] - g_tank_half_size) - 1;
+	const int32_t enemy_min_y = Fixed16FloorToInt(position[1] - g_tank_half_size) - 1;
+	const int32_t enemy_max_x = Fixed16FloorToInt(position[0] + g_tank_half_size) + 1;
+	const int32_t enemy_max_y = Fixed16FloorToInt(position[1] + g_tank_half_size) + 1;
+
+	/* Try to place tetris figures at free space touching these cells.
+	  ####
+	  #  #
+	  #  #
+	  ####
+	*/
+
+	for(int32_t i = 0; i < 256; ++i)
+	{
+		const uint32_t type_index = rand_.Next() % g_tetris_num_piece_types;
+		const TetrisBlock type = TetrisBlock(uint32_t(TetrisBlock::I) + type_index);
+
+		TetrisPieceBlocks blocks = g_tetris_pieces_blocks[type_index];
+
+		// Choose random rotation.
+		const uint32_t num_rotations = rand_.Next() / 47u % 4u;
+		for(uint32_t i = 0; i < num_rotations; ++i)
+		{
+			TetrisPiece piece;
+			piece.type = type;
+			piece.blocks = blocks;
+			blocks = RotateTetrisPieceBlocks(piece);
+		}
+
+		int32_t figure_min_x = 99999, figure_max_x = -9999;
+		int32_t figure_min_y = 99999, figure_max_y = -9999;
+		for(const TetrisPieceBlock& block : blocks)
+		{
+			figure_min_x = std::min(figure_min_x, block[0]);
+			figure_max_x = std::max(figure_max_x, block[0]);
+			figure_min_y = std::min(figure_min_y, block[1]);
+			figure_max_y = std::max(figure_max_y, block[1]);
+		}
+
+		const int32_t offset_min_x = enemy_min_x - figure_max_x;
+		const int32_t offset_min_y = enemy_min_y - figure_max_y;
+		const int32_t offset_max_x = enemy_max_x - figure_min_x;
+		const int32_t offset_max_y = enemy_max_y - figure_min_y;
+
+		assert(offset_min_x <= offset_max_x);
+		assert(offset_min_y <= offset_max_y);
+
+		const int32_t offset_x = offset_min_x + int32_t(rand_.Next() % uint32_t(1 + offset_max_x - offset_min_x));
+		const int32_t offset_y = offset_min_y + int32_t(rand_.Next() % uint32_t(1 + offset_max_y - offset_min_y));
+
+		TetrisPieceBlocks blocks_shifted = blocks;
+		for(TetrisPieceBlock& block_shifted : blocks_shifted)
+		{
+			block_shifted[0] += offset_x;
+			block_shifted[1] += offset_y;
+		}
+
+		bool can_place = true;
+		for(const TetrisPieceBlock& block_shifted : blocks_shifted)
+		{
+			if( block_shifted[0] >= 0 && block_shifted[0] < int32_t(c_field_width ) &&
+				block_shifted[1] >= 0 && block_shifted[1] < int32_t(c_field_height))
+			{
+				const Block& field_block = field_[uint32_t(block_shifted[0]) + uint32_t(block_shifted[1]) * c_field_width];
+				can_place &= field_block.type == BlockType::Empty || field_block.destruction_mask == 0;
+			}
+			else
+			{
+				can_place = false;
+				break;
+			}
+
+			const fixed16vec2_t bbox_min{IntToFixed16(block_shifted[0]), IntToFixed16(block_shifted[1])};
+			const fixed16vec2_t bbox_max{bbox_min[0] + g_fixed16_one, bbox_min[1] + g_fixed16_one};
+
+			for(const Enemy& enemy : enemies_)
+			{
+				can_place &=
+					!BBoxesIntersect(
+						bbox_min,
+						bbox_max,
+						{enemy.position[0] - g_tank_half_size, enemy.position[1] - g_tank_half_size},
+						{enemy.position[0] + g_tank_half_size, enemy.position[1] + g_tank_half_size});
+			}
+			for(const PacmanGhost& pacman_ghost : pacman_ghosts_)
+			{
+				can_place &=
+					!BBoxesIntersect(
+						bbox_min,
+						bbox_max,
+						{pacman_ghost.position[0] - g_tank_half_size, pacman_ghost.position[1] - g_tank_half_size},
+						{pacman_ghost.position[0] + g_tank_half_size, pacman_ghost.position[1] + g_tank_half_size});
+			}
+			if(player_ != std::nullopt)
+			{
+				can_place &=
+					!BBoxesIntersect(
+						bbox_min,
+						bbox_max,
+						{player_->position[0] - g_tank_half_size, player_->position[1] - g_tank_half_size},
+						{player_->position[0] + g_tank_half_size, player_->position[1] + g_tank_half_size});
+			}
+		}
+
+		if(!can_place)
+		{
+			continue;
+		}
+
+		// Place it.
+
+		for(const TetrisPieceBlock& block_shifted : blocks_shifted)
+		{
+			Block& field_block = field_[uint32_t(block_shifted[0]) + uint32_t(block_shifted[1]) * c_field_width];
+			field_block.type = BlockType(uint32_t(BlockType::TetrisBlock0) + type_index);
+			field_block.destruction_mask = 0xF;
+		}
+	} // for tries.
 }
 
 void GameBattleCity::MakeEventSound(const SoundId sound_id)
@@ -1376,11 +2018,13 @@ GameBattleCity::BlockType GameBattleCity::GetBlockTypeForLevelDataByte(const cha
 
 GameBattleCity::Projectile GameBattleCity::MakeProjectile(
 	const fixed16vec2_t& tank_position,
-	const GridDirection tank_direction)
+	const GridDirection tank_direction,
+	const bool is_armor_piercing)
 {
 	Projectile projectile;
 	projectile.position = tank_position;
 	projectile.direction = tank_direction;
+	projectile.is_armor_piercing = is_armor_piercing;
 
 	const fixed16_t offset = g_tank_half_size + g_projectile_half_size;
 

@@ -785,34 +785,6 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 
 void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) const
 {
-	const SpriteBMP sprites[4][4]
-	{
-		{
-			Sprites::pacman_ghost_0_right,
-			Sprites::pacman_ghost_0_left ,
-			Sprites::pacman_ghost_0_down ,
-			Sprites::pacman_ghost_0_up   ,
-		},
-		{
-			Sprites::pacman_ghost_1_right,
-			Sprites::pacman_ghost_1_left ,
-			Sprites::pacman_ghost_1_down ,
-			Sprites::pacman_ghost_1_up   ,
-		},
-		{
-			Sprites::pacman_ghost_2_right,
-			Sprites::pacman_ghost_2_left ,
-			Sprites::pacman_ghost_2_down ,
-			Sprites::pacman_ghost_2_up   ,
-		},
-		{
-			Sprites::pacman_ghost_3_right,
-			Sprites::pacman_ghost_3_left ,
-			Sprites::pacman_ghost_3_down ,
-			Sprites::pacman_ghost_3_up   ,
-		},
-	};
-
 	const SpriteBMP sprites_dead[4]
 	{
 		Sprites::pacman_ghost_dead_right,
@@ -821,7 +793,7 @@ void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) c
 		Sprites::pacman_ghost_dead_up   ,
 	};
 
-	SpriteBMP sprite = sprites[uint32_t(ghost.type)][uint32_t(ghost.direction)];
+	SpriteBMP sprite = GetPacmanGhostSprite(ghost.type, ghost.direction);
 	if(ghost.mode == GhostMode::Eaten)
 	{
 		sprite = sprites_dead[uint32_t(ghost.direction)];
@@ -925,8 +897,8 @@ void GamePacman::SpawnPacmanAndGhosts()
 	{
 		Ghost& ghost = ghosts_[i];
 		const uint32_t index_wrapped = i % 4;
-		ghost.type = GhostType(index_wrapped % 4);
-		if(ghost.type == GhostType::Blinky)
+		ghost.type = PacmanGhostType(index_wrapped % 4);
+		if(ghost.type == PacmanGhostType::Blinky)
 		{
 			ghost.target_position = {IntToFixed16(20) + g_fixed16_one / 2, IntToFixed16(14) + g_fixed16_one / 2};
 		}
@@ -1184,16 +1156,16 @@ void GamePacman::MoveGhost(Ghost& ghost)
 	uint32_t bonuses_release_limit = 0;
 	switch(ghost.type)
 	{
-	case GhostType::Blinky:
+	case PacmanGhostType::Blinky:
 		bonuses_release_limit = 0;
 		break;
-	case GhostType::Pinky:
+	case PacmanGhostType::Pinky:
 		bonuses_release_limit = g_bonuses_eaten_for_pinky_release;
 		break;
-	case GhostType::Inky:
+	case PacmanGhostType::Inky:
 		bonuses_release_limit = g_bonuses_eaten_for_inky_release;
 		break;
-	case GhostType::Clyde:
+	case PacmanGhostType::Clyde:
 		bonuses_release_limit = g_bonuses_eaten_for_clyde_release;
 		break;
 	}
@@ -1382,7 +1354,7 @@ void GamePacman::MoveGhost(Ghost& ghost)
 }
 
 std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
-	const GhostType ghost_type,
+	const PacmanGhostType ghost_type,
 	const GhostMode ghost_mode,
 	const std::array<int32_t, 2>& ghost_position)
 {
@@ -1409,10 +1381,10 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 
 	switch(ghost_type)
 	{
-	case GhostType::Blinky:
+	case PacmanGhostType::Blinky:
 		return pacman_block;
 
-	case GhostType::Pinky:
+	case PacmanGhostType::Pinky:
 		{
 			auto block = pacman_block;
 			const int32_t offset = 4;
@@ -1435,10 +1407,10 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 			return block;
 		}
 
-	case GhostType::Inky:
+	case PacmanGhostType::Inky:
 		for(const Ghost& other_ghost : ghosts_)
 		{
-			if(other_ghost.type != GhostType::Blinky)
+			if(other_ghost.type != PacmanGhostType::Blinky)
 			{
 				continue;
 			}
@@ -1477,7 +1449,7 @@ std::array<int32_t, 2> GamePacman::GetGhostDestinationBlock(
 		// Can't find Blinky.
 		return pacman_block;
 
-	case GhostType::Clyde:
+	case PacmanGhostType::Clyde:
 		{
 			const std::array<int32_t, 2> vec_to_pacman
 			{
@@ -2053,14 +2025,14 @@ bool GamePacman::IsBlockInsideGhostsRoom(const std::array<int32_t, 2>& block)
 		block[1] >= 12 && block[1] <= 17;
 }
 
-std::array<int32_t, 2> GamePacman::GetScatterModeTarget(const GhostType ghost_type)
+std::array<int32_t, 2> GamePacman::GetScatterModeTarget(const PacmanGhostType ghost_type)
 {
 	switch(ghost_type)
 	{
-	case GhostType::Blinky: return {int32_t(c_field_width) + 2, int32_t(c_field_height - 4)};
-	case GhostType::Pinky: return {int32_t(c_field_width) + 2, 3};
-	case GhostType::Inky: return {0, int32_t(c_field_height - 1)};
-	case GhostType::Clyde: return {0, 1};
+	case PacmanGhostType::Blinky: return {int32_t(c_field_width) + 2, int32_t(c_field_height - 4)};
+	case PacmanGhostType::Pinky: return {int32_t(c_field_width) + 2, 3};
+	case PacmanGhostType::Inky: return {0, int32_t(c_field_height - 1)};
+	case PacmanGhostType::Clyde: return {0, 1};
 	}
 
 	assert(false);
