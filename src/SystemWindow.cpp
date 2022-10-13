@@ -81,44 +81,43 @@ void CopyImageWithCrtEffect(
 		{
 			const uint32_t x_minus = std::max(1u, x) - 1;
 			const uint32_t x_plus  = std::min(src_width - 2, x) + 1;
-			ColorComponents components = ColorComponentsScale(UnpackColor(src_line[x]), 16);
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line[x_minus]), 4));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line[x_plus ]), 4));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_minus[x]), 2));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_plus [x]), 2));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_minus[x_minus]), 1));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_minus[x_plus ]), 1));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_plus [x_minus]), 1));
-			components = ColorComponentsAdd(components, ColorComponentsScale(UnpackColor(src_line_plus [x_plus ]), 1));
+			ColorComponents components = ColorComponentsShiftLeft(UnpackColor(src_line[x]), 4);
+			components = ColorComponentsAdd(components, ColorComponentsShiftLeft(UnpackColor(src_line[x_minus]), 2));
+			components = ColorComponentsAdd(components, ColorComponentsShiftLeft(UnpackColor(src_line[x_plus ]), 2));
+			components = ColorComponentsAdd(components, ColorComponentsShiftLeft(UnpackColor(src_line_minus[x]), 1));
+			components = ColorComponentsAdd(components, ColorComponentsShiftLeft(UnpackColor(src_line_plus [x]), 1));
+			components = ColorComponentsAdd(components, UnpackColor(src_line_minus[x_minus]));
+			components = ColorComponentsAdd(components, UnpackColor(src_line_minus[x_plus ]));
+			components = ColorComponentsAdd(components, UnpackColor(src_line_plus [x_minus]));
+			components = ColorComponentsAdd(components, UnpackColor(src_line_plus [x_plus ]));
+			components = ColorComponentsShiftRight(components, 5);
 
-			const uint32_t result_shift = 5;
-
-			for(uint32_t dy = 0; dy < scale; ++dy)
+			for(uint32_t dx = 0; dx < scale; ++dx)
 			{
-				Color32* const dst_line = dst_start_line + dy * dst_stride;
-
-				for(uint32_t dx = 0; dx < scale; ++dx)
+				const uint32_t dst_x = x * scale + dx;
+				ColorComponents components_modified = components;
+				switch(dst_x % 3)
 				{
-					const uint32_t dst_x = x * scale + dx;
-					ColorComponents components_modified = components;
-					switch(dst_x % 3)
-					{
-					case 0:
-						components_modified[3] = components_modified[3] * 3 / 4;
-						components_modified[2] = components_modified[2] * 3 / 4;
-						break;
-					case 1:
-						components_modified[3] = components_modified[3] * 3 / 4;
-						components_modified[1] = components_modified[1] * 3 / 4;
-						break;
-					case 2:
-						components_modified[2] = components_modified[2] * 3 / 4;
-						components_modified[1] = components_modified[1] * 3 / 4;
-						break;
-					}
-					dst_line[dst_x] = PackColor(ColorComponentsShiftRight(components_modified, result_shift));
+				case 0:
+					components_modified[3] = components_modified[3] * 3 / 4;
+					components_modified[2] = components_modified[2] * 3 / 4;
+					break;
+				case 1:
+					components_modified[3] = components_modified[3] * 3 / 4;
+					components_modified[1] = components_modified[1] * 3 / 4;
+					break;
+				case 2:
+					components_modified[2] = components_modified[2] * 3 / 4;
+					components_modified[1] = components_modified[1] * 3 / 4;
+					break;
 				}
-			} // for dst y
+
+				const Color32 color_packed = PackColor(components_modified);
+				for(uint32_t dy = 0; dy < scale; ++dy)
+				{
+					dst_start_line[dst_x + dy * dst_stride] = color_packed;
+				} // for dy
+			} // for dx
 		} // for src x
 	} // for src y
 }

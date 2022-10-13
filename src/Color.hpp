@@ -64,6 +64,16 @@ inline ColorComponents ColorComponentsScale(ColorComponents c, const uint32_t sc
 	return c;
 }
 
+inline ColorComponents ColorComponentsShiftLeft(ColorComponents c, const uint32_t shift)
+{
+	for(size_t i = 0; i < c.size(); ++i)
+	{
+		c[i] <<= shift;
+	}
+
+	return c;
+}
+
 inline ColorComponents ColorComponentsShiftRight(ColorComponents c, const uint32_t shift)
 {
 	for(size_t i = 0; i < c.size(); ++i)
