@@ -163,9 +163,10 @@ private:
 
 	void SpawnPlayer();
 	void SpawnNewEnemy();
-	void TrySpawnPacmanGhost();
+	void SpawnPacmanGhost();
+	void TrySpawnExtraElement();
 	void SpawnBonus();
-	void TrySpawnSnakeBonus();
+	void SpawnSnakeBonus();
 	void MakeExplosion(const fixed16vec2_t& position);
 
 	void ActivateBaseProtectionBonus();
@@ -201,6 +202,7 @@ private:
 	std::vector<Explosion> explosions_;
 	std::optional<Bonus> bonus_;
 	std::optional<SnakeBonus> snake_bonus_;
+	uint32_t extra_elements_spawn_points_ = 0;
 	uint32_t enemies_freezee_bonus_end_tick_ = 0;
 	uint32_t base_protection_bonus_end_tick_ = 0;
 	uint32_t level_start_animation_end_tick_ = 0;

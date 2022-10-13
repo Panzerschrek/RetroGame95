@@ -172,8 +172,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 			SpawnNewEnemy();
 		}
 
-		TrySpawnPacmanGhost();
-		TrySpawnSnakeBonus();
+		TrySpawnExtraElement();
 	}
 
 	for(size_t e = 0; e < explosions_.size();)
@@ -633,6 +632,7 @@ void GameBattleCity::NextLevel()
 	pacman_ghosts_.clear();
 	bonus_ = std::nullopt;
 	snake_bonus_ = std::nullopt;
+	extra_elements_spawn_points_ = 0;
 	enemies_freezee_bonus_end_tick_ = 0;
 	base_protection_bonus_end_tick_ = 0;
 
@@ -820,6 +820,7 @@ void GameBattleCity::TryToPickUpBonus()
 			bonus_enemy_destroyed |= enemy.gives_bonus;
 			MakeExplosion(enemy.position);
 		}
+		extra_elements_spawn_points_ += uint32_t(enemies_.size());
 		enemies_.clear();
 		break;
 
@@ -1315,6 +1316,7 @@ bool GameBattleCity::UpdateProjectile(Projectile& projectile, const bool is_play
 			{
 				SpawnBonus();
 			}
+			++extra_elements_spawn_points_;
 
 			if(i + 1 < enemies_.size())
 			{
@@ -1623,18 +1625,8 @@ void GameBattleCity::SpawnNewEnemy()
 	}
 }
 
-void GameBattleCity::TrySpawnPacmanGhost()
+void GameBattleCity::SpawnPacmanGhost()
 {
-	if(pacman_ghosts_.size() >= g_max_alive_pacman_ghosts)
-	{
-		return;
-	}
-
-	if(rand_.Next() % 1345 != 29)
-	{
-		return;
-	}
-
 	// Try to spawn it at random position, but avoid obstacles.
 	for(uint32_t i = 0; i < 64; ++i)
 	{
@@ -1701,6 +1693,52 @@ void GameBattleCity::TrySpawnPacmanGhost()
 	}
 }
 
+void GameBattleCity::TrySpawnExtraElement()
+{
+	// Give spawn points for enemies kill. Make extra elements spawn dependent on number of killed enemies, not just time.
+
+	if(extra_elements_spawn_points_ == 0)
+	{
+		return;
+	}
+	if(snake_bonus_ != std::nullopt && pacman_ghosts_.size() >= g_max_alive_pacman_ghosts)
+	{
+		return;
+	}
+
+	if(rand_.Next() % 745 != 29)
+	{
+		return;
+	}
+
+	--extra_elements_spawn_points_;
+	if(rand_.Next() % 10 >= 6)
+	{
+		// Spawn something not for each spawn point.
+		return;
+	}
+
+	if(pacman_ghosts_.size() >= g_max_alive_pacman_ghosts)
+	{
+		SpawnSnakeBonus();
+	}
+	else if(snake_bonus_ != std::nullopt)
+	{
+		SpawnPacmanGhost();
+	}
+	else
+	{
+		if(rand_.Next() % 3 == 0)
+		{
+			SpawnPacmanGhost();
+		}
+		else
+		{
+			SpawnSnakeBonus();
+		}
+	}
+}
+
 void GameBattleCity::SpawnBonus()
 {
 	const auto bonus_type = BonusType(rand_.Next() % uint32_t(BonusType::NumTypes));
@@ -1737,14 +1775,9 @@ void GameBattleCity::SpawnBonus()
 	}
 }
 
-void GameBattleCity::TrySpawnSnakeBonus()
+void GameBattleCity::SpawnSnakeBonus()
 {
 	if(snake_bonus_ != std::nullopt)
-	{
-		return;
-	}
-
-	if(rand_.Next() % 1547 != 653)
 	{
 		return;
 	}
