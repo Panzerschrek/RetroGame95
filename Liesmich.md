@@ -3,7 +3,7 @@
 
 ### über das Spiel
 
-Das ist ein Computerspiel, die wurde für den GameDev.ru Retrospielwettbewerb (2022) gemacht.
+Das ist ein Computerspiel, das für den GameDev.ru Retrospielwettbewerb (2022) gemacht wurde.
 
 Das Spiel ist relativ lang und enthält verschiedene Überraschungen.
 Spielen Sie es bis zum Ende!
@@ -23,7 +23,7 @@ Spielen Sie es bis zum Ende!
 * Esc - Spiel beenden
 * "-" - das Fenster reduzieren
 * "=" - das Fenster vergrößern
-* "Backspace" - CRT Effect umschalten
+* Rücktaste - CRT Effect umschalten
 * "[" - leiser
 * "]" - lauter
 * "Pause" - Spiel anhalten

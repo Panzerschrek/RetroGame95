@@ -20,7 +20,7 @@ DEFINE_STRING(game_name_arkanoid, "das Verlorenes Raumschiff")
 DEFINE_STRING(game_name_tetris, "der Maurer")
 DEFINE_STRING(game_name_snake, "die Gefreßige Schlange")
 DEFINE_STRING(game_name_pacman, "Packmann")
-DEFINE_STRING(game_name_battle_city, "die Kampfstadt")
+DEFINE_STRING(game_name_battle_city, "Panzerkampf")
 DEFINE_STRING(game_name_end_screen, "das Ende")
 
 DEFINE_STRING(arkanoid_round, "Runde")
@@ -59,7 +59,7 @@ Sie haben das Spiel gewonnen!
 
 DEFINE_STRING(end_screen_authors,
 R"(
-Diese Spiel wurde für den GameDev.ru
+Dieses Spiel wurde für den GameDev.ru
 
 Retrospielwettbewerb (2022) gemacht.
 
