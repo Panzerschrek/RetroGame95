@@ -442,6 +442,184 @@ void DrawSnakeStats(
 	}
 }
 
+void DrawPacmanField(
+	const FrameBuffer frame_buffer,
+	const char* const field_data,
+	const uint32_t field_width,
+	const uint32_t field_height,
+	const uint32_t x_start,
+	const uint32_t y_start,
+	const uint32_t x_end,
+	const uint32_t y_end)
+{
+	const char c_wall_symbol = '#';
+	const Color32 c_wall_color = g_cga_palette[1];
+	for(uint32_t y = y_start; y < y_end; ++y)
+	{
+		const char* const line = field_data + y * field_width;
+		const char* const line_y_minus = field_data + (std::max(1u, y) - 1) * field_width;
+		const char* const line_y_plus  = field_data + (std::min(field_height - 2, y) + 1) * field_width;
+
+		for(uint32_t x = x_start; x < x_end ; ++x)
+		{
+			const char block = line[x];
+			if(block != c_wall_symbol)
+			{
+				continue;
+			}
+
+			const uint32_t block_x = x * g_pacman_block_size;
+			const uint32_t block_y = y * g_pacman_block_size;
+			const auto set_pixel = [&](const uint32_t dx, const uint32_t dy)
+			{
+				frame_buffer.data[ (block_x + dx) + (block_y + dy) * frame_buffer.width] = c_wall_color;
+			};
+
+			const uint32_t x_minus_one_clamped = std::max(x, 1u) - 1;
+			const uint32_t x_plus_one_clamped = std::min(x, field_width - 2) + 1;
+
+			const bool block_y_minus = line_y_minus[x] == c_wall_symbol;
+			const bool block_y_plus  = line_y_plus [x] == c_wall_symbol;
+			const bool block_x_minus = line[x_minus_one_clamped] == c_wall_symbol;
+			const bool block_x_plus  = line[x_plus_one_clamped ] == c_wall_symbol;
+			const bool block_x_minus_y_minus = line_y_minus[x_minus_one_clamped] == c_wall_symbol;
+			const bool block_x_minus_y_plus  = line_y_plus [x_minus_one_clamped] == c_wall_symbol;
+			const bool block_x_plus_y_minus  = line_y_minus[x_plus_one_clamped ] == c_wall_symbol;
+			const bool block_x_plus_y_plus   = line_y_plus [x_plus_one_clamped ] == c_wall_symbol;
+
+			// Sides.
+			if((block_x_plus && block_x_minus) || (!block_y_minus && !block_y_plus))
+			{
+				if(!block_y_minus)
+				{
+					for(uint32_t dx = 0; dx < g_pacman_block_size; ++dx)
+						set_pixel(dx, 4);
+				}
+				if(!block_y_plus )
+				{
+					for(uint32_t dx = 0; dx < g_pacman_block_size; ++dx)
+						set_pixel(dx, 3);
+				}
+			}
+			if(block_x_plus && block_x_minus)
+			{
+				if(!block_y_minus && (!block_x_plus_y_plus   || !block_x_minus_y_plus ))
+				{
+					for(uint32_t dx = 0; dx < g_pacman_block_size; ++dx)
+						set_pixel(dx, 3);
+				}
+				if(!block_y_plus  && (!block_x_plus_y_minus  || !block_x_minus_y_minus))
+				{
+					for(uint32_t dx = 0; dx < g_pacman_block_size; ++dx)
+						set_pixel(dx, 4);
+				}
+			}
+			if((block_y_minus && block_y_plus) || (!block_x_minus && !block_x_plus))
+			{
+				if(!block_x_minus)
+				{
+					for(uint32_t dy = 0; dy < g_pacman_block_size; ++dy)
+						set_pixel(4, dy);
+				}
+				if(!block_x_plus)
+				{
+					for(uint32_t dy = 0; dy < g_pacman_block_size; ++dy)
+						set_pixel(3, dy);
+				}
+			}
+			if(block_y_plus && block_y_minus)
+			{
+				if(!block_x_minus && (!block_x_plus_y_minus  || !block_x_plus_y_plus  ))
+				{
+					for(uint32_t dy = 0; dy < g_pacman_block_size; ++dy)
+						set_pixel(3, dy);
+				}
+				if(!block_x_plus && (!block_x_minus_y_minus  || !block_x_minus_y_plus ))
+				{
+					for(uint32_t dy = 0; dy < g_pacman_block_size; ++dy)
+						set_pixel(4, dy);
+				}
+			}
+
+			// Outer corners.
+			if(!block_x_minus && !block_y_minus && block_x_plus && block_y_plus)
+			{
+				set_pixel(4, 6);
+				set_pixel(4, 7);
+				set_pixel(6, 4);
+				set_pixel(7, 4);
+				set_pixel(5, 5);
+			}
+			if(!block_x_plus && !block_y_minus && block_x_minus && block_y_plus)
+			{
+				set_pixel(3, 6);
+				set_pixel(3, 7);
+				set_pixel(0, 4);
+				set_pixel(1, 4);
+				set_pixel(2, 5);
+			}
+			if(!block_x_minus && !block_y_plus  && block_x_plus  && block_y_minus)
+			{
+				set_pixel(4, 0);
+				set_pixel(4, 1);
+				set_pixel(6, 3);
+				set_pixel(7, 3);
+				set_pixel(5, 2);
+			}
+			if(!block_x_plus && !block_y_plus  && block_x_minus && block_y_minus)
+			{
+				set_pixel(3, 0);
+				set_pixel(3, 1);
+				set_pixel(0, 3);
+				set_pixel(1, 3);
+				set_pixel(2, 2);
+			}
+
+			// Inner corners.
+			if(block_x_minus && block_y_minus && !block_x_minus_y_minus)
+			{
+				set_pixel(4, 0);
+				set_pixel(4, 1);
+				set_pixel(4, 2);
+				set_pixel(0, 4);
+				set_pixel(1, 4);
+				set_pixel(2, 4);
+				set_pixel(3, 3);
+			}
+			if(block_x_minus && block_y_plus && !block_x_minus_y_plus )
+			{
+				set_pixel(4, 5);
+				set_pixel(4, 6);
+				set_pixel(4, 7);
+				set_pixel(0, 3);
+				set_pixel(1, 3);
+				set_pixel(2, 3);
+				set_pixel(3, 4);
+			}
+			if(block_x_plus && block_y_minus && !block_x_plus_y_minus  )
+			{
+				set_pixel(3, 0);
+				set_pixel(3, 1);
+				set_pixel(3, 2);
+				set_pixel(5, 4);
+				set_pixel(6, 4);
+				set_pixel(7, 4);
+				set_pixel(4, 3);
+			}
+			if(block_x_plus && block_y_plus  && !block_x_plus_y_plus  )
+			{
+				set_pixel(3, 5);
+				set_pixel(3, 6);
+				set_pixel(3, 7);
+				set_pixel(5, 3);
+				set_pixel(6, 3);
+				set_pixel(7, 3);
+				set_pixel(4, 4);
+			}
+		} // for x
+	} // for y
+}
+
 SpriteBMP GetPacmanGhostSprite(const PacmanGhostType ghost_type, const GridDirection ghost_direction)
 {
 	return g_pacman_ghost_sprites[size_t(ghost_type)][size_t(ghost_direction)];

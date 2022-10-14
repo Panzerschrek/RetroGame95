@@ -1,6 +1,7 @@
 #pragma once
 #include "GameInterface.hpp"
 #include "GamesCommon.hpp"
+#include "GamesDrawCommon.hpp"
 #include "Fixed.hpp"
 #include "Rand.hpp"
 #include "SoundPlayer.hpp"
@@ -96,7 +97,7 @@ private:
 
 	static const constexpr uint32_t c_field_width = 33;
 	static const constexpr uint32_t c_field_height = 30;
-	static const constexpr uint32_t c_block_size = 8;
+	static const constexpr uint32_t c_block_size = g_pacman_block_size;
 
 	static const constexpr uint32_t c_num_ghosts = 4;
 

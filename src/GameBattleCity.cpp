@@ -40,6 +40,13 @@ const size_t g_max_alive_pacman_ghosts = 2;
 const uint32_t g_enemies_per_level = 15;
 const uint32_t g_max_lives = 9;
 
+const uint32_t g_transition_time_hide_pacman_ui = GameInterface::c_update_frequency * 3;
+const uint32_t g_transition_time_show_field_borders = g_transition_time_hide_pacman_ui + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_stop_auto_movement = g_transition_time_show_field_borders + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_tank = g_transition_time_stop_auto_movement + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_field = g_transition_time_show_tank + GameInterface::c_update_frequency;
+const uint32_t g_transition_time_show_ui = g_transition_time_show_field + GameInterface::c_update_frequency;
+
 bool BBoxesIntersect(
 	const fixed16vec2_t& min_a, const fixed16vec2_t& max_a,
 	const fixed16vec2_t& min_b, const fixed16vec2_t& max_b)
@@ -90,6 +97,9 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
 	NextLevel();
+	level_start_animation_end_tick_ = 0;
+
+	SpawnSnakeBonus();
 }
 
 void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vector<bool>& keyboard_state)
@@ -166,7 +176,8 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 			} // for projectiles.
 		}
 
-		if(enemies_left_ > 0 &&
+		if(tick_ >= g_transition_time_show_tank &&
+			enemies_left_ > 0 &&
 			enemies_.size() < g_max_alive_enemies &&
 			(tick_ % GameInterface::c_update_frequency) == 0)
 		{
@@ -213,23 +224,6 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = c_block_size * 2;
 	const uint32_t field_offset_y = (frame_buffer.height - field_height) / 2;
 
-	const uint32_t field_x_end = field_offset_x + field_width ;
-	const uint32_t field_y_end = field_offset_y + field_height;
-
-	const Color32 border_color = g_cga_palette[8];
-	FillRect(frame_buffer, border_color, 0, 0, frame_buffer.width, field_offset_y);
-	FillRect(frame_buffer, border_color, 0, field_offset_y + field_height, frame_buffer.width, frame_buffer.height - field_y_end);
-	FillRect(frame_buffer, border_color, 0, field_offset_y, field_offset_x, field_height);
-	FillRect(frame_buffer, border_color, field_x_end, field_offset_y, frame_buffer.width - field_x_end, field_height);
-
-	// Base.
-	DrawSpriteWithAlpha(
-		frame_buffer,
-		base_is_destroyed_ ? Sprites::battle_city_eagle_destroyed : Sprites::battle_city_eagle,
-		0,
-		field_offset_x + c_block_size * (c_field_width / 2 - 1),
-		field_offset_y + c_block_size * (c_field_height - 2));
-
 	const SpriteBMP block_sprites[]
 	{
 		Sprites::battle_city_block_bricks,
@@ -246,44 +240,94 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		Sprites::tetris_block_small_3,
 	};
 
-	// Draw field except foliage.
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
+	if(tick_ < g_transition_time_show_field)
 	{
-		const Block& block = field_[x + y * c_field_width];
-		if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.destruction_mask == 0)
+		// Base.
+		for(uint32_t dy = 0; dy < 2; ++dy)
+		for(uint32_t dx = 0; dx < 2; ++dx)
 		{
-			continue;
+			const SpriteBMP sprite(Sprites::pacman_food);
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				sprite,
+				0,
+				field_offset_x + c_block_size * (c_field_width / 2 - 1 + dx) + c_block_size / 2 - sprite.GetWidth() / 2,
+				field_offset_y + c_block_size * (c_field_height - 2 + dy)  + c_block_size / 2 - sprite.GetHeight() / 2);
 		}
 
-		const uint32_t sprite_x = field_offset_x + x * c_block_size;
-		const uint32_t sprite_y = field_offset_y + y * c_block_size;
-		const SpriteBMP sprite = block_sprites[size_t(block.type)];
+		const uint32_t pacman_field_width  = c_field_width  + 4;
+		const uint32_t pacman_field_height = c_field_height + 4;
+		DrawPacmanField(
+			frame_buffer,
+			battle_city_level_0_pacman_field,
+			pacman_field_width,
+			pacman_field_height,
+			0,
+			0,
+			pacman_field_width,
+			pacman_field_height);
+	}
+	else
+	{
+		// Base.
+		DrawSpriteWithAlpha(
+			frame_buffer,
+			base_is_destroyed_ ? Sprites::battle_city_eagle_destroyed : Sprites::battle_city_eagle,
+			0,
+			field_offset_x + c_block_size * (c_field_width / 2 - 1),
+			field_offset_y + c_block_size * (c_field_height - 2));
 
-		if(block.destruction_mask == 0xF)
+		// Draw field except foliage.
+		for(uint32_t y = 0; y < c_field_height; ++y)
+		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
-			DrawSprite(frame_buffer, sprite, sprite_x, sprite_y);
-		}
-		else
-		{
-			const uint32_t segment_size = c_block_size / 2;
-			for(uint32_t dy = 0; dy < 2; ++dy)
-			for(uint32_t dx = 0; dx < 2; ++dx)
+			const Block& block = field_[x + y * c_field_width];
+			if(block.type == BlockType::Empty || block.type == BlockType::Foliage || block.destruction_mask == 0)
 			{
-				if((block.destruction_mask & BlockMaskForCoord(dx, dy)) != 0)
+				continue;
+			}
+
+			const uint32_t sprite_x = field_offset_x + x * c_block_size;
+			const uint32_t sprite_y = field_offset_y + y * c_block_size;
+			const SpriteBMP sprite = block_sprites[size_t(block.type)];
+
+			if(block.destruction_mask == 0xF)
+			{
+				DrawSprite(frame_buffer, sprite, sprite_x, sprite_y);
+			}
+			else
+			{
+				const uint32_t segment_size = c_block_size / 2;
+				for(uint32_t dy = 0; dy < 2; ++dy)
+				for(uint32_t dx = 0; dx < 2; ++dx)
 				{
-					DrawSpriteRect(
-						frame_buffer,
-						sprite,
-						sprite_x + dx * segment_size,
-						sprite_y + dy * segment_size,
-						dx * segment_size,
-						dy * segment_size,
-						segment_size,
-						segment_size);
+					if((block.destruction_mask & BlockMaskForCoord(dx, dy)) != 0)
+					{
+						DrawSpriteRect(
+							frame_buffer,
+							sprite,
+							sprite_x + dx * segment_size,
+							sprite_y + dy * segment_size,
+							dx * segment_size,
+							dy * segment_size,
+							segment_size,
+							segment_size);
+					}
 				}
 			}
 		}
+	}
+
+	const Color32 border_color = g_cga_palette[8];
+	if(tick_ >= g_transition_time_show_field_borders)
+	{
+		const uint32_t field_x_end = field_offset_x + field_width ;
+		const uint32_t field_y_end = field_offset_y + field_height;
+
+		FillRect(frame_buffer, border_color, 0, 0, frame_buffer.width, field_offset_y);
+		FillRect(frame_buffer, border_color, 0, field_offset_y + field_height, frame_buffer.width, frame_buffer.height - field_y_end);
+		FillRect(frame_buffer, border_color, 0, field_offset_y, field_offset_x, field_height);
+		FillRect(frame_buffer, border_color, field_x_end, field_offset_y, frame_buffer.width - field_x_end, field_height);
 	}
 
 	if(snake_bonus_ != std::nullopt)
@@ -294,7 +338,10 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			Sprites::snake_food_medium,
 		};
 
-		const SpriteBMP sprite = bonus_sprites[size_t(snake_bonus_->type)];
+		const SpriteBMP sprite =
+			tick_ < g_transition_time_show_field
+				? Sprites::pacman_bonus_deadly
+				: bonus_sprites[size_t(snake_bonus_->type)];
 		DrawSpriteWithAlpha(
 			frame_buffer,
 			sprite,
@@ -308,27 +355,64 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t x = uint32_t(Fixed16FloorToInt(player_->position[0] * int32_t(c_block_size)));
 		const uint32_t y = uint32_t(Fixed16FloorToInt(player_->position[1] * int32_t(c_block_size)));
 
+		if(tick_ < g_transition_time_show_tank)
 		{
-			const bool use_a = ((x ^ y) & 1) != 0;
+			const SpriteBMP sprites[]
+			{
+				Sprites::pacman_0,
+				Sprites::pacman_1,
+				Sprites::pacman_2,
+				Sprites::pacman_3,
+				Sprites::pacman_2,
+				Sprites::pacman_1,
+			};
 
-			const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
-			GetDrawFuncForDirection(player_->direction)(
-				frame_buffer,
-				sprite,
-				0,
-				field_offset_x + x - sprite.GetWidth () / 2,
-				field_offset_y + y - sprite.GetHeight() / 2);
+			const uint32_t num_frames = uint32_t(std::size(sprites));
+			const fixed16_t dist = player_->position[0] + player_->position[1];
+
+			const SpriteBMP sprite(sprites[((uint32_t(dist) * num_frames) >> g_fixed16_base) % num_frames]);
+			const uint32_t pacman_x = field_offset_x + x - sprite.GetWidth () / 2;
+			const uint32_t pacman_y = field_offset_y + y - sprite.GetHeight() / 2;
+			switch(player_->direction)
+			{
+			case GridDirection::XMinus:
+				DrawSpriteWithAlphaRotate180(frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			case GridDirection::XPlus:
+				DrawSpriteWithAlpha         (frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			case GridDirection::YMinus:
+				DrawSpriteWithAlphaRotate270(frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			case GridDirection::YPlus:
+				DrawSpriteWithAlphaRotate90 (frame_buffer, sprite, 0, pacman_x, pacman_y);
+				break;
+			}
 		}
-
-		if(tick_ < player_->shield_end_tick)
+		else
 		{
-			const SpriteBMP sprite(tick_ / 6 % 2 != 0 ? Sprites::battle_city_player_shield_a : Sprites::battle_city_player_shield_b);
-			DrawSpriteWithAlpha(
-				frame_buffer,
-				sprite,
-				0,
-				field_offset_x + x - sprite.GetWidth () / 2,
-				field_offset_y + y - sprite.GetHeight() / 2);
+			{
+				const bool use_a = ((x ^ y) & 1) != 0;
+
+				const SpriteBMP sprite(use_a ? Sprites::battle_city_player_0_a : Sprites::battle_city_player_0_b);
+				GetDrawFuncForDirection(player_->direction)(
+					frame_buffer,
+					sprite,
+					0,
+					field_offset_x + x - sprite.GetWidth () / 2,
+					field_offset_y + y - sprite.GetHeight() / 2);
+			}
+
+			if(tick_ < player_->shield_end_tick)
+			{
+				const SpriteBMP sprite(tick_ / 6 % 2 != 0 ? Sprites::battle_city_player_shield_a : Sprites::battle_city_player_shield_b);
+				DrawSpriteWithAlpha(
+					frame_buffer,
+					sprite,
+					0,
+					field_offset_x + x - sprite.GetWidth () / 2,
+					field_offset_y + y - sprite.GetHeight() / 2);
+			}
 		}
 	}
 
@@ -472,22 +556,25 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(explosion.position[1] * int32_t(c_block_size))) - sprite.GetHeight() / 2);
 	}
 
-	// Draw foliage after player and enemies.
-	for(uint32_t y = 0; y < c_field_height; ++y)
-	for(uint32_t x = 0; x < c_field_width ; ++x)
+	if(tick_ >= g_transition_time_show_field)
 	{
-		const Block& block = field_[x + y * c_field_width];
-		if(block.type != BlockType::Foliage || block.destruction_mask == 0)
+		// Draw foliage after player and enemies.
+		for(uint32_t y = 0; y < c_field_height; ++y)
+		for(uint32_t x = 0; x < c_field_width ; ++x)
 		{
-			continue;
-		}
+			const Block& block = field_[x + y * c_field_width];
+			if(block.type != BlockType::Foliage || block.destruction_mask == 0)
+			{
+				continue;
+			}
 
-		DrawSpriteWithAlpha(
-			frame_buffer,
-			block_sprites[size_t(BlockType::Foliage)],
-			0,
-			field_offset_x + x * c_block_size,
-			field_offset_y + y * c_block_size);
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				block_sprites[size_t(BlockType::Foliage)],
+				0,
+				field_offset_x + x * c_block_size,
+				field_offset_y + y * c_block_size);
+		}
 	}
 
 	if(bonus_ != std::nullopt)
@@ -513,41 +600,70 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	// UI.
 
-	for(uint32_t i = 0; i < enemies_left_; ++i)
+	if(tick_ < g_transition_time_hide_pacman_ui)
 	{
-		const SpriteBMP sprite(Sprites::battle_city_remaining_enemy);
-		DrawSprite(
-			frame_buffer,
-			sprite,
-			frame_buffer.width - 32 + sprite.GetWidth() * (i % 2),
-			40 + (i / 2) * sprite.GetHeight());
+		const SpriteBMP life_spirte(Sprites::pacman_life);
+		for(uint32_t i = 0; i < lives_; ++i)
+		{
+			DrawSpriteWithAlpha(
+				frame_buffer,
+				life_spirte,
+				0,
+				field_offset_x + (c_field_width + 1) * c_block_size + i % 3 * (life_spirte.GetWidth() + 2),
+				c_block_size * 2 + i / 3 * (life_spirte.GetHeight() + 3));
+		}
+
+		const uint32_t texts_offset_x = field_offset_x + (c_field_width + 1) * c_block_size;
+		const uint32_t texts_offset_y = 8 * g_glyph_height;
+
+		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
+
+		char text[64];
+		NumToString(text, sizeof(text), level_, 5);
+		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
+
+		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
+		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, "    ß");
 	}
 
-	if(player_ != std::nullopt)
+	if(tick_ >= g_transition_time_show_ui)
 	{
-		for(uint32_t i = 0; i < player_->armor_piercing_shells; ++i)
+		for(uint32_t i = 0; i < enemies_left_; ++i)
 		{
-			const SpriteBMP sprite(Sprites::arkanoid_ball);
+			const SpriteBMP sprite(Sprites::battle_city_remaining_enemy);
 			DrawSprite(
 				frame_buffer,
 				sprite,
-				frame_buffer.width - 40 + (sprite.GetWidth() + 2) * (i % 4),
-				frame_buffer.height - 24 + (i / 4) * (sprite.GetHeight() + 2));
+				frame_buffer.width - 32 + sprite.GetWidth() * (i % 2),
+				40 + (i / 2) * sprite.GetHeight());
 		}
+
+		if(player_ != std::nullopt)
+		{
+			for(uint32_t i = 0; i < player_->armor_piercing_shells; ++i)
+			{
+				const SpriteBMP sprite(Sprites::arkanoid_ball);
+				DrawSprite(
+					frame_buffer,
+					sprite,
+					frame_buffer.width - 40 + (sprite.GetWidth() + 2) * (i % 4),
+					frame_buffer.height - 24 + (i / 4) * (sprite.GetHeight() + 2));
+			}
+		}
+
+		const uint32_t texts_offset_x = frame_buffer.width - 32;
+		const uint32_t texts_offset_y = frame_buffer.height / 2 + g_glyph_height;
+		char text[16];
+
+		DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y, "IP");
+		NumToString(text, sizeof(text), lives_, 2);
+		DrawSprite(frame_buffer, Sprites::battle_city_player_lives_symbol, texts_offset_x, texts_offset_y + g_glyph_height);
+		DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height, text);
+
+		NumToString(text, sizeof(text), level_, 2);
+		DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height * 8, text);
+		DrawSprite(frame_buffer, Sprites::battle_city_level_symbol, texts_offset_x, texts_offset_y + g_glyph_height * 6);
 	}
-
-	const uint32_t texts_offset_x = frame_buffer.width - 32;
-	const uint32_t texts_offset_y = frame_buffer.height / 2 + g_glyph_height;
-	char text[16];
-
-	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y, "IP");
-	NumToString(text, sizeof(text), lives_, 2);
-	DrawSprite(frame_buffer, Sprites::battle_city_player_lives_symbol, texts_offset_x, texts_offset_y + g_glyph_height);
-	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height, text);
-
-	NumToString(text, sizeof(text), level_, 2);
-	DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height * 8, text);
-	DrawSprite(frame_buffer, Sprites::battle_city_level_symbol, texts_offset_x, texts_offset_y + g_glyph_height * 6);
 
 	if(game_over_)
 	{
@@ -651,26 +767,29 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	const bool up_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_UP) && keyboard_state[size_t(SDL_SCANCODE_UP)];
 	const bool down_pressed = keyboard_state.size() > size_t(SDL_SCANCODE_DOWN) && keyboard_state[size_t(SDL_SCANCODE_DOWN)];
 
-	if((left_pressed || right_pressed || up_pressed || down_pressed))
+	if(tick_ >= g_transition_time_show_tank)
 	{
-		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankStay)
+		if((left_pressed || right_pressed || up_pressed || down_pressed))
 		{
-			sound_player_.PlayLoopedSound(SoundId::TankMovement);
-			ActiveSound active_sound;
-			active_sound.id = SoundId::TankMovement;
-			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
-			current_sound_ = active_sound;
+			if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankStay)
+			{
+				sound_player_.PlayLoopedSound(SoundId::TankMovement);
+				ActiveSound active_sound;
+				active_sound.id = SoundId::TankMovement;
+				active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+				current_sound_ = active_sound;
+			}
 		}
-	}
-	else
-	{
-		if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankMovement)
+		else
 		{
-			sound_player_.PlayLoopedSound(SoundId::TankStay);
-			ActiveSound active_sound;
-			active_sound.id = SoundId::TankStay;
-			active_sound.end_tick = std::numeric_limits<uint32_t>::max();
-			current_sound_ = active_sound;
+			if(current_sound_ == std::nullopt || tick_ >= current_sound_->end_tick || current_sound_->id == SoundId::TankMovement)
+			{
+				sound_player_.PlayLoopedSound(SoundId::TankStay);
+				ActiveSound active_sound;
+				active_sound.id = SoundId::TankStay;
+				active_sound.end_tick = std::numeric_limits<uint32_t>::max();
+				current_sound_ = active_sound;
+			}
 		}
 	}
 
@@ -715,6 +834,24 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	{
 		new_position[1] += g_player_speed;
 	}
+	else if(tick_ < g_transition_time_stop_auto_movement)
+	{
+		switch(player_->direction)
+		{
+		case GridDirection::XPlus:
+			new_position[0] += g_player_speed;
+			break;
+		case GridDirection::XMinus:
+			new_position[0] -= g_player_speed;
+			break;
+		case GridDirection::YPlus:
+			new_position[1] += g_player_speed;
+			break;
+		case GridDirection::YMinus:
+			new_position[1] -= g_player_speed;
+			break;
+		}
+	}
 
 	bool moves_towards_other_tank = false;
 	for(const Enemy& enemy : enemies_)
@@ -755,9 +892,10 @@ void GameBattleCity::ProcessPlayerInput(const std::vector<bool>& keyboard_state)
 	}
 
 	// Shoot.
-	if((keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)]) ||
+	if(((keyboard_state.size() > size_t(SDL_SCANCODE_LCTRL) && keyboard_state[size_t(SDL_SCANCODE_LCTRL)]) ||
 		(keyboard_state.size() > size_t(SDL_SCANCODE_RCTRL) && keyboard_state[size_t(SDL_SCANCODE_RCTRL)]) ||
-		(keyboard_state.size() > size_t(SDL_SCANCODE_SPACE) && keyboard_state[size_t(SDL_SCANCODE_SPACE)]))
+		(keyboard_state.size() > size_t(SDL_SCANCODE_SPACE) && keyboard_state[size_t(SDL_SCANCODE_SPACE)])) &&
+		tick_ >= g_transition_time_show_tank)
 	{
 		const size_t max_active_projectiles = player_level_;
 		if(tick_ >= player_->next_shot_tick && player_->projectiles.size() < max_active_projectiles)

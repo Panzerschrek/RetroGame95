@@ -33,4 +33,16 @@ void DrawTetrisField(
 
 void DrawSnakeStats(FrameBuffer frame_buffer, uint32_t length, uint32_t lives, uint32_t level, uint32_t score);
 
+const uint32_t g_pacman_block_size = 8;
+
+void DrawPacmanField(
+	FrameBuffer frame_buffer,
+	const char* field_data,
+	uint32_t field_width,
+	uint32_t field_height,
+	uint32_t x_start,
+	uint32_t y_start,
+	uint32_t x_end,
+	uint32_t y_end);
+
 SpriteBMP GetPacmanGhostSprite(PacmanGhostType ghost_type, GridDirection ghost_direction);
