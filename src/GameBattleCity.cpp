@@ -96,6 +96,8 @@ GameBattleCity::GameBattleCity(SoundPlayer& sound_player)
 	: sound_player_(sound_player)
 	, rand_(Rand::CreateWithRandomSeed())
 {
+	OpenGame(GameId::BattleCity);
+
 	NextLevel();
 	level_start_animation_end_tick_ = 0;
 
