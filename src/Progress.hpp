@@ -17,6 +17,9 @@ struct Progress
 {
 	uint32_t opened_games_mask = 1; // First game is always opened.
 	GameId current_game = GameId::Arkanoid;
+
+	GameId GetLastOpenedGame() const;
+	uint32_t GetNumOpenedGames() const;
 };
 
 Progress LoadProgress();

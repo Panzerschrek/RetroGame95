@@ -115,8 +115,9 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 				}
 				else if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
 				{
+					const uint32_t num_opened_games = progress_.GetNumOpenedGames();
 					*select_game_row =
-						SelectGameMenuRow((uint32_t(*select_game_row) + uint32_t(SelectGameMenuRow::NumGames) - 1) % uint32_t(SelectGameMenuRow::NumGames));
+						SelectGameMenuRow((uint32_t(*select_game_row) + num_opened_games - 1) % num_opened_games);
 				}
 			}
 			if(event.key.keysym.scancode == SDL_SCANCODE_DOWN)
@@ -127,7 +128,8 @@ void GameMainMenu::Tick(const std::vector<SDL_Event>& events, const std::vector<
 				}
 				else if(const auto select_game_row = std::get_if<SelectGameMenuRow>(&current_row_))
 				{
-					*select_game_row = SelectGameMenuRow((uint32_t(*select_game_row) + 1) % uint32_t(SelectGameMenuRow::NumGames));
+					const uint32_t num_opened_games = progress_.GetNumOpenedGames();
+					*select_game_row = SelectGameMenuRow((uint32_t(*select_game_row) + 1) % num_opened_games);
 				}
 			}
 
@@ -212,7 +214,9 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 			Strings::game_name_battle_city,
 			Strings::game_name_end_screen,
 		};
-		for(uint32_t i = 0; i < uint32_t(SelectGameMenuRow::NumGames); ++i)
+
+		const uint32_t num_opened_games = progress_.GetNumOpenedGames();
+		for(uint32_t i = 0; i < std::min(uint32_t(SelectGameMenuRow::NumGames), num_opened_games + 1); ++i)
 		{
 			DrawTextWithFullShadow(
 				frame_buffer,

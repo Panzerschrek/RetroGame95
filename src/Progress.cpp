@@ -20,6 +20,25 @@ void SaveProgress(const Progress& progress)
 
 } // namespace
 
+GameId Progress::GetLastOpenedGame() const
+{
+	uint32_t last_opened_game = 0;
+	for(uint32_t i = 0; i < uint32_t(GameId::NumGames); ++i)
+	{
+		if(((1 << i) & opened_games_mask) != 0)
+		{
+			last_opened_game = i;
+		}
+	}
+
+	return GameId(last_opened_game);
+}
+
+uint32_t Progress::GetNumOpenedGames() const
+{
+	return uint32_t(GetLastOpenedGame()) + 1;
+}
+
 Progress LoadProgress()
 {
 	Progress progress;
