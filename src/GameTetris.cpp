@@ -165,7 +165,7 @@ void GameTetris::Tick(const std::vector<SDL_Event>& events, const std::vector<bo
 
 void GameTetris::Draw(const FrameBuffer frame_buffer) const
 {
-	const SpriteBMP sprites[g_tetris_num_piece_types]
+	static constexpr const SpriteBMP sprites[g_tetris_num_piece_types]
 	{
 		Sprites::tetris_block_4,
 		Sprites::tetris_block_7,
@@ -306,7 +306,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(laser_beam.position[1] * int32_t(block_height)))  - sprite.GetHeight() / 2);
 	}
 
-	const SpriteBMP bonuses_sprites[]
+	static constexpr const SpriteBMP bonuses_sprites[]
 	{
 		Sprites::arkanoid_bonus_b,
 		Sprites::arkanoid_bonus_d,

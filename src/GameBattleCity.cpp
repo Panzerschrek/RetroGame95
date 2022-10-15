@@ -226,7 +226,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t field_offset_x = c_block_size * 2;
 	const uint32_t field_offset_y = (frame_buffer.height - field_height) / 2;
 
-	const SpriteBMP block_sprites[]
+	static constexpr const SpriteBMP block_sprites[]
 	{
 		Sprites::battle_city_block_bricks,
 		Sprites::battle_city_block_bricks,
@@ -334,7 +334,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	if(snake_bonus_ != std::nullopt)
 	{
-		const SpriteBMP bonus_sprites[]
+		static constexpr const SpriteBMP bonus_sprites[]
 		{
 			Sprites::snake_food_small,
 			Sprites::snake_food_medium,
@@ -359,7 +359,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 		if(tick_ < g_transition_time_show_tank)
 		{
-			const SpriteBMP sprites[]
+			static constexpr const SpriteBMP sprites[]
 			{
 				Sprites::pacman_0,
 				Sprites::pacman_1,
@@ -418,7 +418,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP spawn_glow_sprites[]
+	static constexpr const SpriteBMP spawn_glow_sprites[]
 	{
 		Sprites::battle_city_tank_spawn_glow_0,
 		Sprites::battle_city_tank_spawn_glow_1,
@@ -533,7 +533,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP explosion_sprites[]
+	static constexpr const SpriteBMP explosion_sprites[]
 	{
 		Sprites::battle_city_explosion_0,
 		Sprites::battle_city_explosion_1,
@@ -581,7 +581,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 	if(bonus_ != std::nullopt)
 	{
-		const SpriteBMP bonus_sprites[]
+		static constexpr const SpriteBMP bonus_sprites[]
 		{
 			Sprites::battle_city_bonus_tank,
 			Sprites::battle_city_bonus_star,

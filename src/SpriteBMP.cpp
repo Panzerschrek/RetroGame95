@@ -31,16 +31,6 @@ struct SpriteBMP::BitmapInfoHeader
 };
 #pragma pack(pop)
 
-SpriteBMP::SpriteBMP(const uint8_t* const file_data)
-	: file_data_(file_data)
-{
-	static_assert(sizeof(SpriteBMP::BitmapFileHeader) == 14, "invalide size");
-	static_assert(sizeof(SpriteBMP::BitmapInfoHeader) == 40, "invalide size");
-
-	assert(GetFileHeader().size >= 40);
-	assert(GetInfoHeader().bit_count == 8); // Only 8-bit images supported.
-}
-
 uint32_t SpriteBMP::GetWidth() const
 {
 	return uint32_t(GetInfoHeader().width);
@@ -58,6 +48,8 @@ uint32_t SpriteBMP::GetHeight() const
 
 const uint8_t* SpriteBMP::GetImageData() const
 {
+	assert(GetFileHeader().size >= 40);
+	assert(GetInfoHeader().bit_count == 8); // Only 8-bit images supported.
 	return file_data_ + GetFileHeader().off_bits;
 }
 
@@ -68,10 +60,12 @@ const Color32* SpriteBMP::GetPalette() const
 
 const SpriteBMP::BitmapFileHeader& SpriteBMP::GetFileHeader() const
 {
+	static_assert(sizeof(SpriteBMP::BitmapFileHeader) == 14, "invalide size");
 	return *reinterpret_cast<const BitmapFileHeader*>(file_data_);
 }
 
 const SpriteBMP::BitmapInfoHeader& SpriteBMP::GetInfoHeader() const
 {
+	static_assert(sizeof(SpriteBMP::BitmapInfoHeader) == 40, "invalide size");
 	return *reinterpret_cast<const BitmapInfoHeader*>(file_data_ + sizeof(BitmapFileHeader));
 }

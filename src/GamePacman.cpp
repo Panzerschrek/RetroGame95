@@ -93,7 +93,7 @@ const uint32_t g_transition_time_show_pacman_stats = g_transition_time_end_show_
 
 const uint32_t g_transition_time_change_end = g_transition_time_start_show_pacman_field;
 
-const SpriteBMP g_bonus_sprites[]
+constexpr const SpriteBMP g_bonus_sprites[]
 {
 	Sprites::pacman_food,
 	Sprites::pacman_food,
@@ -524,7 +524,7 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 	}
 	else if(pacman_.dead_animation_end_tick != std::nullopt)
 	{
-		const SpriteBMP sprites[]
+		static constexpr const SpriteBMP sprites[]
 		{
 			Sprites::pacman_0,
 			Sprites::pacman_1,
@@ -566,7 +566,7 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 	}
 	else
 	{
-		const SpriteBMP sprites[]
+		static constexpr const SpriteBMP sprites[]
 		{
 			Sprites::pacman_0,
 			Sprites::pacman_1,
@@ -621,7 +621,7 @@ void GamePacman::DrawPacman(const FrameBuffer frame_buffer) const
 
 void GamePacman::DrawGhost(const FrameBuffer frame_buffer, const Ghost& ghost) const
 {
-	const SpriteBMP sprites_dead[4]
+	static constexpr const SpriteBMP sprites_dead[4]
 	{
 		Sprites::pacman_ghost_dead_right,
 		Sprites::pacman_ghost_dead_left ,

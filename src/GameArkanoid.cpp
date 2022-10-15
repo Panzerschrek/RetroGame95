@@ -163,7 +163,7 @@ void GameArkanoid::Draw(const FrameBuffer frame_buffer) const
 			field_offset_y + uint32_t(Fixed16FloorToInt(laser_beam.position[1])) - (c_laser_beam_height + 1) / 2);
 	}
 
-	const SpriteBMP bonuses_sprites[]
+	static constexpr const SpriteBMP bonuses_sprites[]
 	{
 		Sprites::arkanoid_bonus_b,
 		Sprites::arkanoid_bonus_c,

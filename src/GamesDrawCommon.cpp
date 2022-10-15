@@ -9,7 +9,7 @@
 namespace
 {
 
-const SpriteBMP g_tetris_blocks[g_tetris_num_piece_types]
+constexpr const SpriteBMP g_tetris_blocks[g_tetris_num_piece_types]
 {
 	Sprites::tetris_block_4,
 	Sprites::tetris_block_7,
@@ -20,7 +20,7 @@ const SpriteBMP g_tetris_blocks[g_tetris_num_piece_types]
 	Sprites::tetris_block_3,
 };
 
-const SpriteBMP g_pacman_ghost_sprites[4][4]
+constexpr const SpriteBMP g_pacman_ghost_sprites[4][4]
 {
 	{
 		Sprites::pacman_ghost_0_right,
@@ -53,7 +53,7 @@ const SpriteBMP g_pacman_ghost_sprites[4][4]
 
 void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exit)
 {
-	const SpriteBMP sprites_trim_top[]
+	static constexpr const SpriteBMP sprites_trim_top[]
 	{
 		Sprites::arkanoid_trim_corner_top_left,
 		Sprites::arkanoid_trim_segment_top_0,
@@ -90,7 +90,7 @@ void DrawArkanoidFieldBorder(const FrameBuffer frame_buffer, const bool draw_exi
 		trim_top_x += sprite.GetWidth();
 	}
 
-	const SpriteBMP sprites_trim_left[]
+	static constexpr const SpriteBMP sprites_trim_left[]
 	{
 		Sprites::arkanoid_trim_segment_side_0,
 		Sprites::arkanoid_trim_segment_side_0,
@@ -181,7 +181,7 @@ void DrawArkanoidField(
 	assert(start_column <= end_column);
 	assert(end_column <= g_arkanoid_field_width);
 
-	const SpriteBMP block_sprites[]
+	static constexpr const SpriteBMP block_sprites[]
 	{
 		Sprites::arkanoid_block_1,
 		Sprites::arkanoid_block_2,

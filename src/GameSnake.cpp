@@ -237,7 +237,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const SpriteBMP tetris_blocks_sprites[g_tetris_num_piece_types]
+	static constexpr const SpriteBMP tetris_blocks_sprites[g_tetris_num_piece_types]
 	{
 		Sprites::tetris_block_4,
 		Sprites::tetris_block_7,
@@ -269,7 +269,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 
 	if(tick_ >= g_transition_time_bonuses_show)
 	{
-		const SpriteBMP bonus_sprites[]
+		static constexpr const SpriteBMP bonus_sprites[]
 		{
 			Sprites::snake_food_small,
 			Sprites::snake_food_medium,
