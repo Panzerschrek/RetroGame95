@@ -32,13 +32,6 @@ public:
 	void DecreaseVolume();
 
 private:
-	static void SDLCALL AudioCallback(void* userdata, Uint8* stream, int len_bytes);
-	void FillAudioBuffer(SampleType* buffer, uint32_t sample_count);
-
-	void LockChannel();
-	void UnlockChannel();
-
-private:
 	struct Channel
 	{
 		bool is_active = false;
@@ -46,6 +39,13 @@ private:
 		uint32_t position_samples = 0;
 		const SoundData* src_sound_data = nullptr;
 	};
+
+private:
+	static void SDLCALL AudioCallback(void* userdata, Uint8* stream, int len_bytes);
+	void FillAudioBuffer(SampleType* buffer, uint32_t sample_count);
+
+	void LockChannel();
+	void UnlockChannel();
 
 private:
 	SDL_AudioDeviceID device_id_ = 0u;

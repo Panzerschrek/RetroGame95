@@ -25,7 +25,7 @@ SoundPlayer::SoundPlayer(SoundOut& sound_out)
 		sounds_[i] = c_gen_funcs[i](sound_out_.GetSampleRate());
 	}
 
-	const std::pair<const uint8_t*, size_t> c_music_data[]
+	static const constexpr std::pair<const uint8_t*, size_t> c_music_data[]
 	{
 		{Music::in_taberna, std::size(Music::in_taberna)},
 		{Music::herr_mannelig, std::size(Music::herr_mannelig)},
