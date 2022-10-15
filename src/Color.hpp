@@ -3,7 +3,6 @@
 #include <cstdint>
 
 using Color32 = uint32_t;
-using Color24 = std::array<uint8_t, 3>;
 
 inline constexpr const Color32 g_cga_palette[16]
 {
@@ -54,16 +53,6 @@ inline ColorComponents ColorComponentsAdd(ColorComponents c, const ColorComponen
 	return c;
 }
 
-inline ColorComponents ColorComponentsScale(ColorComponents c, const uint32_t scaler)
-{
-	for(size_t i = 0; i < c.size(); ++i)
-	{
-		c[i] *= scaler;
-	}
-
-	return c;
-}
-
 inline ColorComponents ColorComponentsShiftLeft(ColorComponents c, const uint32_t shift)
 {
 	for(size_t i = 0; i < c.size(); ++i)
@@ -84,12 +73,3 @@ inline ColorComponents ColorComponentsShiftRight(ColorComponents c, const uint32
 	return c;
 }
 
-inline ColorComponents ColorComponentsDiv(ColorComponents c, const uint32_t divisor)
-{
-	for(size_t i = 0; i < c.size(); ++i)
-	{
-		c[i] /= divisor;
-	}
-
-	return c;
-}
