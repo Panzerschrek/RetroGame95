@@ -3,8 +3,6 @@
 namespace Strings
 {
 
-// TODO - check these translations.
-
 #define DEFINE_STRING(x, y) const char x[] = y;
 
 DEFINE_STRING(window_title, "Vermischung")
@@ -74,8 +72,6 @@ Es werde Frieden!
 
 Fick den Krieg!
 )")
-
-#undef DEFINE_STRING
 
 #undef DEFINE_STRING
 
