@@ -145,6 +145,21 @@ void CopyImageWithScaleAndCrtEffect(
 	func(src, src_width, src_height, dst, dst_stride);
 }
 
+void SwapColorComponents(Color32* const buffer, const uint32_t stride, const uint32_t height)
+{
+#ifdef __EMSCRIPTEN__
+	for(uint32_t i= 0; i < stride * height; ++i)
+	{
+		const Color32 c= buffer[i];
+		buffer[i]= (c & 0xFF00FF00) | ((c & 0x00FF0000) >> 16) | ((c & 0x000000FF) << 16);
+	}
+#else
+	(void)buffer;
+	(void)stride;
+	(void)height;
+#endif
+}
+
 } // namespace
 
 SystemWindow::SystemWindow()
@@ -238,11 +253,16 @@ void SystemWindow::EndFrame()
 		SDL_LockSurface(surface_);
 	}
 
+	const uint32_t src_width= uint32_t(surface_->w) / scale_;
+	const uint32_t src_height= uint32_t(surface_->h) / scale_;
+
+	SwapColorComponents(frame_buffer_data_.data(), src_width, src_height);
+
 	(use_crt_effect_ ? CopyImageWithScaleAndCrtEffect : CopyImageWithScale)(
 		scale_,
 		frame_buffer_data_.data(),
-		uint32_t(surface_->w) / scale_,
-		uint32_t(surface_->h) / scale_,
+		src_width,
+		src_height,
 		reinterpret_cast<Color32*>(surface_->pixels),
 		uint32_t(surface_->pitch) / sizeof(Color32));
 
