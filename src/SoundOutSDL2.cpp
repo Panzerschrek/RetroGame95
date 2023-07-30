@@ -1,4 +1,4 @@
-#include "SoundOut.hpp"
+#include "SoundOutSDL2.hpp"
 #include <SDL.h>
 #include <cassert>
 
