@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 
 set(GAME_LANGUAGE "De" CACHE STRING "Language of the game. For example, En, De or nay other (with existing localization file).")
 set(TARGET_EMSCRIPTEN NO CACHE BOOL "Set to yes in order to build for emscripten")
+set(TARGET_DOS NO CACHE BOOL "Set to yes in order to build for MS-DOS")
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.15")
 	cmake_policy(SET CMP0091 NEW)
@@ -31,17 +32,19 @@ if(MSVC)
 		-D_CRT_SECURE_NO_WARNINGS
 		-D_HAS_EXCEPTIONS=0)
 
-	# Link compiler runtime statically to minimize dependencies.
-	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
-	else()
-		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
-	endif()
+	if(NOT TARGET_DOS)
+		# Link compiler runtime statically to minimize dependencies.
+		if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+			set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
+		else()
+			set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+		endif()
 
-	# Use LTO to speed-up code and remove unused stuff.
-	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-		add_compile_options(/GL)
-		add_link_options(/LTCG)
+		# Use LTO to speed-up code and remove unused stuff.
+		if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+			add_compile_options(/GL)
+			add_link_options(/LTCG)
+		endif()
 	endif()
 else()
 	add_compile_options(-Werror -Wall -Wextra -Wconversion)
@@ -128,6 +131,11 @@ file(GLOB_RECURSE LOCALIZATION_SOURCES "Strings*.cpp")
 list(REMOVE_ITEM SOURCES ${LOCALIZATION_SOURCES})
 list(APPEND SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Strings${GAME_LANGUAGE}.cpp)
 
-add_executable(${PROJECT_NAME} ${GUI_APP_FLAG} ${SOURCES} ${SPRITES_HEADERS} ${SPRITES_HEADER} ${MUSIC_HEADERS} ${MUSIC_HEADER})
-target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS} ${SPRITES_HEADERS_PATH} ${MUSIC_HEADERS_PATH})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
+if(TARGET_DOS)
+	add_library(${PROJECT_NAME} ${SOURCES} ${SPRITES_HEADERS} ${SPRITES_HEADER} ${MUSIC_HEADERS} ${MUSIC_HEADER})
+	target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS} ${SPRITES_HEADERS_PATH} ${MUSIC_HEADERS_PATH})
+else()
+	add_executable(${PROJECT_NAME} ${GUI_APP_FLAG} ${SOURCES} ${SPRITES_HEADERS} ${SPRITES_HEADER} ${MUSIC_HEADERS} ${MUSIC_HEADER})
+	target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS} ${SPRITES_HEADERS_PATH} ${MUSIC_HEADERS_PATH})
+	target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
+endif()

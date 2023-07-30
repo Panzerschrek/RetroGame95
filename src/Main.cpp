@@ -46,4 +46,10 @@ extern "C" int main(int argc, char *argv[])
 	return 0;
 }
 
+extern "C" void vermischung_main()
+{
+	Host host;
+	while(!host.Loop()){}
+}
+
 #endif
