@@ -1,4 +1,4 @@
-#include "SystemWindow.hpp"
+#include "SystemWindowSDL2.hpp"
 #include "Strings.hpp"
 #include <SDL.h>
 #include <algorithm>
