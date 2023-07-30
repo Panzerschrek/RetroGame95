@@ -225,7 +225,7 @@ void DrawArkanoidLevelStartSplash(const FrameBuffer frame_buffer, const uint32_t
 {
 	DrawTextCentered(
 		frame_buffer,
-		g_cga_palette[9],
+		9,
 		g_arkanoid_field_offset_x + g_arkanoid_block_width  * g_arkanoid_field_width  / 2,
 		g_arkanoid_field_offset_y + g_arkanoid_block_height * (g_arkanoid_field_height - 6),
 		Strings::arkanoid_round);
@@ -234,7 +234,7 @@ void DrawArkanoidLevelStartSplash(const FrameBuffer frame_buffer, const uint32_t
 	NumToString(text, sizeof(text), level, 0);
 	DrawTextCentered(
 		frame_buffer,
-		g_color_white,
+		g_color_white_index,
 		g_arkanoid_field_offset_x + g_arkanoid_block_width  * g_arkanoid_field_width  / 2,
 		g_arkanoid_field_offset_y + g_arkanoid_block_height * (g_arkanoid_field_height - 6) + g_glyph_height * 2,
 		text);
@@ -249,7 +249,7 @@ void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, con
 
 	DrawText(
 		frame_buffer,
-		g_cga_palette[9],
+		9,
 		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(Strings::arkanoid_round)),
 		texts_offset_y,
 		Strings::arkanoid_round);
@@ -257,14 +257,14 @@ void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, con
 	NumToString(text, sizeof(text), level, 5);
 	DrawText(
 		frame_buffer,
-		g_color_white,
+		g_color_white_index,
 		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(text)),
 		texts_offset_y + g_glyph_height * 2,
 		text);
 
 	DrawText(
 		frame_buffer,
-		g_cga_palette[9],
+		9,
 		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(Strings::arkanoid_score)),
 		texts_offset_y + g_glyph_height * 8,
 		Strings::arkanoid_score);
@@ -272,7 +272,7 @@ void DrawArakoindStats(const FrameBuffer frame_buffer, const uint32_t level, con
 	NumToString(text, sizeof(text), score, 5);
 	DrawText(
 		frame_buffer,
-		g_color_white,
+		g_color_white_index,
 		texts_offset_x - g_glyph_width * uint32_t(UTF8StringLen(text)),
 		texts_offset_y + g_glyph_height * 10,
 		text);
@@ -342,7 +342,7 @@ void DrawTetrisNextPiece(const FrameBuffer frame_buffer, const TetrisBlock next_
 	const uint8_t pieces_colors[g_tetris_num_piece_types]{ 4, 7, 5, 1, 2, 6, 3, };
 	DrawText(
 		frame_buffer,
-		g_cga_palette[pieces_colors[uint32_t(next_piece_index)]],
+		pieces_colors[uint32_t(next_piece_index)],
 		next_piece_offset_x + block_width * 4,
 		next_piece_offset_y - block_height * 6,
 		Strings::tetris_next);
@@ -369,13 +369,13 @@ void DrawTetrisStats(const FrameBuffer frame_buffer, const uint32_t level, const
 	const uint32_t texts_offset_y = field_offset_y + block_height * g_tetris_field_height - g_glyph_height * 3;
 
 	char text[64];
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y, Strings::tetris_level);
+	DrawText(frame_buffer, 14, texts_offset_x, texts_offset_y, Strings::tetris_level);
 	NumToString(text, sizeof(text), level, 4);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 6, texts_offset_y, text);
+	DrawText(frame_buffer, g_color_white_index, texts_offset_x + g_glyph_width * 6, texts_offset_y, text);
 
-	DrawText(frame_buffer, g_cga_palette[14], texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
+	DrawText(frame_buffer, 14, texts_offset_x, texts_offset_y + g_glyph_height * 2, Strings::tetris_score);
 	NumToString(text, sizeof(text), score, 4);
-	DrawText(frame_buffer, g_color_white, texts_offset_x + g_glyph_width * 6, texts_offset_y + g_glyph_height * 2, text);
+	DrawText(frame_buffer, g_color_white_index, texts_offset_x + g_glyph_width * 6, texts_offset_y + g_glyph_height * 2, text);
 }
 
 void DrawTetrisField(
@@ -427,7 +427,7 @@ void DrawSnakeStats(
 
 		DrawText(
 			frame_buffer,
-			g_cga_palette[stats_colors[i]],
+			stats_colors[i],
 			x - g_glyph_width * len,
 			frame_buffer.height - g_glyph_height * 2 - 3,
 			stats_names[i]);
@@ -435,7 +435,7 @@ void DrawSnakeStats(
 		NumToString(text, sizeof(text), stats[i], 5);
 		DrawText(
 			frame_buffer,
-			g_color_white,
+			g_color_white_index,
 			x - g_glyph_width * 5,
 			frame_buffer.height - g_glyph_height - 1,
 			text);
@@ -453,7 +453,7 @@ void DrawPacmanField(
 	const uint32_t y_end)
 {
 	const char c_wall_symbol = '#';
-	const Color32 c_wall_color = g_cga_palette[1];
+	const uint8_t c_wall_color_index = 1;
 	for(uint32_t y = y_start; y < y_end; ++y)
 	{
 		const char* const line = field_data + y * field_width;
@@ -472,7 +472,7 @@ void DrawPacmanField(
 			const uint32_t block_y = y * g_pacman_block_size;
 			const auto set_pixel = [&](const uint32_t dx, const uint32_t dy)
 			{
-				frame_buffer.data[ (block_x + dx) + (block_y + dy) * frame_buffer.width] = c_wall_color;
+				frame_buffer.data[ (block_x + dx) + (block_y + dy) * frame_buffer.width] = c_wall_color_index;
 			};
 
 			const uint32_t x_minus_one_clamped = std::max(x, 1u) - 1;

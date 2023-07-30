@@ -179,7 +179,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t block_width  = sprites[0].GetWidth ();
 	const uint32_t block_height = sprites[1].GetHeight();
 
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
+	FillWholeFrameBuffer(frame_buffer, g_color_black_index);
 
 	const uint32_t field_offset_x = GetTetrisFieldOffsetX(frame_buffer);
 	const uint32_t field_offset_y = GetTetrisFieldOffsetY(frame_buffer);
@@ -357,7 +357,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawTextCentered(
 			frame_buffer,
-			g_cga_palette[14],
+			14,
 			field_offset_x + block_width  * c_field_width  / 2,
 			field_offset_y + block_height * c_field_height / 2,
 			Strings::tetris_level_completed);
@@ -367,7 +367,7 @@ void GameTetris::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawTextCentered(
 			frame_buffer,
-			g_cga_palette[14],
+			14,
 			field_offset_x + block_width  * c_field_width  / 2,
 			field_offset_y + block_height * c_field_height / 2,
 			Strings::tetris_game_over);

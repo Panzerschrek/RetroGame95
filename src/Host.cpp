@@ -93,8 +93,8 @@ bool Host::Loop()
 
 		DrawTextCenteredWithOutline(
 			frame_buffer,
-			g_cga_palette[colors[index]],
-			g_cga_palette[colors[index ^ 1]],
+			colors[index],
+			colors[index ^ 1],
 			frame_buffer.width  / 2,
 			frame_buffer.height / 2,
 			Strings::paused);

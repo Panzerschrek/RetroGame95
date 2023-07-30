@@ -35,24 +35,24 @@ void GameEndScreen::Draw(const FrameBuffer frame_buffer) const
 
 	DrawTextWithOutline(
 		frame_buffer,
-		g_cga_palette[11],
-		g_cga_palette[0],
+		11,
+		0,
 		g_glyph_width / 2,
 		g_glyph_height * 1,
 		Strings::end_screen_congratulations);
 
 	DrawTextWithOutline(
 		frame_buffer,
-		g_cga_palette[15],
-		g_cga_palette[0],
+		15,
+		0,
 		g_glyph_width / 2,
 		g_glyph_height * 10,
 		Strings::end_screen_authors);
 
 	DrawTextWithFullShadow(
 		frame_buffer,
-		g_cga_palette[14],
-		g_cga_palette[8],
+		14,
+		8,
 		frame_buffer.width - 20 * g_glyph_width,
 		frame_buffer.height - g_glyph_height * 4 - g_glyph_height / 2,
 		Strings::end_screen_peace_text);

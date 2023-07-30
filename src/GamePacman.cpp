@@ -236,7 +236,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 {
 	static_assert(std::size(g_game_field) == c_field_width * c_field_height + 1, "Wrong field size");
 
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
+	FillWholeFrameBuffer(frame_buffer, g_color_black_index);
 
 	if(tick_ < g_transition_time_hide_snake_stats)
 	{
@@ -419,22 +419,22 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 
 		char text[64];
 
-		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
+		DrawText(frame_buffer, 10, texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
 
 		NumToString(text, sizeof(text), level_, 7);
-		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
+		DrawText(frame_buffer, g_color_white_index, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
 
-		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
+		DrawText(frame_buffer, 10, texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
 
 		NumToString(text, sizeof(text), score_, 7);
-		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
+		DrawText(frame_buffer, g_color_white_index, texts_offset_x, texts_offset_y + 7 * g_glyph_height, text);
 
-		const Color32 center_text_color = g_cga_palette[9 + tick_ / 16 % 7];
+		const uint8_t center_text_color_index = 9 + tick_ / 16 % 7;
 		if(tick_ < spawn_animation_end_tick_)
 		{
 			DrawTextCentered(
 				frame_buffer,
-				center_text_color,
+				center_text_color_index,
 				c_field_width  * c_block_size / 2,
 				c_field_height * c_block_size / 2,
 				Strings::pacman_ready);
@@ -443,7 +443,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawTextCentered(
 				frame_buffer,
-				center_text_color,
+				center_text_color_index,
 				c_field_width  * c_block_size / 2,
 				c_field_height * c_block_size / 2,
 				Strings::pacman_level_completed);
@@ -454,7 +454,7 @@ void GamePacman::Draw(const FrameBuffer frame_buffer) const
 			{
 				DrawTextCentered(
 					frame_buffer,
-					g_cga_palette[14],
+					14,
 					c_field_width  * c_block_size / 2,
 					c_field_height * c_block_size / 2,
 					Strings::pacman_game_over);

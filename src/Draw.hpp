@@ -3,11 +3,11 @@
 #include "Matrix.hpp"
 #include "SpriteBMP.hpp"
 
-void FillWholeFrameBuffer(FrameBuffer frame_buffer, Color32 color);
+void FillWholeFrameBuffer(FrameBuffer frame_buffer, uint8_t cga_color_index);
 
 void FillRect(
 	FrameBuffer frame_buffer,
-	Color32 color,
+	uint8_t cga_color_index,
 	uint32_t start_x,
 	uint32_t start_y,
 	uint32_t w,
@@ -91,46 +91,46 @@ constexpr const uint32_t g_glyph_height = 8;
 
 void DrawText(
 	FrameBuffer frame_buffer,
-	Color32 color,
+	uint8_t cga_color_index,
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
 
 void DrawTextWithLightShadow(
 	FrameBuffer frame_buffer,
-	Color32 color,
-	Color32 shadow_color,
+	uint8_t cga_color_index,
+	uint8_t cga_color_index_shadow,
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
 
 void DrawTextWithFullShadow(
 	FrameBuffer frame_buffer,
-	Color32 color,
-	Color32 shadow_color,
+	uint8_t cga_color_index,
+	uint8_t cga_color_index_shadow,
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
 
 void DrawTextWithOutline(
 	FrameBuffer frame_buffer,
-	Color32 color,
-	Color32 outline_color,
+	uint8_t cga_color_index,
+	uint8_t cga_color_index_outline,
 	uint32_t start_x,
 	uint32_t start_y,
 	const char* text);
 
 void DrawTextCentered(
 	FrameBuffer frame_buffer,
-	Color32 color,
+	uint8_t cga_color_index,
 	uint32_t center_x,
 	uint32_t center_y,
 	const char* text);
 
 void DrawTextCenteredWithOutline(
 	FrameBuffer frame_buffer,
-	Color32 color,
-	Color32 outline_color,
+	uint8_t cga_color_index,
+	uint8_t cga_color_index_outline,
 	uint32_t center_x,
 	uint32_t center_y,
 	const char* text);

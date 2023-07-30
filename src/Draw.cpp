@@ -27,16 +27,36 @@ namespace
 #pragma warning(pop)
 #endif
 
+inline constexpr const Color32 g_cga_palette[16]
+{
+	0x00000000,
+	0x000000AA,
+	0x0000AA00,
+	0x0000AAAA,
+	0x00AA0000,
+	0x00AA00AA,
+	0x00AA5500,
+	0x00AAAAAA,
+	0x00555555,
+	0x005555FF,
+	0x0055FF55,
+	0x0055FFFF,
+	0x00FF5555,
+	0x00FF55FF,
+	0x00FFFF55,
+	0x00FFFFFF,
+};
+
 } // namespace
 
-void FillWholeFrameBuffer(const FrameBuffer frame_buffer, const Color32 color)
+void FillWholeFrameBuffer(const FrameBuffer frame_buffer, const uint8_t cga_color_index)
 {
-	FillRect(frame_buffer, color, 0, 0, frame_buffer.width, frame_buffer.height);
+	FillRect(frame_buffer, cga_color_index, 0, 0, frame_buffer.width, frame_buffer.height);
 }
 
 void FillRect(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
+	const uint8_t cga_color_index,
 	const uint32_t start_x,
 	const uint32_t start_y,
 	const uint32_t w,
@@ -44,6 +64,9 @@ void FillRect(
 {
 	assert(start_x + w <= frame_buffer.width);
 	assert(start_y + h <= frame_buffer.height);
+	assert(cga_color_index < std::size(g_cga_palette));
+
+	const Color32 color= g_cga_palette[cga_color_index];
 
 	for(uint32_t y = 0; y < h; ++y)
 	{
@@ -283,11 +306,14 @@ void DrawSpriteWithAlphaRotate270(
 
 void DrawText(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
+	const uint8_t cga_color_index,
 	const uint32_t start_x,
 	const uint32_t start_y,
 	const char* text)
 {
+	assert(cga_color_index < std::size(g_cga_palette));
+	const Color32 color= g_cga_palette[cga_color_index];
+
 	uint32_t x = start_x;
 	uint32_t y = start_y;
 	while(*text != '\0')
@@ -341,52 +367,52 @@ void DrawText(
 
 void DrawTextWithLightShadow(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
-	const Color32 shadow_color,
+	const uint8_t cga_color_index,
+	const uint8_t cga_color_index_shadow,
 	const uint32_t start_x,
 	const uint32_t start_y,
 	const char* const text)
 {
-	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
-	DrawText(frame_buffer, color, start_x, start_y, text);
+	DrawText(frame_buffer, cga_color_index, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, cga_color_index_shadow, start_x, start_y, text);
 }
 
 void DrawTextWithFullShadow(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
-	const Color32 shadow_color,
+	const uint8_t cga_color_index,
+	const uint8_t cga_color_index_shadow,
 	const uint32_t start_x,
 	const uint32_t start_y,
 	const char* const text)
 {
-	DrawText(frame_buffer, shadow_color, start_x + 1, start_y, text);
-	DrawText(frame_buffer, shadow_color, start_x, start_y + 1, text);
-	DrawText(frame_buffer, shadow_color, start_x + 1, start_y + 1, text);
-	DrawText(frame_buffer, color, start_x, start_y, text);
+	DrawText(frame_buffer, cga_color_index_shadow, start_x + 1, start_y, text);
+	DrawText(frame_buffer, cga_color_index_shadow, start_x, start_y + 1, text);
+	DrawText(frame_buffer, cga_color_index_shadow, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, cga_color_index, start_x, start_y, text);
 }
 
 void DrawTextWithOutline(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
-	const Color32 outline_color,
+	const uint8_t cga_color_index,
+	const uint8_t cga_color_index_outline,
 	const uint32_t start_x,
 	const uint32_t start_y,
 	const char* const text)
 {
-	DrawText(frame_buffer, outline_color, start_x + 1, start_y, text);
-	DrawText(frame_buffer, outline_color, start_x - 1, start_y, text);
-	DrawText(frame_buffer, outline_color, start_x, start_y + 1, text);
-	DrawText(frame_buffer, outline_color, start_x, start_y - 1, text);
-	DrawText(frame_buffer, outline_color, start_x + 1, start_y + 1, text);
-	DrawText(frame_buffer, outline_color, start_x + 1, start_y - 1, text);
-	DrawText(frame_buffer, outline_color, start_x - 1, start_y + 1, text);
-	DrawText(frame_buffer, outline_color, start_x - 1, start_y - 1, text);
-	DrawText(frame_buffer, color, start_x, start_y, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x + 1, start_y, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x - 1, start_y, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x, start_y + 1, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x, start_y - 1, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x + 1, start_y + 1, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x + 1, start_y - 1, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x - 1, start_y + 1, text);
+	DrawText(frame_buffer, cga_color_index_outline, start_x - 1, start_y - 1, text);
+	DrawText(frame_buffer, cga_color_index, start_x, start_y, text);
 }
 
 void DrawTextCentered(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
+	const uint8_t cga_color_index,
 	const uint32_t center_x,
 	const uint32_t center_y,
 	const char* const text)
@@ -416,7 +442,7 @@ void DrawTextCentered(
 
 	DrawText(
 		frame_buffer,
-		color,
+		cga_color_index,
 		center_x - max_symbols_in_line * g_glyph_width / 2,
 		center_y - num_lines * g_glyph_height / 2,
 		text);
@@ -424,8 +450,8 @@ void DrawTextCentered(
 
 void DrawTextCenteredWithOutline(
 	const FrameBuffer frame_buffer,
-	const Color32 color,
-	const Color32 outline_color,
+	const uint8_t cga_color_index,
+	const uint8_t cga_color_index_outline,
 	const uint32_t center_x,
 	const uint32_t center_y,
 	const char* const text)
@@ -433,8 +459,8 @@ void DrawTextCenteredWithOutline(
 	for(uint32_t dx = 0; dx < 3; ++dx)
 	for(uint32_t dy = 0; dy < 3; ++dy)
 	{
-		DrawTextCentered(frame_buffer, outline_color, center_x + dx - 1, center_y + dy - 1, text);
+		DrawTextCentered(frame_buffer, cga_color_index_outline, center_x + dx - 1, center_y + dy - 1, text);
 	}
 
-	DrawTextCentered(frame_buffer, color, center_x, center_y, text);
+	DrawTextCentered(frame_buffer, cga_color_index, center_x, center_y, text);
 }

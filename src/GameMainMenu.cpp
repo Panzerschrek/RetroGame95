@@ -164,9 +164,9 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 	const uint32_t row_step = 3 * g_glyph_height;
 	const uint32_t cursor_offset = 3 * g_glyph_width;
 
-	const Color32 texts_color = g_cga_palette[11];
-	const Color32 cursor_color = g_cga_palette[10];
-	const Color32 shadow_color = g_cga_palette[0];
+	const uint8_t texts_color_index = 11;
+	const uint8_t cursor_color_index = 10;
+	const uint8_t shadow_color_index = 0;
 	const bool draw_cursor = tick_ / 32 % 2 != 0;
 
 	const char* const selet_symbol = ">>";
@@ -185,8 +185,8 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawTextWithFullShadow(
 				frame_buffer,
-				texts_color,
-				shadow_color,
+				texts_color_index,
+				shadow_color_index,
 				offset_x,
 				offset_y + row_step * i,
 				texts[i]);
@@ -196,8 +196,8 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawTextWithFullShadow(
 				frame_buffer,
-				cursor_color,
-				shadow_color,
+				cursor_color_index,
+				shadow_color_index,
 				offset_x - cursor_offset,
 				offset_y + row_step * uint32_t(*main_menu_row),
 				selet_symbol);
@@ -220,8 +220,8 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawTextWithFullShadow(
 				frame_buffer,
-				texts_color,
-				shadow_color,
+				texts_color_index,
+				shadow_color_index,
 				offset_x,
 				offset_y + row_step * uint32_t(i),
 				(i == 0 || ((1 << i) & progress_.opened_games_mask) != 0)
@@ -233,8 +233,8 @@ void GameMainMenu::Draw(const FrameBuffer frame_buffer) const
 		{
 			DrawTextWithFullShadow(
 				frame_buffer,
-				cursor_color,
-				shadow_color,
+				cursor_color_index,
+				shadow_color_index,
 				offset_x - cursor_offset,
 				offset_y + row_step * uint32_t(*select_game_row),
 				selet_symbol);

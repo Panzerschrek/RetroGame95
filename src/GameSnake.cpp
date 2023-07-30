@@ -187,7 +187,7 @@ void GameSnake::Tick(const std::vector<SDL_Event>& events, const std::vector<boo
 
 void GameSnake::Draw(const FrameBuffer frame_buffer) const
 {
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
+	FillWholeFrameBuffer(frame_buffer, g_color_black_index);
 
 	const uint32_t field_offset_x = c_block_size;
 	const uint32_t field_offset_y = c_block_size;
@@ -482,7 +482,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 
 		DrawTextCentered(
 			frame_buffer,
-			g_color_white,
+			g_color_white_index,
 			field_offset_x + c_block_size  * c_field_width  / 2,
 			field_offset_y + c_block_size * c_field_height / 2,
 			text);
@@ -491,7 +491,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawTextCentered(
 			frame_buffer,
-			g_color_white,
+			g_color_white_index,
 			field_offset_x + c_block_size  * c_field_width  / 2,
 			field_offset_y + c_block_size * c_field_height / 2,
 			Strings::snake_level_completed);
@@ -500,7 +500,7 @@ void GameSnake::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawTextCentered(
 			frame_buffer,
-			g_color_white,
+			g_color_white_index,
 			field_offset_x + c_block_size  * c_field_width  / 2,
 			field_offset_y + c_block_size * c_field_height / 2,
 			Strings::snake_game_over);

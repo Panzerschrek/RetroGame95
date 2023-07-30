@@ -218,7 +218,7 @@ void GameBattleCity::Tick(const std::vector<SDL_Event>& events, const std::vecto
 
 void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 {
-	FillWholeFrameBuffer(frame_buffer, g_color_black);
+	FillWholeFrameBuffer(frame_buffer, g_color_black_index);
 
 	const uint32_t field_width  = c_field_width  * c_block_size;
 	const uint32_t field_height = c_field_height * c_block_size;
@@ -320,16 +320,16 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		}
 	}
 
-	const Color32 border_color = g_cga_palette[8];
+	const uint8_t border_color_index = 8;
 	if(tick_ >= g_transition_time_show_field_borders)
 	{
 		const uint32_t field_x_end = field_offset_x + field_width ;
 		const uint32_t field_y_end = field_offset_y + field_height;
 
-		FillRect(frame_buffer, border_color, 0, 0, frame_buffer.width, field_offset_y);
-		FillRect(frame_buffer, border_color, 0, field_offset_y + field_height, frame_buffer.width, frame_buffer.height - field_y_end);
-		FillRect(frame_buffer, border_color, 0, field_offset_y, field_offset_x, field_height);
-		FillRect(frame_buffer, border_color, field_x_end, field_offset_y, frame_buffer.width - field_x_end, field_height);
+		FillRect(frame_buffer, border_color_index, 0, 0, frame_buffer.width, field_offset_y);
+		FillRect(frame_buffer, border_color_index, 0, field_offset_y + field_height, frame_buffer.width, frame_buffer.height - field_y_end);
+		FillRect(frame_buffer, border_color_index, 0, field_offset_y, field_offset_x, field_height);
+		FillRect(frame_buffer, border_color_index, field_x_end, field_offset_y, frame_buffer.width - field_x_end, field_height);
 	}
 
 	if(snake_bonus_ != std::nullopt)
@@ -483,7 +483,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 				{
 					FillRect(
 						frame_buffer,
-						g_cga_palette[colors[i]],
+						colors[i],
 						start_x,
 						start_y,
 						sprite.GetWidth(),
@@ -618,14 +618,14 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t texts_offset_x = field_offset_x + (c_field_width + 1) * c_block_size;
 		const uint32_t texts_offset_y = 8 * g_glyph_height;
 
-		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
+		DrawText(frame_buffer, 10, texts_offset_x, texts_offset_y + 0 * g_glyph_height, Strings::pacman_level);
 
 		char text[64];
 		NumToString(text, sizeof(text), level_, 5);
-		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
+		DrawText(frame_buffer, g_color_white_index, texts_offset_x, texts_offset_y + 2 * g_glyph_height, text);
 
-		DrawText(frame_buffer, g_cga_palette[10], texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
-		DrawText(frame_buffer, g_color_white, texts_offset_x, texts_offset_y + 7 * g_glyph_height, "    ß");
+		DrawText(frame_buffer, 10, texts_offset_x, texts_offset_y + 5 * g_glyph_height, Strings::pacman_score);
+		DrawText(frame_buffer, g_color_white_index, texts_offset_x, texts_offset_y + 7 * g_glyph_height, "    ß");
 	}
 
 	if(tick_ >= g_transition_time_show_ui)
@@ -657,13 +657,13 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t texts_offset_y = frame_buffer.height / 2 + g_glyph_height;
 		char text[16];
 
-		DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y, "IP");
+		DrawText(frame_buffer, g_color_black_index, texts_offset_x, texts_offset_y, "IP");
 		NumToString(text, sizeof(text), lives_, 2);
 		DrawSprite(frame_buffer, Sprites::battle_city_player_lives_symbol, texts_offset_x, texts_offset_y + g_glyph_height);
-		DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height, text);
+		DrawText(frame_buffer, g_color_black_index, texts_offset_x, texts_offset_y + g_glyph_height, text);
 
 		NumToString(text, sizeof(text), level_, 2);
-		DrawText(frame_buffer, g_color_black, texts_offset_x, texts_offset_y + g_glyph_height * 8, text);
+		DrawText(frame_buffer, g_color_black_index, texts_offset_x, texts_offset_y + g_glyph_height * 8, text);
 		DrawSprite(frame_buffer, Sprites::battle_city_level_symbol, texts_offset_x, texts_offset_y + g_glyph_height * 6);
 	}
 
@@ -671,8 +671,8 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 	{
 		DrawTextCenteredWithOutline(
 			frame_buffer,
-			g_cga_palette[4],
-			g_cga_palette[15],
+			4,
+			15,
 			field_offset_x + c_field_width  * c_block_size / 2,
 			field_offset_y + c_field_height * c_block_size / 2,
 			Strings::battle_city_game_over);
@@ -683,14 +683,14 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 		const uint32_t y_offset =
 			field_height * (std::min(fade_duration, level_end_animation_end_tick_ - tick_)) / fade_duration;
 
-		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
+		FillRect(frame_buffer, border_color_index, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
 	}
 	else if(tick_ < level_start_animation_end_tick_)
 	{
 		const uint32_t y_offset =
 			field_height - field_height * (std::min(g_level_start_animation_duration, level_start_animation_end_tick_ - tick_)) / g_level_start_animation_duration;
 
-		FillRect(frame_buffer, border_color, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
+		FillRect(frame_buffer, border_color_index, field_offset_x, field_offset_y + y_offset, field_width, field_height - y_offset);
 
 		const uint32_t text_y_center = field_offset_y + c_field_height * c_block_size / 2;
 		if(field_offset_y + y_offset < text_y_center)
@@ -702,7 +702,7 @@ void GameBattleCity::Draw(const FrameBuffer frame_buffer) const
 
 			DrawTextCentered(
 				frame_buffer,
-				g_cga_palette[0],
+				0,
 				field_offset_x + c_field_width  * c_block_size / 2,
 				field_offset_y + c_field_height * c_block_size / 2,
 				text);
